@@ -1,4 +1,4 @@
-# WARSIM overnight log
+# KICwars log
 
 ## Start here
 - **Play:** https://finndoolan-m.github.io/warplayable-game/

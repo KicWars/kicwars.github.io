@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>WARSIM</title>
+<title>KICwars</title>
 <link rel="icon" href="data:,">
 <style>:root{--acc:#6dff9a;--bg:rgba(10,15,20,.82);--bd:rgba(255,255,255,.12);--tx:#e8eef2;--dim:#93a1ab;--red:#ff5a4a}
 *{box-sizing:border-box}
@@ -191,7 +191,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 
 <!-- main menu -->
 <div id="menu" class="screen">
-  <div class="brand"><h1>WARSIM</h1><p>Five nations. One island. Command the war, or jump into the fight yourself.</p></div>
+  <div class="brand"><h1>KICwars</h1><p>Five nations. One island. Command the war, or jump into the fight yourself.</p></div>
   <div class="mcard" id="mhome">
     <button class="big primary" id="bQuick" title="Choose your nation and enemies, then start with a ready-made base and pick a unit to play straight away">Quick Battle: jump in</button>
     <button class="big" id="bCamp" title="Spend a budget on troops, place them, and beat a fixed enemy army">Campaign: budget battles</button>
@@ -316,7 +316,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 <div id="joinScr" class="screen hidden"><div class="mcard wide">
   <h2>Join a friend</h2>
   <p class="msg">Paste the invite code or link your friend sent you. For a second tab on this computer, type the 5-letter room code.</p>
-  <textarea id="joinIn" rows="3" placeholder="WARSIM-... invite code, invite link, or room code"></textarea>
+  <textarea id="joinIn" rows="3" placeholder="KICWARS-... invite code, invite link, or room code"></textarea>
   <button class="big primary" id="bJoinGo">Join</button>
   <div id="joinReply" class="hidden">
     <p><b>Send this reply code back to your friend</b>, then wait here:</p>
@@ -392,7 +392,7 @@ async function unzip(code) {
 function slimSdp(sdp) {
   return sdp.split(/\r?\n/).filter(l => l && !/^a=(extmap|rtcp|ssrc|msid|ice-options)/.test(l)).join('\n');
 }
-const INVITE_TAG = 'WARSIM-';
+const INVITE_TAG = 'KICWARS-';
 function cleanInvite(s) { // accept a bare code, a code with the tag, or a full link with #join=
   s = (s || '').trim();
   const h = s.match(/[#&?]join=([A-Za-z0-9_-]+)/); if (h) s = h[1];
@@ -446,7 +446,7 @@ Gh.prototype.req = async function (method, path, body, cond) {
   return {same: false, data};
 };
 Gh.prototype.me = async function () { return (await this.req('GET', '/user')).data.login; };
-Gh.prototype.newGist = async function (file, content) { return (await this.req('POST', '/gists', {description: 'WARSIM relay (safe to delete)', public: false, files: {[file]: {content}}})).data.id; };
+Gh.prototype.newGist = async function (file, content) { return (await this.req('POST', '/gists', {description: 'KICwars relay (safe to delete)', public: false, files: {[file]: {content}}})).data.id; };
 Gh.prototype.write = function (id, files) { const f = {}; for (const k in files) f[k] = {content: files[k]}; return this.req('PATCH', '/gists/' + id, {files: f}); };
 Gh.prototype.read = async function (id) { const r = await this.req('GET', '/gists/' + id, null, true); return r.same ? null : r.data; };
 Gh.prototype.fileText = async function (g, name) {
@@ -608,7 +608,7 @@ function ClientLink(code, h, opts) {
 }
 ClientLink.prototype.answer = async function (code) {
   let o;
-  try { o = JSON.parse(await unzip(code)); } catch (e) { throw new Error('That invite code is not complete. Copy the whole code (it starts with WARSIM-).'); }
+  try { o = JSON.parse(await unzip(code)); } catch (e) { throw new Error('That invite code is not complete. Copy the whole code (it starts with KICWARS-).'); }
   if (o.t !== 'o') throw new Error('That is a reply code. Paste it on the host\'s screen instead.');
   const pc = this.pc = new RTCPeerConnection(Net.rtcConfig());
   pc.ondatachannel = ev => {
@@ -655,7 +655,7 @@ ClientLink.prototype.close = function () {
 };
 </script>
 
-<script>// WARSIM game data: nations, units, buildings, upgrades, powers. No DOM here, the sim also runs in Node.
+<script>// KICwars game data: nations, units, buildings, upgrades, powers. No DOM here, the sim also runs in Node.
 const NATIONS = [
   {key: 'licases', name: 'The Licases', leader: 'Lucas Mar', color: '#ff6b3d', dark: '#8a2f12', look: 'bike',
    blurb: 'Infantry speed +18% · Scouts cost −40%',
