@@ -14,6 +14,11 @@
 
 ## Log (newest first, Sydney time)
 
+### 2026-11-05 — Walk around inside ships and subs
+- In a destroyer or submarine, press **B** (rebindable) to leave the captain's chair and walk the rooms: bridge with real windows, mess, quarters, engine room and aft deck on destroyers; control room, torpedo room, bunks and reactor on subs, plus a missile bay on the Nuclear Sub. The ship coasts to a stop while nobody is at the helm. Walk back to the chair and press **B** again to take control.
+- Every nation now gets a Naval Yard in Quick Battle, even with a capital far from the sea, so all can use destroyers and attack subs. Ships spawn pointing at open water.
+- Tested with scripts in the browser, not played by hand and not in multiplayer.
+
 ### 2026-11-05 — Setup screen, all units, phones, aiming
 - **Setup:** Quick Battle and Play vs Bots let you choose your nation, 1 to 5 bot enemies, and each enemy's nation, difficulty and team. *All units unlocked and free* gives human players every unit from every nation.
 - **Deploy:** spawn in and play a unit, or just send it to your army. Ships now spawn in open water.

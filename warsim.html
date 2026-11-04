@@ -1137,6 +1137,11 @@ Sim.prototype.setupPlayer = function (p) {
         const ang = a + Math.PI + (t % 2 ? 1 : -1) * Math.ceil(t / 2) * .26 + (k === 'yard' ? 0 : 0), x = Math.round(s.x + Math.cos(ang) * r), y = Math.round(s.y + Math.sin(ang) * r);
         if (this.canPlace(k, x, y, p.i)) { this.addBuilding(k, p.i, x, y, true); done = true; }
       }
+      if (!done && k === 'yard') { // capital far from the sea: every nation still gets a yard, on the nearest coast
+        let best = null, bd = 1e9;
+        for (let y = 2; y < this.N - 2; y += 2) for (let x = 2; x < this.N - 2; x += 2) { const dd = Math.hypot(x - s.x, y - s.y); if (dd < bd && this.canPlace(k, x, y, p.i)) { bd = dd; best = [x, y]; } }
+        if (best) this.addBuilding(k, p.i, best[0], best[1], true);
+      }
     }
   }
 };
@@ -1938,6 +1943,14 @@ Sim.prototype.spawnFrom = function (b, k, p) {
     }
   }
   const u = this.addUnit(k, p.i, x, y);
+  if (ud.cat === 'sea') { // point the bow at the longest stretch of open water
+    let bestR = -1;
+    for (let t = 0; t < 16; t++) {
+      const ang = t / 16 * Math.PI * 2; let r = 0;
+      while (r < 30 && passable(this.M, 1, Math.round(y + Math.sin(ang) * (r + 1)) * this.N + Math.round(x + Math.cos(ang) * (r + 1)))) r++;
+      if (r > bestR) { bestR = r; u.h = ang; }
+    }
+  }
   if (b.rally) { this.go(u, b.rally.x, b.rally.y); if (ud.cat !== 'inf' || k !== 'worker') u.amove = true; }
   if (k === 'worker' && !b.rally) { const n = this.nearestNode(u, 'steel'); if (n) u.task = {type: 'gather', node: n.id}; }
   p.built++;
@@ -5761,7 +5774,7 @@ Game.prototype.issue = function (c) {
 // Shots: hitscan weapons are resolved on this client against what you see (instant feedback) and the host checks them;
 // projectiles (rockets, shells, bombs, missiles, grenades) are simulated by the host.
 
-const BIND_DEFAULTS = {fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP'};
+const BIND_DEFAULTS = {fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', walk: 'KeyB', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP'};
 const Settings = {
   view: 'fp', sens: 1, invert: false, assist: false, autofire: false, flightAssist: true,
   binds: Object.assign({}, BIND_DEFAULTS),
@@ -5780,7 +5793,7 @@ const Settings = {
 };
 Settings.load();
 
-const BIND_LABELS = {fire: 'Fire', alt: 'Secondary weapon', ads: 'Aim / scope (toggle)', reload: 'Reload', jump: 'Jump / climb', sprint: 'Sprint / descend', view: 'First / third person', exit: 'Back to command', free: 'Free cursor', cycle: 'Cycle lock target', special: 'National special ability', fwd: 'Forward / throttle up', back: 'Back / throttle down', left: 'Left / roll left', right: 'Right / roll right', chooser: 'Unit chooser'};
+const BIND_LABELS = {fire: 'Fire', alt: 'Secondary weapon', ads: 'Aim / scope (toggle)', reload: 'Reload', jump: 'Jump / climb', sprint: 'Sprint / descend', view: 'First / third person', exit: 'Back to command', free: 'Free cursor', cycle: 'Cycle lock target', special: 'National special ability', walk: "Ships: leave / sit in captain's chair", fwd: 'Forward / throttle up', back: 'Back / throttle down', left: 'Left / roll left', right: 'Right / roll right', chooser: 'Unit chooser'};
 
 const _v3 = new THREE.Vector3(), _v3b = new THREE.Vector3();
 const Direct = {
@@ -5793,7 +5806,7 @@ const Direct = {
   modeOf(d) { return d.cat === 'drone' ? 'fpv' : d.cat === 'air' ? 'plane' : d.cat === 'heli' ? 'heli' : d.cat === 'sea' ? 'ship' : d.cat === 'veh' ? 'vehicle' : 'soldier'; },
 
   enter(ui, e) {
-    this.ui = ui; this.e = e; this.id = e.id; this.on = true;
+    this.ui = ui; this.e = e; this.id = e.id; this.on = true; this.aboard = null;
     const d = e.d;
     this.mode = this.modeOf(d);
     this.yaw = e.h; this.pitch = this.mode === 'plane' ? 0 : -.05; this.roll = 0; this.vz = 0; this.mx = this.my = 0; this.keys = {}; this.mouseDown = false;
@@ -5818,7 +5831,7 @@ const Direct = {
 
   exit(msg) {
     if (!this.on) return;
-    this.on = false;
+    this.on = false; this.aboard = null;
     const ui = this.ui, R = ui.g.R, e = ui.g.view.ents.get(this.id);
     if (e) ui.g.issue({c: 'pilot', ids: [this.id], on: 0});
     R.fpId = 0; R.fpPose = null; R.hideId = 0; R.post = null;
@@ -5836,7 +5849,7 @@ const Direct = {
     let w = document.getElementById('tc');
     if (w) return w;
     w = document.createElement('div'); w.id = 'tc';
-    w.innerHTML = '<div id="tcLook"></div><div id="tcStick"><i></i></div><div id="tcTop"><button data-tap="view">View</button><button data-tap="chooser">Units</button><button data-tap="exit">Command</button><button id="tcMenu">Menu</button></div><div id="tcBtns">'
+    w.innerHTML = '<div id="tcLook"></div><div id="tcStick"><i></i></div><div id="tcTop"><button data-tap="walk" class="m-ship">Walk / Chair</button><button data-tap="view">View</button><button data-tap="chooser">Units</button><button data-tap="exit">Command</button><button id="tcMenu">Menu</button></div><div id="tcBtns">'
       + '<button data-tap="special">Special</button><button data-tap="cycle" class="m-air">Lock</button><button data-tap="reload" class="m-gun">Reload</button><button data-tap="ads" class="m-gun">Aim</button><button data-hold="down" class="m-up">Down</button><button data-hold="up" class="m-up">Up</button><button data-hold="alt">2nd</button><button data-hold="fire" class="fire">FIRE</button></div>';
     document.getElementById('direct').appendChild(w);
     const stop = e => { e.preventDefault(); e.stopPropagation(); };
@@ -5872,7 +5885,7 @@ const Direct = {
     const vis = (sel, on) => w.querySelectorAll(sel).forEach(b => { b.style.display = on ? '' : 'none'; });
     vis('.m-up', m === 'heli' || m === 'fpv' || m === 'soldier');
     w.querySelector('[data-hold="up"]').textContent = m === 'soldier' ? 'Jump' : 'Up'; w.querySelector('[data-hold="down"]').textContent = m === 'soldier' ? 'Sprint' : 'Down';
-    vis('.m-air', W.some(s => s.w.t === 'msl')); vis('.m-gun', m !== 'fpv'); vis('[data-hold="alt"]', W.length > 1);
+    vis('.m-ship', m === 'ship'); vis('.m-air', W.some(s => s.w.t === 'msl')); vis('.m-gun', m !== 'fpv'); vis('[data-hold="alt"]', W.length > 1);
     document.getElementById('dhelp').style.display = 'none';
   },
   firstPerson() { return Settings.view === 'fp'; },
@@ -5932,7 +5945,8 @@ const Direct = {
     if (!down) return true;
     if (e.repeat) return true;
     if (c === B.exit) { this.ui.deployed = false; this.exit(); return true; }
-    if (c === B.view) { this.toggleView(); return true; }
+    if (c === B.walk && this.mode === 'ship') { this.toggleAboard(); return true; }
+    if (c === B.view) { if (this.aboard) this.msg('Walking is first person only', 1.2); else this.toggleView(); return true; }
     if (c === B.chooser) { this.ui.deployed = true; this.exit(); this.ui.openDeploy(); return true; }
     if (c === B.ads) { this.toggleAds(); return true; }
     if (c === B.reload) { this.reload(this.slot); return true; }
@@ -5975,8 +5989,8 @@ const Direct = {
     if (this.look === 'free') lx = ly = 0;
     this.lookX = lx * S; this.lookY = ly * S;
     const fn = {soldier: this.moveSoldier, vehicle: this.moveVehicle, ship: this.moveVehicle, plane: this.movePlane, heli: this.moveHeli, fpv: this.moveFpv}[this.mode];
-    fn.call(this, dt, e, M, g.view.N);
-    this.camera(dt, g, M);
+    if (this.aboard) { this.moveAboard(dt, e, M, g.view.N); this.cameraAboard(dt, g); }
+    else { fn.call(this, dt, e, M, g.view.N); this.camera(dt, g, M); }
     // network pose, 15 times a second
     this.sendT -= dt;
     if (this.sendT <= 0) {
@@ -5985,10 +5999,46 @@ const Direct = {
     }
     this.weapons(dt, g, e);
     this.msgT = (this.msgT || 0) - dt;
-    if (e.d.nukeT && e.nukeReady && k[B.alt]) { this.ui.startNuke(e); k[B.alt] = false; }
+    if (e.d.nukeT && e.nukeReady && k[B.alt] && !this.aboard) { this.ui.startNuke(e); k[B.alt] = false; }
     this.ui.updateDirect(this, e, dt);
   },
 
+  // ---------- ships: leave the captain's chair, walk the rooms, sit back down to take control ----------
+  interior() { const e = this.e; return Interior.get(e.k, this.ui.g.view.players[e.o].nation); },
+  toggleAboard() {
+    const I = this.interior();
+    if (!this.aboard) {
+      this.aboard = {x: I.chair[0], z: I.chair[1] + .55, yaw: 0, pitch: 0}; this.ads = false; this.nearChair = true;
+      this.ui.g.R.hideId = this.id; this.msg('Out of the chair. The ship slows down until you are back', 2.5);
+    } else if (this.nearChair) {
+      this.aboard = null; this.camYaw = this.turret = this.pose.h; this.camPitch = 0; this.applyView(); this.msg('You have the helm', 1.5);
+    } else this.msg("Walk back to the captain's chair to take control", 2);
+  },
+  moveAboard(dt, e, M, N) {
+    const A = this.aboard, I = this.interior(), k = this.keys, B = Settings.binds;
+    A.yaw += this.lookX; A.pitch = clamp(A.pitch - this.lookY, -1.3, 1.3);
+    let f = 0, r = 0;
+    if (k[B.fwd]) f++; if (k[B.back]) f--; if (k[B.right]) r++; if (k[B.left]) r--;
+    const L = Math.hypot(f, r) || 1, sp = 2 * (k[B.sprint] ? 1.5 : 1) * dt / L, c = Math.cos(A.yaw), s = Math.sin(A.yaw);
+    const nx = A.x + (c * f - s * r) * sp, nz = A.z + (s * f + c * r) * sp;
+    if (I.free(nx, nz)) { A.x = nx; A.z = nz; } else if (I.free(nx, A.z)) A.x = nx; else if (I.free(A.x, nz)) A.z = nz;
+    if (f || r) this.bobT += dt * 7;
+    this.chairD = Math.hypot(A.x - I.chair[0], A.z - I.chair[1]); this.nearChair = this.chairD < 1;
+    // nobody at the helm: no input reaches the ship, so it coasts to a stop
+    const held = this.keys; this.keys = {}; this.lookX = this.lookY = 0;
+    this.moveVehicle(dt, e, M, N);
+    this.keys = held;
+  },
+  cameraAboard(dt, g) {
+    const A = this.aboard, p = this.pose, R = g.R, cam = R.cam, I = this.interior(), wy = p.h + A.yaw, cp = Math.cos(A.pitch), S = .2, c = Math.cos(p.h), s = Math.sin(p.h);
+    const fw = {x: Math.cos(wy) * cp, y: Math.sin(wy) * cp, z: Math.sin(A.pitch)};
+    this.viewYaw = wy; this.viewPitch = A.pitch; this.fw = this.shotDir = fw; this.aimPt = null; this.aimHit = null; this.blocked = null; this.curZoom = 1; this.adsK = 0;
+    const cx = p.x + (c * A.x - s * A.z) * S, cy = p.y + (s * A.x + c * A.z) * S, cz = p.z + I.worldUp;
+    this.camP = {x: cx, y: cy, z: cz};
+    cam.position.set(cx, cz, cy); cam.up.set(0, 1, 0); cam.lookAt(cx + fw.x * 50, cz + fw.z * 50, cy + fw.y * 50);
+    cam.fov = 72; cam.near = .1; cam.updateProjectionMatrix();
+    R.camTarget = R.camTarget || new THREE.Vector3(); R.camTarget.set(p.x, p.z, p.y);
+  },
   moveSoldier(dt, e, M, N) {
     const k = this.keys, B = Settings.binds, d = e.d, p = this.pose;
     this.yaw += this.lookX; this.pitch = clamp(this.pitch - this.lookY, -1.35, 1.35);
@@ -6243,7 +6293,7 @@ const Direct = {
     const onEnemy = this.aimTarget(this.W[this.slot] && this.W[this.slot].w, g) === 'hit';
     const pri = k[B.fire] || this.mouseDown || (Settings.autofire && onEnemy);
     const sec = k[B.alt];
-    if (this.look === 'free') return;
+    if (this.look === 'free' || this.aboard) return;
     if (pri) this.tryFire(this.slot, g);
     if (sec && this.W.length > 1) { const s = this.slot === 0 ? 1 : 0; const W = this.W[s].w; if (this.mode === 'soldier' && W.mag && W.mag > 1 && W.t === 'hit') { if (this.slot !== s) { this.slot = s; VM.build(e, g.view.players[e.o].nation, s); } } else this.tryFire(s, g, true); }
     if (this.salvo > 0) { this.salvoT -= dt; if (this.salvoT <= 0) { this.salvo--; this.salvoT = .09; this.fireProj(this.W[1].w, 1, g); } }
@@ -6396,6 +6446,13 @@ const Direct = {
 
   // ---------- after the world is drawn: first-person hands and gun ----------
   post() {
+    if (this.on && this.aboard) {
+      const R = this.ui.g.R, r = R.r, A = this.aboard, I = this.interior(), C = I.cam, cp = Math.cos(A.pitch), y = Interior.EYE + Math.abs(Math.sin(this.bobT)) * .012;
+      C.fov = R.cam.fov; C.aspect = R.cam.aspect; C.updateProjectionMatrix();
+      C.position.set(A.x, y, A.z); C.lookAt(A.x + Math.cos(A.yaw) * cp, y + Math.sin(A.pitch), A.z + Math.sin(A.yaw) * cp);
+      const ac = r.autoClear; r.autoClear = false; r.clearDepth(); r.render(I.scene, C); r.autoClear = ac;
+      return;
+    }
     if (!this.on || !this.firstPerson() || this.mode !== 'soldier') return;
     const W = this.W[this.slot] && this.W[this.slot].w, scoped = W && W.scope && this.adsK > .8;
     if (scoped) return;
@@ -6407,6 +6464,16 @@ const Direct = {
     const cx = w / 2, cy = h / 2, W = this.W[this.slot] && this.W[this.slot].w, S = this.W[this.slot], g = this.ui.g, dt = 1 / 60;
     c.save();
     const fp = this.firstPerson();
+    if (this.mode === 'ship') {
+      const K = Settings.keyName(Settings.binds.walk), A = this.aboard;
+      c.textAlign = 'center'; c.fillStyle = '#fff'; c.shadowColor = '#000'; c.shadowBlur = 4;
+      if (A) {
+        const I = this.interior(); c.font = '800 16px system-ui'; c.fillText(I.roomAt(A.x, A.z), cx, 62);
+        c.font = '700 15px system-ui'; c.fillText(this.nearChair ? K + ': sit in the captain\'s chair and take control' : "Captain's chair: " + Math.ceil(this.chairD) + ' m away', cx, h * .72);
+        c.fillStyle = 'rgba(255,255,255,.8)'; c.fillRect(cx - 1.5, cy - 1.5, 3, 3);
+      } else { c.font = '600 12px system-ui'; c.fillStyle = 'rgba(255,255,255,.75)'; c.fillText(K + ': leave the chair and walk around', cx, 34); }
+      c.shadowBlur = 0;
+    }
     // scope
     if (W && W.scope && this.adsK > .8) {
       const r = Math.min(w, h) * .42;
@@ -6423,7 +6490,7 @@ const Direct = {
     const col = aimT === 'hit' ? '#ff4a3d' : aimT === 'far' ? '#ffb000' : aimT === 'friend' ? '#5fd3ff' : 'rgba(255,255,255,.92)';
     let ax = cx, ay = cy;
     if (this.mode === 'plane') { const E0 = this.eye(), sp = this.toScreen(E0.x + this.shotDir.x * 40, E0.y + this.shotDir.y * 40, E0.z + this.shotDir.z * 40); if (sp) { ax = sp.x; ay = sp.y; } }
-    if (W && !(W.scope && this.adsK > .8) && this.mode !== 'fpv') {
+    if (W && !(W.scope && this.adsK > .8) && this.mode !== 'fpv' && !this.aboard) {
       // the gap is the real spread cone projected onto the screen
       const gap = 3 + Math.tan(Math.min(1.2, this.spreadDeg(W) * Math.PI / 180)) / Math.tan((g.R.cam.fov || 70) * Math.PI / 360) * h / 2;
       c.strokeStyle = col; c.lineWidth = 2; c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = 3;
@@ -6521,7 +6588,7 @@ const Direct = {
     // aircraft HUD
     if (this.mode === 'plane') this.drawFlightHud(c, w, h);
     if (fp && (this.mode === 'plane' || this.mode === 'heli')) this.drawCockpit(c, w, h);
-    if (fp && (this.mode === 'vehicle' || this.mode === 'ship') && !(W && W.arc && !this.direct)) this.drawGunsight(c, w, h);
+    if (fp && !this.aboard && (this.mode === 'vehicle' || this.mode === 'ship') && !(W && W.arc && !this.direct)) this.drawGunsight(c, w, h);
     if (!this.helpSeen) { this.helpSeen = 1; }
     c.textAlign = 'left'; c.font = '600 11px system-ui'; c.fillStyle = 'rgba(255,255,255,.55)'; if (!this.isTouch()) c.fillText('H: controls', 24, h - 74);
     // state of the mouse
@@ -6635,6 +6702,95 @@ const Hit = {
     }
     const p = {x: o.x + dir.x * bt, y: o.y + dir.y * bt, z: o.z + dir.z * bt};
     return {ent: best, d: bt, p, crit, ground: !best && gT > 0, water: !best && gT > 0 && hAt(v.M, p.x, p.y) < 0};
+  },
+};
+
+// Inside a ship: a walkable set of rooms drawn in its own pass over the world, so hull gaps and bridge windows show the real sea.
+// Local axes match the models: +X toward the bow, +Z to the right as ry grows. Hulls are too slim for a blob, so rooms are larger inside.
+const Interior = {
+  cache: {}, EYE: .62, H: 1.25,
+  layout(k) {
+    const sub = !!UNITS[k].sub, long = k === 'nukesub';
+    if (!sub) return {sub, chair: [3.4, 0], worldUp: 1.1,
+      rooms: [
+        {n: 'Bridge', x0: 2, x1: 5, z0: -1.6, z1: 1.6, win: [['x', 5, -1.3, 1.3], ['z', -1.6, 2.4, 4.7], ['z', 1.6, 2.4, 4.7]]},
+        {n: 'Passageway', x0: -3, x1: 2, z0: -.5, z1: .5},
+        {n: 'Mess', x0: -2.5, x1: 0, z0: .5, z1: 2.2},
+        {n: 'Crew quarters', x0: -2.5, x1: 0, z0: -2.2, z1: -.5},
+        {n: 'Engine room', x0: -6, x1: -3, z0: -1.6, z1: 1.6},
+        {n: 'Aft deck', x0: -9, x1: -6, z0: -1.6, z1: 1.6, open: 1},
+      ],
+      doors: [['x', 2, -.4, .4], ['z', .5, -1.6, -.9], ['z', -.5, -1.6, -.9], ['x', -3, -.4, .4], ['x', -6, -.4, .4]],
+      blocks: [[4.1, 4.6, -.7, .7], [-1.9, -.7, 1.1, 1.6], [-2.4, -1.5, -2.1, -1.4], [-1.1, -.1, -2.1, -1.4], [-5.2, -3.8, -1.5, -.8], [-5.2, -3.8, .8, 1.5]],
+      crew: [[4.3, 1.2, 3.14], [-1.3, 1.85, -1.57], [-4.5, -.5, 1.57]]};
+    return {sub, chair: [.5, 0], worldUp: .9,
+      rooms: [
+        {n: 'Control room', x0: -1.5, x1: 2, z0: -1.2, z1: 1.2},
+        {n: 'Torpedo room', x0: 2, x1: 5, z0: -1, z1: 1},
+        {n: 'Passageway', x0: -4, x1: -1.5, z0: -.5, z1: .5},
+        {n: 'Bunks', x0: -3.6, x1: -1.8, z0: .5, z1: 1.8},
+        {n: 'Reactor', x0: -7, x1: -4, z0: -1.2, z1: 1.2},
+      ].concat(long ? [{n: 'Missile bay', x0: -11, x1: -7, z0: -1.2, z1: 1.2}] : []),
+      doors: [['x', 2, -.4, .4], ['x', -1.5, -.4, .4], ['z', .5, -3.1, -2.4], ['x', -4, -.4, .4]].concat(long ? [['x', -7, -.4, .4]] : []),
+      blocks: [[1.05, 1.35, .6, .9], [3, 4.8, -.95, -.5], [3, 4.8, .5, .95], [-3.5, -1.9, 1.15, 1.75], [-6, -5, -.6, .6]].concat(long ? [[-10.4, -10, -1, -.5], [-10.4, -10, .5, 1], [-9.2, -8.8, -1, -.5], [-9.2, -8.8, .5, 1], [-8, -7.6, -1, -.5], [-8, -7.6, .5, 1]] : []),
+      crew: [[-.6, -.8, 0], [2.4, .7, 3.14], [-4.4, -1, 1.57]]};
+  },
+  get(k, nat) { const key = k + '|' + nat; return this.cache[key] || (this.cache[key] = this.build(k, nat)); },
+  build(k, nat) {
+    const L = this.layout(k), P = palette(nat), H = this.H, b = new Batch(), T = .08, sub = L.sub;
+    const wallC = sub ? 0x5d6a66 : 0x8a949c, floorC = sub ? 0x2c3331 : 0x4a525a, roofC = sub ? 0x3b4442 : 0xa8b0b6, DK = 0x1c1f22, ST = 0x3a3f44;
+    const edge = (room, axis, at, a, c) => {
+      const top = room.open ? .45 : H, cuts = [];
+      for (const d of L.doors) if (d[0] === axis && Math.abs(d[1] - at) < .01 && d[3] > a && d[2] < c) cuts.push([Math.max(a, d[2]), Math.min(c, d[3]), 'door']);
+      for (const w of room.win || []) if (w[0] === axis && Math.abs(w[1] - at) < .01) cuts.push([w[2], w[3], 'win']);
+      cuts.sort((p, q) => p[0] - q[0]);
+      const seg = (s, e, y0, y1) => { if (e - s < .001 || y1 <= y0) return; if (axis === 'x') b.box(T, y1 - y0, e - s, at, (y0 + y1) / 2, (s + e) / 2, wallC); else b.box(e - s, y1 - y0, T, (s + e) / 2, (y0 + y1) / 2, at, wallC); };
+      let pos = a;
+      for (const q of cuts) {
+        seg(pos, q[0], 0, top);
+        if (!room.open) { if (q[2] === 'door') seg(q[0], q[1], 1.05, H); else { seg(q[0], q[1], 0, .55); seg(q[0], q[1], 1.02, H); } }
+        pos = q[1];
+      }
+      seg(pos, c, 0, top);
+    };
+    for (const r of L.rooms) {
+      b.box(r.x1 - r.x0, .05, r.z1 - r.z0, (r.x0 + r.x1) / 2, -.025, (r.z0 + r.z1) / 2, r.open ? 0x6f7a84 : floorC);
+      if (!r.open) b.box(r.x1 - r.x0, .05, r.z1 - r.z0, (r.x0 + r.x1) / 2, H + .025, (r.z0 + r.z1) / 2, roofC);
+      edge(r, 'x', r.x0, r.z0, r.z1); edge(r, 'x', r.x1, r.z0, r.z1); edge(r, 'z', r.z0, r.x0, r.x1); edge(r, 'z', r.z1, r.x0, r.x1);
+    }
+    // captain's chair: every vessel has one
+    const [cx, cz] = L.chair;
+    b.cyl(.05, .3, cx, .15, cz, DK); b.box(.42, .07, .42, cx, .34, cz, 0x7a2020); b.box(.07, .5, .42, cx - .2, .6, cz, 0x7a2020); b.box(.3, .05, .05, cx + .02, .47, cz + .2, DK); b.box(.3, .05, .05, cx + .02, .47, cz - .2, DK);
+    b.box(.4, .03, .4, cx, .004, cz, P.main);
+    const screen = (x, y, z, w, h, col, ry) => b.box(w, h, .02, x, y, z, col, ry);
+    if (!sub) {
+      b.box(.5, .55, 1.4, 4.35, .28, 0, ST); screen(4.12, .68, 0, 1.1, .22, 0x5ad0ff, Math.PI / 2); b.cyl(.14, .03, 4.05, .62, 0, DK, 0, 0, Math.PI / 2);
+      b.add(GEO.wedge, 0x6f7a84, 7.2, -.35, 0, 4.4, .3, 3.2); b.cyl(.28, .22, 6.5, .08, 0, ST); b.cylX(.05, 1, 7.1, .12, 0, DK);  // bow and deck gun, seen from the bridge
+      b.box(1.2, .42, .5, -1.3, .21, 1.35, 0x7a5a3a); [-1.7, -.9].forEach(x => b.box(.2, .2, .2, x, .1, 1.0, DK));                // mess table and stools
+      [[-1.95, -1.75], [-.6, -1.75]].forEach(([x, z]) => { b.box(.9, .1, .7, x, .25, z, ST); b.box(.85, .08, .62, x, .32, z, P.main); b.box(.9, .1, .7, x, .8, z, ST); }); // bunks
+      [-1.15, 1.15].forEach(z => { b.box(1.4, .8, .7, -4.5, .4, z, 0x56605f); [-5, -4.5, -4].forEach(x => b.cyl(.12, .3, x, .95, z, 0xb07a30)); });  // engines
+      for (let i = 0; i < 4; i++) b.box(.04, .04, 3.2, -9 + i, .45, 0, DK);   // deck rail ties
+    } else {
+      b.cyl(.08, H, 1.2, H / 2, .75, DK); b.box(.26, .12, .2, 1.1, .68, .75, ST);                    // periscope
+      [-1, 1].forEach(s => { b.box(2.2, .75, .28, .2, .38, s * 1.05, ST); for (let i = 0; i < 3; i++) screen(-.5 + i * .7, .78, s * .9, .5, .28, i % 2 ? 0x46ff9a : 0x5ad0ff, 0); });
+      for (let i = 0; i < 4; i++) b.cylX(.05, 3.4, .25, H - .08, -.9 + i * .6, 0x8a7a50);             // overhead pipes
+      [-1, 1].forEach(s => { b.box(1.8, .08, .42, 3.9, .3, s * .72, DK); [0, 1].forEach(i => b.cylX(.13, 1.7, 3.9, .46 + i * .28, s * .72, 0x56605f)); [-.45, .45].forEach(z => b.cylX(.18, .1, 4.96, .62, z, 0x1a1a1a)); });   // torpedoes and tubes
+      for (let i = 0; i < 2; i++) { b.box(1.6, .08, .6, -2.7, .28 + i * .5, 1.45, ST); b.box(1.5, .07, .5, -2.7, .35 + i * .5, 1.45, P.main); }
+      b.cyl(.55, H, -5.5, H / 2, 0, 0x3c4a44); b.cyl(.4, H + .01, -5.5, H / 2, 0, 0x46ff9a);          // reactor core
+      if (k === 'nukesub') [-10.2, -9, -7.8].forEach(x => [-1, 1].forEach(s => { b.cyl(.2, H, x, H / 2, s * .75, 0xc8ccd0); b.box(.42, .02, .42, x, 1.02, s * .75, 0xc23030); }));
+    }
+    const geo = b.geo(), scene = new THREE.Scene();
+    scene.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({vertexColors: true})));
+    scene.add(new THREE.HemisphereLight(sub ? 0xffd9c8 : 0xffffff, 0x50504a, sub ? .85 : 1));
+    const li = new THREE.DirectionalLight(sub ? 0xffb090 : 0xffffff, .55); li.position.set(.4, 1, .3); scene.add(li);
+    const body = soldierBody('rifle', nat).geo(), mat = new THREE.MeshLambertMaterial({vertexColors: true});
+    const blocks = L.blocks.slice();
+    for (const [x, z, ry] of L.crew) { const m = new THREE.Mesh(body, mat); m.position.set(x, 0, z); m.rotation.y = ry; scene.add(m); blocks.push([x - .2, x + .2, z - .2, z + .2]); }
+    const M = .2, walk = L.rooms.map(r => [r.x0 + M, r.x1 - M, r.z0 + M, r.z1 - M, r.n]);
+    for (const d of L.doors) { if (d[0] === 'x') walk.push([d[1] - .4, d[1] + .4, d[2] + M, d[3] - M]); else walk.push([d[2] + M, d[3] - M, d[1] - .4, d[1] + .4]); }
+    const free = (x, z) => walk.some(w => x >= w[0] && x <= w[1] && z >= w[2] && z <= w[3]) && !blocks.some(q => x > q[0] - .15 && x < q[1] + .15 && z > q[2] - .15 && z < q[3] + .15);
+    const roomAt = (x, z) => { const r = L.rooms.find(q => x >= q.x0 && x <= q.x1 && z >= q.z0 && z <= q.z1); return r ? r.n : ''; };
+    return {scene, free, roomAt, chair: L.chair, worldUp: L.worldUp, cam: new THREE.PerspectiveCamera(72, 1, .03, 200)};
   },
 };
 
@@ -7737,7 +7893,7 @@ const UI = {
     const help = {
       soldier: `${K('fwd')}${K('left')}${K('back')}${K('right')} move · mouse aims (no click needed) · ${K('fire')} or click fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} aim · ${K('reload')} reload · ${K('jump')} jump · ${K('sprint')} sprint`,
       vehicle: `${K('fwd')}${K('back')} drive · ${K('left')}${K('right')} turn hull · mouse aims turret · ${K('fire')} fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} ${D.e.k === 'arty' ? 'direct/indirect fire' : 'zoom'}`,
-      ship: `${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} steer · mouse aims · ${K('fire')} fire${w2 ? ' · ' + K('alt') + ' ' + w2 : ''}`,
+      ship: `${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} steer · mouse aims · ${K('fire')} fire${w2 ? ' · ' + K('alt') + ' ' + w2 : ''} · ${K('walk')} leave the chair and walk`,
       plane: `mouse or arrows steer · ${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} roll · ${K('fire')} guns · ${K('alt')} ${w2} · ${K('cycle')} next target`,
       heli: `${K('fwd')}${K('left')}${K('back')}${K('right')} fly · ${K('up')} up · ${K('down')} down · mouse aims · ${K('fire')} guns · ${K('alt')} ${w2}`,
       fpv: `mouse steers · ${K('fwd')} boost · ${K('back')} brake · ${K('up')}${K('down')} climb/sink · dive into the target · ${K('fire')} detonate`,
