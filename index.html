@@ -816,7 +816,6 @@ const PSPECIAL = {
   dhruvs: {n: 'Smart Scan', cd: 30, desc: 'Reveals every enemy within 25 m for 8 seconds.'},
   valentinos: {n: 'Rally Flag', cd: 35, desc: 'Heals friends around you and gives them +30% damage for 8 seconds.'},
   jethroes: {n: 'Alpha Howl', cd: 40, desc: 'Turn into an alpha wolf blob for 14 seconds.'},
-  toms: {n: 'Flex', cd: 30, desc: 'Take half damage for 5 seconds.'},
   veil: {n: 'Pocket Bribe', cd: 35, desc: 'The nearest enemy soldier in front of you switches sides.'},
 };
 </script>
@@ -1595,7 +1594,6 @@ Sim.prototype.acquire = function (e) {
 // ---------- damage ----------
 Sim.prototype.hurt = function (t, dmg, by) {
   if (t.hp <= 0) return;
-  if ((t.armT || 0) > this.t) dmg *= .5;
   t.hp -= dmg; t.hurtT = this.t;
   if (t.pilot && dmg > .5) this.ev({k: 'ouch', id: t.id, x: t.srcX === undefined ? t.x : t.srcX, y: t.srcY === undefined ? t.y : t.srcY, dmg: Math.round(dmg)});
   t.srcX = undefined;
@@ -2467,7 +2465,6 @@ Sim.prototype.pilotSpecial = function (c, pi) {
   if (k === 'dhruvs') this.near(a.x, a.y, 25, t => { if (!this.friendly(t.o, pi)) t.revealed = this.t + 8; });
   else if (k === 'valentinos') this.near(a.x, a.y, 6, t => { if (t.o === pi && !t.b) { t.hp = Math.min(t.hpm, t.hp + 40); t.rallyT = this.t + 8; this.ev({k: 'heal', t: t.id}); } });
   else if (k === 'jethroes') { if (a.d.cat === 'inf' && a.k !== 'wolf') { const hp = a.hp / a.hpm; this.toWolf(a, 14); a.hpm *= PILOT_HP; a.hp = a.hpm; a.wolf.frac = hp; } }
-  else if (k === 'toms') a.armT = this.t + 5;
   else if (k === 'veil') {
     let best = null, bd = 9;
     this.near(a.x, a.y, 9, t => { if (t.b || t.d.cat !== 'inf' || t.k === 'worker' || this.friendly(t.o, pi) || t.pilot) return; const d = Math.hypot(t.x - a.x, t.y - a.y), ang = Math.abs(angDiff(a.h, Math.atan2(t.y - a.y, t.x - a.x))); if (ang < .8 && d < bd) { bd = d; best = t; } });
