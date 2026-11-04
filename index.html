@@ -153,6 +153,27 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 #freePanel{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:40;display:flex;gap:8px;align-items:center;padding:8px 12px;background:rgba(10,14,18,.9);border:1px solid #ffd23a;border-radius:10px}
 #freePanel.hidden{display:none}
 #gl{touch-action:none}
+/* phone and tablet controls while fighting in person */
+#tc,#tcLook{position:absolute;inset:0}
+#tc{user-select:none;-webkit-user-select:none;touch-action:none}
+#tcLook{pointer-events:auto;touch-action:none}
+#tcStick{position:absolute;left:max(18px,env(safe-area-inset-left));bottom:64px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.35);pointer-events:auto;touch-action:none}
+#tcStick i{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px;border-radius:50%;background:rgba(255,255,255,.45);pointer-events:none}
+#tcTop{position:absolute;top:6px;right:max(8px,env(safe-area-inset-right));display:flex;gap:6px}
+#tcBtns{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:58px;display:grid;grid-template-columns:repeat(4,58px);gap:7px;justify-items:center;align-items:end;direction:rtl}
+#tc button{pointer-events:auto;touch-action:none;border:1px solid rgba(255,255,255,.4);background:rgba(10,16,22,.5);color:#fff;font:700 12px system-ui;border-radius:10px;min-height:42px;padding:0 8px;margin:0}
+#tcBtns button{width:58px;height:58px;border-radius:50%;padding:0;direction:ltr;font-size:11px}
+#tcBtns .fire{width:58px;height:58px;background:rgba(214,48,38,.65);font-size:15px}
+#tc button.on{background:rgba(255,255,255,.4)}
+.dcard img{width:72px!important;height:72px!important}
+@media (orientation:portrait) and (pointer:coarse){#tcBtns{grid-template-columns:repeat(3,58px)}}
+/* short screens: phones held sideways */
+@media (max-height:500px){
+  #menu .big{padding-top:7px;padding-bottom:7px;margin-bottom:4px}#menu h1{font-size:34px;margin:0}
+  #mm{width:96px;height:96px}#cards{grid-template-columns:repeat(5,44px);grid-auto-rows:42px}#cards .card img{width:24px;height:24px}#cards .card .gl{font-size:14px;line-height:24px;height:24px}#cards .card label,#cards .card small{display:none}
+  #selpanel{max-height:90px;overflow:hidden}#powers{bottom:110px;max-height:150px;overflow:auto}
+  .lobbybox{max-height:100dvh;height:100dvh;border-radius:0}.dbox .dcard em{display:none}
+}
 </style>
 </head>
 <body>
@@ -164,7 +185,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 <div id="menu" class="screen">
   <div class="brand"><h1>WARSIM</h1><p>Six nations. One island. Command the war, or jump into the fight yourself.</p></div>
   <div class="mcard" id="mhome">
-    <button class="big primary" id="bQuick" title="Starts a 1 v 1 against a bot and lets you pick a unit to play straight away">Quick Battle: jump in</button>
+    <button class="big primary" id="bQuick" title="Choose your nation and enemies, then start with a ready-made base and pick a unit to play straight away">Quick Battle: jump in</button>
     <button class="big" id="bPlay">Play vs Bots (choose nations)</button>
     <button class="big" id="bHost">Play with a Friend: host</button>
     <button class="big" id="bJoin">Join a Friend</button>
@@ -172,7 +193,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
     <details class="how"><summary>How to play</summary>
       <ul>
         <li><b>Quick Battle</b>: pick a unit and fight it yourself straight away. <b>P</b> reopens the unit chooser; when you die it comes back.</li>
-        <li><b>Fighting in person</b>: just move the mouse to aim (no clicking). <b>Space</b> fires, <b>E</b> secondary, <b>Q</b> aim/scope, <b>R</b> reload, <b>WASD</b> move, <b>X</b> jump, <b>C</b> sprint, <b>V</b> first/third person, <b>Alt</b> frees the cursor, <b>F</b> back to commanding.</li>
+        <li id="howKeys"><b>Fighting in person</b>: just move the mouse to aim (no clicking). <b>Space</b> fires, <b>E</b> secondary, <b>Q</b> aim/scope, <b>R</b> reload, <b>WASD</b> move, <b>X</b> jump, <b>C</b> sprint, <b>V</b> first/third person, <b>Alt</b> frees the cursor, <b>F</b> back to commanding.</li>
         <li><b>Planes</b>: the jet follows your mouse. <b>W/S</b> throttle, <b>A/D</b> roll, <b>Space</b> guns, <b>E</b> missiles or bombs.</li>
         <li><b>Commanding</b>: click or drag to select, right click (or Alt+click, two-finger tap, long press) to move or attack. <b>WASD</b>, screen edges or two-finger scroll pan; wheel or pinch zoom; <b>Q E</b> rotate.</li>
         <li><b>Ctrl+1-9</b> make a group, <b>1-9</b> recall it. <b>.</b> finds an idle worker. <b>Space</b> jumps to the latest alert.</li>
@@ -192,7 +213,9 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
         <div id="nations" class="nations"></div>
       </div>
       <div class="lcol side">
-        <h3>Players</h3>
+        <h3>Your enemies</h3>
+        <label id="enemyRow">Bot enemies <select id="optEnemies"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+        <p class="small">Pick each enemy's nation and difficulty below. Different teams also fight each other; put them on the same team to gang up on you.</p>
         <div id="slots"></div>
         <button id="addBot">+ Add bot</button>
         <div id="invPanel" class="hidden">
@@ -219,6 +242,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
         <h3>Battlefield</h3>
         <label>Island size <select id="optSize"><option value="96">Small</option><option value="128" selected>Medium</option><option value="160">Large</option></select></label>
         <label>Graphics <select id="optQ"><option value="auto" selected>Auto (adapts to your computer)</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
+        <label title="Every unit from every nation, free, from the Deploy screen. Applies to human players only.">All units unlocked and free <input type="checkbox" id="optAll"></label>
         <label>Tutorial <input type="checkbox" id="optTut" checked></label>
         <div id="lStatus" class="msg"></div>
         <button class="big primary" id="bStart">Start War</button>
@@ -236,7 +260,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
     <div class="res" title="Population used / cap. Build Housing for more."><i class="ic pop"></i><b id="rPop">0</b></div>
     <div class="res"><i class="ic clock"></i><b id="rTime">0:00</b></div>
     <div id="scores"></div>
-    <button id="bDeploy" title="Pick a unit, spawn at your capital and play it yourself [P]">Deploy [P]</button><button id="bMenu" title="Menu">Menu</button>
+    <button id="bDeploy" title="Pick a unit, then spawn in and play it or send it to join your army [P]">Deploy [P]</button><button id="bMenu" title="Menu">Menu</button>
   </div>
   <div id="alerts"></div>
   <div id="nukeBanner" class="hidden"></div>
@@ -299,7 +323,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
   <button class="big" id="bJoinBack">Back</button>
 </div></div>
 
-<div id="deploy" class="screen hidden"><div class="lobbybox dbox"><div class="lhead"><h2>Deploy: choose a unit to play</h2><button id="dClose">Back to command</button></div><div id="dList"></div></div></div>
+<div id="deploy" class="screen hidden"><div class="lobbybox dbox"><div class="lhead"><h2>Deploy: choose a unit</h2><button id="dClose">Back to command</button></div><div id="dList"></div></div></div>
 <div id="pause" class="screen hidden"><div class="mcard"><h2>Menu</h2><p class="msg">The war keeps running.</p><button class="big primary" id="bResume">Resume</button><button class="big" id="bSettings2">Controls and settings</button><button class="big" id="bQuit">Quit to menu</button></div></div>
 <div id="over" class="screen hidden"><div class="mcard wide"><h1 id="oTitle"></h1><p id="oSub"></p><table id="oStats"></table><button class="big primary" id="bAgain">Back to menu</button><button class="big" id="bWatch">Keep watching</button></div></div>
 
@@ -1084,7 +1108,7 @@ function Sim(opts) {
   this.grid = new Map();
   this.players = opts.players.map((p, i) => {
     const nat = NATIONS[p.nation];
-    return {i, name: p.name || nat.name, nation: p.nation, nat, team: p.team === undefined ? i : p.team, bot: p.bot || null,
+    return {i, name: p.name || nat.name, nation: p.nation, nat, team: p.team === undefined ? i : p.team, bot: p.bot || null, open: !!p.open,
       steel: 400, fuel: 100, pop: 0, popCap: 15, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0,
       buffs: {}, reveal: 0, spawn: this.M.spawns[i]};
   });
@@ -1120,6 +1144,7 @@ Sim.prototype.setupPlayer = function (p) {
 Sim.prototype.hpMult = function (p) { let m = (p.nat.tr.hp || 1); if (p.ups.armour1) m *= 1.15; if (p.ups.armour2) m *= 1.15; return m; };
 Sim.prototype.dmgMult = function (p) { let m = (p.nat.tr.dmg || 1); if (p.ups.weapons1) m *= 1.15; if (p.ups.weapons2) m *= 1.15; if (p.buffs.forza > this.t) m *= 1.25; return m; };
 Sim.prototype.costOf = function (p, def, key) {
+  if (p.open && key) return [0, 0]; // "all units unlocked": units are free, buildings are not
   let k = p.nat.tr.cost || 1;
   if (key === 'scout' && p.nat.tr.scoutCost) k *= p.nat.tr.scoutCost;
   return [Math.round(def.cost[0] * k), Math.round(def.cost[1] * k)];
@@ -1241,10 +1266,10 @@ Sim.prototype.issue = function (c, pi) {
       const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === pi), d = UNITS[c.u];
       const free = c.u === 'rifle' && (p.freeT || 0) <= this.t;
       if (!hq || !d || (!free && !this.trainable(p, c.u))) break;
-      if (!free && d.from && d.from !== 'hq' && !this.has(pi, d.from)) { this.notify(pi, 'Build a ' + BUILDINGS[d.from].n + ' first', 'bad'); break; }
+      if (!free && !p.open && d.from && d.from !== 'hq' && !this.has(pi, d.from)) { this.notify(pi, 'Build a ' + BUILDINGS[d.from].n + ' first', 'bad'); break; }
       const k = this.costOf(p, d, c.u);
       if (!free && (p.steel < k[0] || p.fuel < k[1])) { this.notify(pi, 'Not enough resources', 'bad'); break; }
-      if (!free && p.pop + d.pop > p.popCap) { this.notify(pi, 'Population full: build Housing', 'bad'); break; }
+      if (!free && !p.open && p.pop + d.pop > p.popCap) { this.notify(pi, 'Population full: build Housing', 'bad'); break; }
       if (free) p.freeT = this.t + 15; else { p.steel -= k[0]; p.fuel -= k[1]; }
       const u = this.spawnFrom(hq, c.u, p);
       u.goal = null; u.task = null;
@@ -1331,6 +1356,7 @@ Sim.prototype.has = function (pi, k) {
 
 Sim.prototype.trainable = function (p, u) {
   const d = UNITS[u];
+  if (d && p.open) return true;
   if (!d || d.hidden) return false;
   if (d.only && !d.only.includes(p.nat.key)) return false;
   if (d.notNation && d.notNation.includes(p.nat.key)) return false;
@@ -1897,9 +1923,12 @@ Sim.prototype.spawnFrom = function (b, k, p) {
   let x = b.x + Math.cos(a) * s * 1.1, y = b.y + Math.sin(a) * s * 1.1;
   if (ud.cat === 'sea') {
     let best = null, bd = 1e9;
-    for (let j = -14; j <= 14; j++) for (let i = -14; i <= 14; i++) {
-      const q = Math.round(b.y + j) * this.N + Math.round(b.x + i);
-      if (q >= 0 && q < this.N * this.N && this.M.h[q] < -.5 && !this.M.occ[q] && i * i + j * j < bd) { bd = i * i + j * j; best = [b.x + i, b.y + j]; }
+    // nearest open water anywhere on the map: a capital far inland must not leave a ship stranded, or in a pond
+    const bx = Math.round(b.x), by = Math.round(b.y), N = this.N, wet = (x, y) => x >= 0 && y >= 0 && x < N && y < N && passable(this.M, 1, y * N + x);
+    const roomy = (x, y) => { let n = 0; for (let j = -6; j <= 6; j += 2) for (let i = -6; i <= 6; i += 2) if (wet(x + i, y + j)) n++; return n >= 30; };
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const i = x - bx, j = y - by, dd = i * i + j * j, q = y * N + x;
+      if (dd < bd && this.M.h[q] < -.5 && !this.M.occ[q] && wet(x, y) && roomy(x, y)) { bd = dd; best = [x, y]; }
     }
     if (best) { x = best[0]; y = best[1]; }
   } else if (ud.cat === 'inf' || ud.cat === 'veh') {
@@ -2253,9 +2282,9 @@ function hitShape(e, x, y, z, h) {
     const sc = 1 + (e.vet || 0) * .08, r = .3 * sc * (T ? 1.15 : 1);
     return {sph: 1, x, y, z: z + (.36 * (T ? .84 : 1) + (bike ? .2 : 0)) * sc, r: r * 1.08};
   }
-  const L = {tank: [1, .6, .45], ifv: [.95, .55, .45], arty: [1, .55, .45], sam: [.9, .5, .5], destroyer: [2.4, .55, .6], attacksub: [1.7, .3, .3], nukesub: [2.3, .38, .35],
+  const L = {tank: [1.12, .62, .58], ifv: [.95, .55, .45], arty: [1, .55, .45], sam: [.9, .5, .5], destroyer: [2.4, .55, .6], attacksub: [1.7, .3, .3], nukesub: [2.3, .38, .35],
     bomber: [1.6, 1.4, .3], gunship: [1, .6, .35], fpv: [.35, .35, .15], hunter: [.4, .3, .15]}[e.k] || (d.cat === 'air' ? [1.1, 1, .25] : [d.r, d.r * .7, .4]);
-  return {box: 1, x, y, z: z + (d.cat === 'veh' ? .45 : d.cat === 'sea' ? .3 : 0), hx: L[0], hy: L[1], hz: L[2], h: h || 0};
+  return {box: 1, x, y, z: z + (d.cat === 'veh' ? L[2] : d.cat === 'sea' ? .3 : 0), hx: L[0], hy: L[1], hz: L[2], h: h || 0};
 }
 // Ray (origin o, unit dir v) against a shape: distance or -1. Also reports a weak-spot hit (top of a blob, rear of a machine).
 function rayShape(o, v, S, out) {
@@ -2314,8 +2343,10 @@ Sim.prototype.pilotHit = function (c, pi) {
   const ex = this.eyeOf(a), S = hitShape(Object.assign({nat: this.players[t.o].nation}, t), t.x, t.y, t.z || 0, t.h);
   const dd = Math.hypot(S.x - ex.x, S.y - ex.y, S.z - ex.z);
   if (dd > W.rng + 3 + (t.b ? t.d.s : 0)) return;
-  if (!t.b && W.t !== 'cone' && W.t !== 'mel' && !clearLine(this.M, ex, {x: S.x, y: S.y, z: S.z})) return;
-  if (t.air && !W.aa && t.z - hAt(this.M, t.x, t.y) > 3) return;
+  // the line is checked to the spot the pilot hit (if it is really on the target), so a hull showing over a crest counts
+  const reach = S.sph ? S.r + .6 : Math.hypot(S.hx, S.hy, S.hz) + .6, seen = c.px !== undefined && Math.hypot(c.px - S.x, c.py - S.y, c.pz - S.z) < reach ? {x: c.px, y: c.py, z: c.pz} : {x: S.x, y: S.y, z: S.z};
+  if (!t.b && W.t !== 'cone' && W.t !== 'mel' && !clearLine(this.M, ex, seen)) return;
+  if (t.air && !W.aa && !W.air && t.z - hAt(this.M, t.x, t.y) > 3) return;
   let dm = W.dmg * n * this.dmgMult(this.players[pi]) * (VS[W.vs][t.b ? 'bld' : t.d.arm] || 0) * (c.crit ? W.crit || 1 : 1);
   if (W.t === 'pel' || W.t === 'hit') dm *= dd > W.rng * .6 ? 1 - (dd - W.rng * .6) / (W.rng * .4) * .5 : 1; // falloff
   if (this.inSmoke(t)) dm *= .7;
@@ -2364,7 +2395,7 @@ Sim.prototype.stepProjs = function () {
         }
       }
       p.vz -= p.g * dt;
-      const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt, nz = p.z + p.vz * dt;
+      const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt, nz = p.z + p.vz * dt, from = {x: p.x, y: p.y, z: p.z}, seg = Math.hypot(nx - p.x, ny - p.y, nz - p.z) || 1e-6, dir = {x: (nx - p.x) / seg, y: (ny - p.y) / seg, z: (nz - p.z) / seg};
       if (nx < 0 || ny < 0 || nx > this.N - 1 || ny > this.N - 1) { p.life = 0; break; }
       p.x = nx; p.y = ny; p.z = nz;
       const g = hAt(M, p.x, p.y);
@@ -2378,8 +2409,10 @@ Sim.prototype.stepProjs = function () {
         if (p.W.sea && !t.sea) return;
         if (t.air && !p.W.air && !p.home && t.d.cat !== 'drone' && t.d.cat !== 'heli') return;
         const S = hitShape(Object.assign({nat: this.players[t.o].nation}, t), t.x, t.y, t.z || 0, t.h), pad = p.home ? .5 : .15;
-        const inside = S.sph ? Math.hypot(p.x - S.x, p.y - S.y, p.z - S.z) < S.r + pad : Math.abs(p.x - S.x) < Math.max(S.hx, S.hy) + pad && Math.abs(p.y - S.y) < Math.max(S.hx, S.hy) + pad && Math.abs(p.z - S.z) < S.hz + pad;
-        if (inside) hit = t;
+        // swept along this step, so fast shells cannot skip through a target, against the real facing of the hull
+        if (S.sph) S.r += pad; else { S.hx += pad; S.hy += pad; S.hz += pad; }
+        const d = rayShape(from, dir, S);
+        if (d >= 0 && d <= seg) hit = t;
       });
       if (!boom && !hit) for (const b of this.ents.values()) if (b.b && !b.d.mine && !this.friendly(b.o, p.o) && Math.abs(b.x - p.x) < b.d.s * .45 && Math.abs(b.y - p.y) < b.d.s * .45 && p.z - b.z < (b.k === 'hq' ? 3 : 1.8)) { hit = b; break; }
       if (hit) { if (p.W.stick && !p.stuck) { p.stuck = hit.id; } else boom = true; }
@@ -2760,7 +2793,7 @@ function Mirror(o) {
   this.t = 0; this.ents = new Map(); this.smokes = []; this.over = null; this.nukes = [];
   this.players = o.players.map((p, i) => {
     const nat = NATIONS[p.nation];
-    return {i, name: p.name || nat.name, nation: p.nation, nat, team: p.team === undefined ? i : p.team, steel: 0, fuel: 0, pop: 0, popCap: 15, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0, buffs: {}, reveal: 0, spawn: this.M.spawns[i]};
+    return {i, name: p.name || nat.name, nation: p.nation, nat, team: p.team === undefined ? i : p.team, open: !!p.open, steel: 0, fuel: 0, pop: 0, popCap: 15, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0, buffs: {}, reveal: 0, spawn: this.M.spawns[i]};
   });
 }
 Mirror.prototype.friendly = Sim.prototype.friendly;
@@ -5728,10 +5761,20 @@ Game.prototype.issue = function (c) {
 // Shots: hitscan weapons are resolved on this client against what you see (instant feedback) and the host checks them;
 // projectiles (rockets, shells, bombs, missiles, grenades) are simulated by the host.
 
+const BIND_DEFAULTS = {fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP'};
 const Settings = {
   view: 'fp', sens: 1, invert: false, assist: false, autofire: false, flightAssist: true,
-  binds: {fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP'},
-  load() { try { const o = JSON.parse(localStorage.getItem('warsim-settings') || '{}'); for (const k in o) if (k === 'binds') Object.assign(this.binds, o.binds); else this[k] = o[k]; } catch (e) {} },
+  binds: Object.assign({}, BIND_DEFAULTS),
+  load() { try { const o = JSON.parse(localStorage.getItem('warsim-settings') || '{}'); for (const k in o) if (k === 'binds') Object.assign(this.binds, o.binds); else this[k] = o[k]; } catch (e) {} const B = this.binds; if (B.exit === B.fire) B.exit = B.fire === 'Space' ? 'KeyF' : 'Space'; },
+  // Give an action a new key. A key already used by another action is swapped, so nothing is left without a key or fights over one.
+  // Returns the label of the action that was swapped, if any. Jump/climb and sprint/descend share their keys.
+  rebind(k, code) {
+    const B = this.binds, old = B[k]; let swapped = '';
+    for (const o in BIND_LABELS) if (o !== k && o !== 'free' && B[o] === code) { B[o] = old; if (o === 'jump') B.up = old; if (o === 'sprint') B.down = old; swapped = BIND_LABELS[o]; }
+    B[k] = code; if (k === 'jump') B.up = code; if (k === 'sprint') B.down = code;
+    this.save(); return swapped;
+  },
+  resetBinds() { Object.assign(this.binds, BIND_DEFAULTS); this.save(); },
   save() { try { const o = {}; for (const k of ['view', 'sens', 'invert', 'assist', 'autofire', 'flightAssist', 'binds']) o[k] = this[k]; localStorage.setItem('warsim-settings', JSON.stringify(o)); } catch (e) {} },
   keyName(code) { return !code ? '?' : code.replace(/^Key/, '').replace(/^Digit/, '').replace('Left', '').replace('Right', '').replace('Space', 'Space').replace('Arrow', ''); },
 };
@@ -5768,6 +5811,7 @@ const Direct = {
     ui.g.issue({c: 'pilot', ids: [e.id], on: 1});
     this.requestLock('enter');
     ui.enterDirect(this);
+    this.showTouch();
     VM.build(e, ui.g.view.players[e.o].nation);
     R.post = () => this.post();
   },
@@ -5785,6 +5829,52 @@ const Direct = {
     else if (ui.deployed) ui.openDeploy();
   },
 
+  // ---------- phones and tablets: left stick moves, dragging anywhere else looks, buttons press the bound keys ----------
+  isTouch() { return !!(window.matchMedia && matchMedia('(pointer:coarse)').matches) || new URLSearchParams(location.search).has('touch'); },
+  touchKey(name, down) { const code = Settings.binds[name]; if (this.on) this.onKey({code, repeat: false, preventDefault() {}}, down); },
+  buildTouch() {
+    let w = document.getElementById('tc');
+    if (w) return w;
+    w = document.createElement('div'); w.id = 'tc';
+    w.innerHTML = '<div id="tcLook"></div><div id="tcStick"><i></i></div><div id="tcTop"><button data-tap="view">View</button><button data-tap="chooser">Units</button><button data-tap="exit">Command</button><button id="tcMenu">Menu</button></div><div id="tcBtns">'
+      + '<button data-tap="special">Special</button><button data-tap="cycle" class="m-air">Lock</button><button data-tap="reload" class="m-gun">Reload</button><button data-tap="ads" class="m-gun">Aim</button><button data-hold="down" class="m-up">Down</button><button data-hold="up" class="m-up">Up</button><button data-hold="alt">2nd</button><button data-hold="fire" class="fire">FIRE</button></div>';
+    document.getElementById('direct').appendChild(w);
+    const stop = e => { e.preventDefault(); e.stopPropagation(); };
+    w.querySelectorAll('[data-tap]').forEach(b => { b.addEventListener('pointerdown', e => { stop(e); this.touchKey(b.dataset.tap, true); this.touchKey(b.dataset.tap, false); }); });
+    w.querySelectorAll('[data-hold]').forEach(b => {
+      const up = e => { stop(e); b.classList.remove('on'); this.touchKey(b.dataset.hold, false); };
+      b.addEventListener('pointerdown', e => { stop(e); try { b.setPointerCapture(e.pointerId); } catch (x) {} b.classList.add('on'); this.touchKey(b.dataset.hold, true); });
+      b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+    });
+    w.querySelector('#tcMenu').addEventListener('pointerdown', e => { stop(e); document.getElementById('pause').classList.remove('hidden'); });
+    // look: every finger on the look area turns the view by how far it moved
+    const look = w.querySelector('#tcLook'), last = new Map();
+    look.addEventListener('pointerdown', e => { stop(e); try { look.setPointerCapture(e.pointerId); } catch (x) {} last.set(e.pointerId, [e.clientX, e.clientY]); });
+    look.addEventListener('pointermove', e => { const q = last.get(e.pointerId); if (!q) return; stop(e); this.mx += (e.clientX - q[0]) * 1.8; this.my += (e.clientY - q[1]) * 1.8; q[0] = e.clientX; q[1] = e.clientY; });
+    const lend = e => last.delete(e.pointerId); look.addEventListener('pointerup', lend); look.addEventListener('pointercancel', lend);
+    // stick: presses the movement keys past a small dead zone
+    const st = w.querySelector('#tcStick'), nub = st.firstChild; let id = null;
+    const set = (dx, dy) => {
+      const B = Settings.binds, L = Math.hypot(dx, dy) || 1, R = st.offsetWidth / 2 || 60, k = Math.min(1, R / L), dz = R * .25;
+      nub.style.transform = `translate(${dx * k}px,${dy * k}px)`;
+      this.keys[B.fwd] = dy < -dz; this.keys[B.back] = dy > dz; this.keys[B.left] = dx < -dz; this.keys[B.right] = dx > dz;
+    };
+    const centre = e => { const r = st.getBoundingClientRect(); return [e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2]; };
+    st.addEventListener('pointerdown', e => { stop(e); id = e.pointerId; try { st.setPointerCapture(id); } catch (x) {} set(...centre(e)); });
+    st.addEventListener('pointermove', e => { if (e.pointerId === id) { stop(e); set(...centre(e)); } });
+    const send = e => { if (e.pointerId === id) { id = null; set(0, 0); } }; st.addEventListener('pointerup', send); st.addEventListener('pointercancel', send);
+    return w;
+  },
+  showTouch() {
+    if (!this.isTouch()) return;
+    const w = this.buildTouch(), m = this.mode, W = this.W;
+    w.classList.remove('hidden'); w.dataset.mode = m;
+    const vis = (sel, on) => w.querySelectorAll(sel).forEach(b => { b.style.display = on ? '' : 'none'; });
+    vis('.m-up', m === 'heli' || m === 'fpv' || m === 'soldier');
+    w.querySelector('[data-hold="up"]').textContent = m === 'soldier' ? 'Jump' : 'Up'; w.querySelector('[data-hold="down"]').textContent = m === 'soldier' ? 'Sprint' : 'Down';
+    vis('.m-air', W.some(s => s.w.t === 'msl')); vis('.m-gun', m !== 'fpv'); vis('[data-hold="alt"]', W.length > 1);
+    document.getElementById('dhelp').style.display = 'none';
+  },
   firstPerson() { return Settings.view === 'fp'; },
   applyView() { const R = this.ui.g.R; R.hideId = this.firstPerson() ? this.id : 0; },
   toggleView() {
@@ -5795,6 +5885,7 @@ const Direct = {
 
   // ---------- look: pointer lock, free cursor, cursor-offset fallback ----------
   requestLock(why) {
+    if (this.isTouch()) { this.look = 'touch'; return; }
     const cv = this.ui.g.R.r.domElement;
     if (!cv.requestPointerLock) { this.look = 'offset'; this.msg('Move the cursor away from the centre to look. Alt: free cursor', 4); return; }
     this.look = 'pending'; this.lockAsked = performance.now();
@@ -5804,7 +5895,7 @@ const Direct = {
     clearTimeout(this.lockWait); this.lockWait = setTimeout(() => { if (this.on && this.look === 'pending') this.lockFailed(); }, 1200);
   },
   lockFailed() {
-    if (!this.on || document.pointerLockElement) return;
+    if (!this.on || document.pointerLockElement || this.isTouch()) return;
     // Chrome refuses a re-lock for about a second after Esc: retry once, quietly, then fall back
     this.lockTries = (this.lockTries || 0) + 1;
     if (this.lockTries <= 2) { this.look = 'pending'; this.msg('Locking the mouse...', 1.2); clearTimeout(this.relockT); this.relockT = setTimeout(() => { if (this.on && this.look === 'pending') this.requestLock('retry'); }, 1150); return; }
@@ -5836,7 +5927,7 @@ const Direct = {
   onKey(e, down) {
     const B = Settings.binds, c = e.code;
     if (c === 'AltLeft' || c === 'AltRight' || c === B.free) { e.preventDefault(); if (down && !e.repeat) this.toggleFree(); return true; }
-    if (c === 'Tab') e.preventDefault();
+    if (c === 'Tab' || c === 'Space') e.preventDefault();
     this.keys[c] = down;
     if (!down) return true;
     if (e.repeat) return true;
@@ -5849,7 +5940,6 @@ const Direct = {
     if (c === B.special) { this.special(); return true; }
     if (c === 'KeyH') { document.getElementById('dhelp').classList.toggle('mini'); return true; }
     if (c === 'Digit1' || c === 'Digit2') { const s = +c.slice(5) - 1; if (this.W[s] && this.W[s].w.mag) { this.slot = s; VM.build(this.e, this.ui.g.view.players[this.e.o].nation, s); } return true; }
-    if (c === 'Space' || c === B.fire) e.preventDefault();
     return true;
   },
   special() {
@@ -5869,7 +5959,7 @@ const Direct = {
   update(dt, g) {
     const e = g.view.ents.get(this.id);
     if (!e) { this.exit(this.mode === 'fpv' ? 'Signal lost' : this.e.d.n + ' destroyed'); return; }
-    if (e.k !== this.e.k) { this.W = (PWPN[e.k] || []).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0})); this.slot = 0; VM.build(e, g.view.players[e.o].nation, 0); this.msg(e.k === 'wolf' ? 'ALPHA WOLF! Space bites, E pounces' : 'Back to blob form', 2); }
+    if (e.k !== this.e.k) { this.W = (PWPN[e.k] || []).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0})); this.slot = 0; VM.build(e, g.view.players[e.o].nation, 0); this.msg(e.k === 'wolf' ? 'ALPHA WOLF! ' + Settings.keyName(Settings.binds.fire) + ' bites, ' + Settings.keyName(Settings.binds.alt) + ' pounces' : 'Back to blob form', 2); }
     this.e = e; this.g = g;
     const k = this.keys, B = Settings.binds, M = g.view.M;
     // look input: mouse (locked), cursor offset (fallback), arrow keys (keyboard and trackpad friendly)
@@ -6148,9 +6238,9 @@ const Direct = {
         if (best) this.lockId = best;
       } else { const was = this.lockK; this.lockK = Math.min(1, this.lockK + dt / 1.2); if (was < 1 && this.lockK >= 1) Sfx.beep(1400); else if (this.lockK < 1) Sfx.beep(700); }
     }
-    if (this.mode === 'fpv') { if (k[B.fire] || k.Space || this.mouseDown) { g.issue({c: 'pfire', id: this.id, w: 'det', yaw: 0, pitch: 0}); this.keys[B.fire] = false; this.mouseDown = false; } if (this.batt <= 0) g.issue({c: 'pfire', id: this.id, w: 'det', yaw: 0, pitch: 0}); return; }
+    if (this.mode === 'fpv') { if (k[B.fire] || this.mouseDown) { g.issue({c: 'pfire', id: this.id, w: 'det', yaw: 0, pitch: 0}); this.keys[B.fire] = false; this.mouseDown = false; } if (this.batt <= 0) g.issue({c: 'pfire', id: this.id, w: 'det', yaw: 0, pitch: 0}); return; }
     if (e.k === 'hunter') { if (k[B.fire] || this.mouseDown) g.issue({c: 'pfire', id: this.id, w: 'det', yaw: 0, pitch: 0}); return; }
-    const onEnemy = this.aimHit && this.aimHit.ent && !g.view.friendly(this.aimHit.ent.o, g.me);
+    const onEnemy = this.aimTarget(this.W[this.slot] && this.W[this.slot].w, g) === 'hit';
     const pri = k[B.fire] || this.mouseDown || (Settings.autofire && onEnemy);
     const sec = k[B.alt];
     if (this.look === 'free') return;
@@ -6179,6 +6269,15 @@ const Direct = {
     this.bloom = Math.min(6, this.bloom + (W.kick || .3) * .35);
     this.kick = 1; this.flashT = .05;
     VM.fired(W);
+  },
+  // what the crosshair is on for this weapon: 'hit', 'far' (enemy out of range), 'immune' (this gun cannot hurt it), 'friend' or ''
+  aimTarget(W, g) {
+    const h = this.aimHit, t = h && h.ent;
+    if (!t) return '';
+    if (g.view.friendly(t.o, g.me)) return 'friend';
+    if (W && !Hit.canHurt(t, W, g.view)) return 'immune';
+    if (W && (W.t === 'hit' || W.t === 'pel' || W.t === 'cone' || W.t === 'mel') && W.rng && Math.hypot(h.p.x - this.pose.x, h.p.y - this.pose.y, h.p.z - this.pose.z) > W.rng) return 'far';
+    return 'hit';
   },
   spreadDeg(W) {
     const ads = this.adsK;
@@ -6220,8 +6319,8 @@ const Direct = {
     }
     for (const o of hitsBy.values()) {
       const t = o.e;
-      if (g.view.friendly(t.o, g.me)) { R.impact(o.p.x, o.p.y, o.p.z, false, true); continue; }
-      g.issue({c: 'phit', id: this.id, w: s, t: t.id, crit: o.crit ? 1 : 0, n: o.n});
+      if (g.view.friendly(t.o, g.me) || !Hit.canHurt(t, W, g.view)) { R.impact(o.p.x, o.p.y, o.p.z, false, true); continue; }
+      g.issue({c: 'phit', id: this.id, w: s, t: t.id, crit: o.crit ? 1 : 0, n: o.n, px: o.p.x, py: o.p.y, pz: o.p.z});
       this.predictHit(t, W, o.n, o.crit, o.p, g);
     }
     if (nearMiss && !hitsBy.size) g.issue({c: 'pnear', id: this.id, x: nearMiss.x, y: nearMiss.y});
@@ -6232,7 +6331,7 @@ const Direct = {
     // flames are blocked by hills
     const gT = rayGround(g.view.M, E, f, W.rng, true), reach = gT > 0 ? gT : W.rng;
     for (const t of g.view.ents.values()) {
-      if (t.id === this.id || g.view.friendly(t.o, g.me) || t.inside || !R.isVisible(t.x, t.y)) continue;
+      if (t.id === this.id || g.view.friendly(t.o, g.me) || t.inside || !R.isVisible(t.x, t.y) || !Hit.canHurt(t, W, g.view)) continue;
       const S = Hit.shape(t, g.view), dx = S.x - E.x, dy = S.y - E.y, dz = S.z - E.z, L = Math.hypot(dx, dy, dz);
       if (L > reach + (S.r || S.hx || 0)) continue;
       if ((dx * f.x + dy * f.y + dz * f.z) / (L || 1) < Math.cos(W.sp * Math.PI / 180) && L > .8) continue;
@@ -6244,6 +6343,10 @@ const Direct = {
     const E = this.eye(), d = this.shotDir || this.fw, mz = W.t === 'bomb' ? {x: this.pose.x, y: this.pose.y, z: this.pose.z - .3} : this.muzzle();
     let dx = d.x, dy = d.y, dz = d.z;
     if (W.arc && this.aimPt && !this.direct) { const sol = ballisticPitch(mz, this.aimPt, W.spd, W.g); if (sol !== null) { const yaw = Math.atan2(this.aimPt.y - mz.y, this.aimPt.x - mz.x); dx = Math.cos(yaw) * Math.cos(sol); dy = Math.sin(yaw) * Math.cos(sol); dz = Math.sin(sol); } }
+    else if (!W.fuse && W.t !== 'bomb' && this.mode !== 'plane' && this.aimPt) { // direct fire: from the muzzle to the crosshair, allowing for drop
+      const ax = this.aimPt.x - mz.x, ay = this.aimPt.y - mz.y, ad = Math.hypot(ax, ay);
+      if (ad > .5) { const sol = ballisticPitch(mz, this.aimPt, W.spd || 40, W.g || 0), pt = sol === null ? Math.atan2(this.aimPt.z - mz.z, ad) : sol; dx = ax / ad * Math.cos(pt); dy = ay / ad * Math.cos(pt); dz = Math.sin(pt); }
+    }
     if (W.fuse && !W.arc) { dz += .25; const L = Math.hypot(dx, dy, dz); dx /= L; dy /= L; dz /= L; } // throw grenades slightly upward
     const sp = (W.sp || 0) * Math.PI / 180 * (1 - this.adsK * .7);
     dx += (Math.random() - .5) * sp; dy += (Math.random() - .5) * sp; dz += (Math.random() - .5) * sp;
@@ -6316,19 +6419,20 @@ const Direct = {
       if (this.aimHit && this.aimHit.d) c.fillText(this.aimHit.d.toFixed(0) * 10 + ' m', cx + r * .5, cy + 18);
     }
     // crosshair: grows with spread, red over an enemy
-    const onEnemy = this.aimHit && this.aimHit.ent && !g.view.friendly(this.aimHit.ent.o, g.me), friend = this.aimHit && this.aimHit.ent && !onEnemy;
-    const col = onEnemy ? '#ff4a3d' : friend ? '#5fd3ff' : 'rgba(255,255,255,.92)';
+    const aimT = this.aimTarget(W, g);
+    const col = aimT === 'hit' ? '#ff4a3d' : aimT === 'far' ? '#ffb000' : aimT === 'friend' ? '#5fd3ff' : 'rgba(255,255,255,.92)';
     let ax = cx, ay = cy;
-    if (this.mode === 'plane') { const sp = this.toScreen(this.pose.x + this.shotDir.x * 40, this.pose.y + this.shotDir.y * 40, this.pose.z + this.shotDir.z * 40); if (sp) { ax = sp.x; ay = sp.y; } }
+    if (this.mode === 'plane') { const E0 = this.eye(), sp = this.toScreen(E0.x + this.shotDir.x * 40, E0.y + this.shotDir.y * 40, E0.z + this.shotDir.z * 40); if (sp) { ax = sp.x; ay = sp.y; } }
     if (W && !(W.scope && this.adsK > .8) && this.mode !== 'fpv') {
-      const gap = 5 + this.spreadDeg(W) * (h / (g.R.cam.fov || 70)) * .9;
+      // the gap is the real spread cone projected onto the screen
+      const gap = 3 + Math.tan(Math.min(1.2, this.spreadDeg(W) * Math.PI / 180)) / Math.tan((g.R.cam.fov || 70) * Math.PI / 360) * h / 2;
       c.strokeStyle = col; c.lineWidth = 2; c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = 3;
       c.beginPath();
       if (this.mode === 'plane') { c.arc(ax, ay, 9, 0, 6.2832); c.moveTo(ax - 16, ay); c.lineTo(ax - 9, ay); c.moveTo(ax + 9, ay); c.lineTo(ax + 16, ay); }
       else if (W.t === 'pel' || W.t === 'cone') { c.arc(cx, cy, gap + 6, 0, 6.2832); }
       else { for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { c.moveTo(cx + dx * gap, cy + dy * gap); c.lineTo(cx + dx * (gap + 8), cy + dy * (gap + 8)); } }
       c.stroke();
-      c.fillStyle = col; c.fillRect(cx - 1, cy - 1, 2, 2);
+      c.fillStyle = col; c.fillRect(ax - 1, ay - 1, 2, 2);
       // aim circle for planes (where the mouse is steering)
       if (this.mode === 'plane') { const sp = this.toScreen(this.pose.x + this.fwAim().x * 40, this.pose.y + this.fwAim().y * 40, this.pose.z + this.fwAim().z * 40); if (sp) { c.strokeStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.arc(sp.x, sp.y, 14, 0, 6.2832); c.stroke(); } }
       c.shadowBlur = 0;
@@ -6419,9 +6523,9 @@ const Direct = {
     if (fp && (this.mode === 'plane' || this.mode === 'heli')) this.drawCockpit(c, w, h);
     if (fp && (this.mode === 'vehicle' || this.mode === 'ship') && !(W && W.arc && !this.direct)) this.drawGunsight(c, w, h);
     if (!this.helpSeen) { this.helpSeen = 1; }
-    c.textAlign = 'left'; c.font = '600 11px system-ui'; c.fillStyle = 'rgba(255,255,255,.55)'; c.fillText('H: controls', 24, h - 74);
+    c.textAlign = 'left'; c.font = '600 11px system-ui'; c.fillStyle = 'rgba(255,255,255,.55)'; if (!this.isTouch()) c.fillText('H: controls', 24, h - 74);
     // state of the mouse
-    const st = this.look === 'locked' ? '' : this.look === 'free' ? 'CURSOR FREE: press Alt or click the view to aim' : this.look === 'offset' ? 'Steer with the cursor offset · Alt: free cursor' : 'Locking the mouse...';
+    const st = this.look === 'locked' || this.look === 'touch' ? '' : this.look === 'free' ? 'CURSOR FREE: press Alt or click the view to aim' : this.look === 'offset' ? 'Steer with the cursor offset · Alt: free cursor' : 'Locking the mouse...';
     if (st) { c.textAlign = 'center'; c.font = '700 14px system-ui'; c.fillStyle = 'rgba(0,0,0,.55)'; const tw = c.measureText(st).width; c.fillRect(cx - tw / 2 - 12, 18, tw + 24, 26); c.fillStyle = this.look === 'free' ? '#ffd23a' : '#fff'; c.fillText(st, cx, 36); }
     if (this.look === 'offset') { c.strokeStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.arc(cx, cy, Math.min(w, h) * .05, 0, 6.2832); c.stroke(); c.beginPath(); c.moveTo(cx, cy); c.lineTo(this.mouseX, this.mouseY); c.stroke(); }
     if (this.msgT > 0) { c.textAlign = 'center'; c.font = '800 18px system-ui'; c.fillStyle = `rgba(255,255,255,${Math.min(1, this.msgT * 2)})`; c.shadowColor = '#000'; c.shadowBlur = 6; c.fillText(this.msgText, cx, h * .3); c.shadowBlur = 0; }
@@ -6515,6 +6619,7 @@ function ballisticPitch(o, t, v, g) {
 
 // Ray casts against what this player can see (rendered positions), plus terrain.
 const Hit = {
+  canHurt(t, W, v) { return !t.air || W.aa || W.air || t.z - hAt(v.M, t.x, t.y) <= 3; }, // same rule as the host's pilotHit
   shape(t, v) { return hitShape(Object.assign({nat: v.players[t.o] ? v.players[t.o].nation : 0}, t), t.rx === undefined ? t.x : t.rx, t.ryy === undefined ? t.y : t.ryy, t.rz === undefined ? t.z || 0 : t.rz, t.ry === undefined ? t.h : t.ry); },
   cast(v, o, dir, max, selfId, me, R) {
     const gT = rayGround(v.M, o, dir, max, true), lim = gT > 0 ? gT : max;
@@ -6687,15 +6792,16 @@ const UI = {
 
   // ---------- main menu and lobby ----------
   bindMenu() {
-    $('bPlay').onclick = () => { Sfx.init(); Sfx.ui(); this.openLobby('solo'); };
-    $('bQuick').onclick = () => { Sfx.init(); Sfx.ui(); this.openLobby('solo'); $('optTut').checked = false; this.quick = true; this.startGame(); };
+    $('bPlay').onclick = () => { Sfx.init(); Sfx.ui(); this.quick = false; this.openLobby('solo'); $('optAll').checked = false; };
+    $('bQuick').onclick = () => { Sfx.init(); Sfx.ui(); this.openLobby('solo'); $('optTut').checked = false; $('optAll').checked = true; this.quick = true; $('lTitle').textContent = 'Quick Battle setup'; };
+    this.keyHints();
     $('bSettings').onclick = $('bSettings2').onclick = () => this.openSettings();
     $('sClose').onclick = () => { $('settings').classList.add('hidden'); Settings.save(); };
     $('fpResume').onclick = () => Direct.toggleFree();
     $('fpChooser').onclick = () => { this.deployed = true; Direct.exit(); this.openDeploy(); };
     $('fpCommand').onclick = () => { this.deployed = false; Direct.exit(); };
     $('fpSettings').onclick = () => this.openSettings();
-    $('sReset').onclick = () => { const d = {fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP'}; Object.assign(Settings.binds, d); Settings.save(); this.openSettings(); };
+    $('sReset').onclick = () => { Settings.resetBinds(); this.openSettings(); };
     $('bHost').onclick = () => { Sfx.init(); Sfx.ui(); this.openLobby('host'); };
     $('bJoin').onclick = () => { Sfx.init(); Sfx.ui(); this.openJoin(); };
     $('bJoinGo').onclick = () => { Sfx.init(); this.join($('joinIn').value); };
@@ -6715,11 +6821,17 @@ const UI = {
     $('lBack').onclick = () => this.leaveLobby();
     $('addBot').onclick = () => { if (this.lobby.slots.length < 6) { const used = this.lobby.slots.map(s => s.nation), n = [0, 1, 2, 3, 4, 5].find(x => !used.includes(x)); this.lobby.slots.push({kind: 'bot', level: 'normal', nation: n === undefined ? 0 : n, team: this.lobby.slots.length}); this.pushLobby(); } };
     $('bStart').onclick = () => this.startGame();
+    $('optEnemies').onchange = () => { // add or remove bots until the count matches; friends are never removed
+      const L = this.lobby, want = +$('optEnemies').value;
+      while (L.slots.filter(s => s.kind === 'bot').length > want) L.slots.splice(L.slots.map(s => s.kind).lastIndexOf('bot'), 1);
+      while (L.slots.filter(s => s.kind === 'bot').length < want && L.slots.length < 6) $('addBot').onclick();
+      this.pushLobby();
+    };
     $('bResume').onclick = () => $('pause').classList.add('hidden');
     try { const q = localStorage.getItem('warsim-gfx'); if (q) $('optQ').value = q; } catch (e) {}
     $('optQ').onchange = () => { const q = $('optQ').value; try { localStorage.setItem('warsim-gfx', q); } catch (e) {} this.gfxAuto = q === 'auto'; this.R.setQuality(q === 'auto' ? 'high' : q); };
     this.gfxAuto = $('optQ').value === 'auto';
-    if (!(new URLSearchParams(location.search)).get('q')) this.R.setQuality(this.gfxAuto ? 'high' : $('optQ').value);
+    if (!(new URLSearchParams(location.search)).get('q')) this.R.setQuality(this.gfxAuto ? (Direct.isTouch() ? 'medium' : 'high') : $('optQ').value);
     $('bQuit').onclick = () => this.quit();
     $('bMenu').onclick = () => $('pause').classList.remove('hidden');
     $('bDeploy').onclick = () => this.openDeploy();
@@ -6775,7 +6887,12 @@ const UI = {
     } else { $('invPanel').classList.add('hidden'); this.net = 'off'; $('lCode').classList.add('hidden'); $('lTitle').textContent = 'Skirmish against bots'; }
     this.drawLobby();
   },
-  openSettings() {
+  keyHints() {
+    const K = c => Settings.keyName(Settings.binds[c]);
+    $('fpChooser').textContent = `Unit chooser (${K('chooser')})`; $('fpCommand').textContent = `Command view (${K('exit')})`;
+    $('howKeys').innerHTML = `<b>Fighting in person</b>: just move the mouse to aim (no clicking). <b>${K('fire')}</b> fires, <b>${K('alt')}</b> secondary, <b>${K('ads')}</b> aim/scope, <b>${K('reload')}</b> reload, <b>${K('fwd')}${K('left')}${K('back')}${K('right')}</b> move, <b>${K('jump')}</b> jump, <b>${K('sprint')}</b> sprint, <b>${K('view')}</b> first/third person, <b>Alt</b> frees the cursor, <b>${K('exit')}</b> back to commanding.`;
+  },
+  openSettings(note) {
     const S = Settings;
     $('sSens').value = S.sens; $('sSensV').textContent = (+S.sens).toFixed(2); $('sInvert').checked = S.invert; $('sAssist').checked = S.assist; $('sAuto').checked = S.autofire; $('sTp').checked = S.view === 'tp';
     $('sSens').oninput = () => { S.sens = +$('sSens').value; $('sSensV').textContent = S.sens.toFixed(2); S.save(); };
@@ -6785,13 +6902,15 @@ const UI = {
     $('sFly').checked = S.flightAssist; $('sFly').onchange = () => { S.flightAssist = $('sFly').checked; S.save(); };
     $('sTp').onchange = () => { S.view = $('sTp').checked ? 'tp' : 'fp'; S.save(); if (Direct.on) Direct.applyView(); };
     const w = $('sBinds'); w.innerHTML = '';
+    if (note) { const m = document.createElement('p'); m.className = 'msg good'; m.style.gridColumn = '1 / -1'; m.textContent = note; w.append(m); }
+    this.keyHints();
     for (const k in BIND_LABELS) {
       if (k === 'free') continue;
       const l = document.createElement('span'); l.textContent = BIND_LABELS[k];
       const b = document.createElement('button'); b.textContent = S.keyName(S.binds[k]);
       b.onclick = () => {
         b.textContent = 'press a key'; b.classList.add('wait');
-        const f = ev => { ev.preventDefault(); ev.stopPropagation(); removeEventListener('keydown', f, true); b.classList.remove('wait'); if (ev.code !== 'Escape') { S.binds[k] = ev.code; S.save(); } b.textContent = S.keyName(S.binds[k]); };
+        const f = ev => { ev.preventDefault(); ev.stopPropagation(); removeEventListener('keydown', f, true); b.classList.remove('wait'); const c = ev.code; if (c === 'AltLeft' || c === 'AltRight') { this.openSettings('Alt always frees the cursor, pick another key.'); return; } if (c !== 'Escape' && c !== S.binds[k]) { const sw = S.rebind(k, c); this.openSettings(BIND_LABELS[k] + ' is now ' + S.keyName(c) + (sw ? '. ' + sw + ' moved to ' + S.keyName(S.binds[Object.keys(BIND_LABELS).find(o => BIND_LABELS[o] === sw)]) + '.' : '.')); return; } b.textContent = S.keyName(S.binds[k]); };
         addEventListener('keydown', f, true);
       };
       w.append(l, b);
@@ -6873,7 +6992,7 @@ const UI = {
     L.slots.forEach((s, i) => {
       const d = document.createElement('div'); d.className = 'slot';
       const n = NATIONS[s.nation];
-      d.innerHTML = `<span class="dot" style="background:${n.color}"></span><span class="nm">${i === this.mySlot ? 'You: ' + n.name.replace('The ', '') : s.kind === 'bot' ? 'Bot' : (s.name || 'Player') + ': ' + n.name.replace('The ', '')}</span>`;
+      d.innerHTML = `<span class="dot" style="background:${n.color}"></span><span class="nm">${i === this.mySlot ? 'You: ' + n.name.replace('The ', '') : s.kind === 'bot' ? '#' + (L.slots.slice(0, i).filter(q => q.kind === 'bot').length + 1) : (s.name || 'Player') + ': ' + n.name.replace('The ', '')}</span>`;
       if (host && s.kind === 'bot') {
         const nat = document.createElement('select'); NATIONS.forEach((q, j) => nat.add(new Option(q.name.replace('The ', ''), j))); nat.value = s.nation; nat.onchange = () => { s.nation = +nat.value; this.pushLobby(); };
         const lv = document.createElement('select'); ['easy', 'normal', 'hard'].forEach(q => lv.add(new Option(q, q))); lv.value = s.level; lv.onchange = () => { s.level = lv.value; this.pushLobby(); };
@@ -6884,6 +7003,7 @@ const UI = {
       w.appendChild(d);
     });
     $('addBot').classList.toggle('hidden', !host || L.slots.length >= 6);
+    $('optEnemies').value = L.slots.filter(s => s.kind === 'bot').length || 1; $('optEnemies').disabled = !host;
     $('bStart').classList.toggle('hidden', !host);
     const teams = new Set(L.slots.map(s => s.team));
     $('bStart').disabled = teams.size < 2;
@@ -6895,7 +7015,7 @@ const UI = {
   },
   leaveLobby() {
     if (this.link) { this.link.close(); this.link = null; }
-    this.net = 'off';
+    this.net = 'off'; this.quick = false;
     $('lobby').classList.add('hidden'); $('menu').classList.remove('hidden');
   },
   join(code, opts) {
@@ -6936,8 +7056,9 @@ const UI = {
   },
   startGame() {
     Sfx.init();
+    if (Direct.isTouch()) { try { const d = document.documentElement, r = d.requestFullscreen && d.requestFullscreen(); if (r && r.then) r.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); } catch (e) {} }
     const L = this.lobby, seed = (Math.random() * 1e6) | 0, size = +$('optSize').value;
-    const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null}));
+    const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked}));
     this.playersIds = L.slots.map(s => s.id || null);
     if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id)}});
     this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, tut: $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick});
@@ -7001,7 +7122,7 @@ const UI = {
       case 'out': { this.addAlert(`${v.players[ev.p].name} has fallen!`, ev.p === me ? 'bad' : 'gold'); if (ev.p === me) this.showOver(false); break; }
       case 'over': this.showOver(v.players[me].team === ev.team); break;
       case 'nuke': { const mine = v.friendly(ev.o, me); this.nukes.push({id: ev.id, until: performance.now() + ev.d * 1000, mine, x: ev.x, y: ev.y}); this.addAlert(mine ? 'ICBM launched!' : 'WARNING: enemy ICBM launched!', 'bad', ev.x, ev.y); break; }
-      case 'deployed': if (ev.p === me) { const u = v.ents.get(ev.id); if (u) { this.deployed = true; this.flown = true; this.closeDeploy(); Direct.enter(this, u); } } break;
+      case 'deployed': if (ev.p === me) { const u = v.ents.get(ev.id); if (u && this.deployMode === 'army') { this.addAlert(u.d.n + ' deployed', 'good'); if (!$('deploy').classList.contains('hidden')) this.openDeploy(); } else if (u) { this.deployed = true; this.flown = true; this.closeDeploy(); Direct.enter(this, u); } } break;
       case 'nukekill': this.nukes = this.nukes.filter(n => n.id !== ev.id); break;
       case 'hitm': if (Direct.on && ev.p === me) { const x = $('xhair'); x.style.borderColor = '#ff5a4a'; setTimeout(() => x.style.borderColor = '', 120); } break;
     }
@@ -7214,10 +7335,10 @@ const UI = {
     }
     if (c === 'Equal' || c === 'NumpadAdd') { this.cam.tdist *= .85; return; }
     if (c === 'Minus' || c === 'NumpadSubtract') { this.cam.tdist *= 1.18; return; }
-    if (c === 'KeyP') { this.openDeploy(); return; }
+    if (c === Settings.binds.chooser) { this.openDeploy(); return; }
+    if (c === Settings.binds.exit) { e.preventDefault(); this.tryDirect(); return; }
     if (c === 'Space') { e.preventDefault(); if (this.lastAlert) this.jump(this.lastAlert.x, this.lastAlert.y); return; }
     if (c === 'Period') { const list = [...this.g.view.ents.values()].filter(u => u.o === this.g.me && u.k === 'worker' && !u.task && !u.goal); if (list.length) { this.sel.clear(); const w = list[(this.idleI = (this.idleI || 0) + 1) % list.length]; this.sel.add(w.id); this.jump(w.x, w.y); this.refreshHud(true); } else this.addAlert('No idle workers'); return; }
-    if (c === 'KeyF') { this.tryDirect(); return; }
     if (e.ctrlKey || e.metaKey) return;
     // power hotkeys use Alt-free digits only when no group exists; command card uses letters
     const letter = c.startsWith('Key') ? c.slice(3) : null;
@@ -7226,7 +7347,7 @@ const UI = {
   },
   tryDirect() {
     const list = [...this.sel].map(i => this.g.view.ents.get(i)).filter(e => e && !e.b && e.o === this.g.me);
-    if (!list.length) { this.addAlert('Select a unit first, then press F', 'bad'); Sfx.bad(); return; }
+    if (!list.length) { this.addAlert('Select a unit first, then press ' + Settings.keyName(Settings.binds.exit), 'bad'); Sfx.bad(); return; }
     list.sort((a, b) => (b.d.cat === 'drone') - (a.d.cat === 'drone'));
     this.flown = true;
     Direct.enter(this, list[0]);
@@ -7569,32 +7690,37 @@ const UI = {
     if (!p || !p.alive) return;
     if (Direct.on) { this.deployed = true; Direct.exit(); }
     const w = $('dList'); w.innerHTML = '';
-    const groups = [['Infantry', ['rifle', 'assault', 'rocket', 'sniper', 'scout', 'medic']], ['Vehicles', ['tank', 'ifv', 'arty', 'mlrs', 'sam']], ['Aircraft', ['fighter', 'interceptor', 'bomber', 'f16', 'f15', 'f35', 'gunship']], ['Drones', ['fpv', 'hunter']], ['Navy', ['destroyer', 'attacksub', 'nukesub']]];
-    const role = {rifle: 'All-rounder. Rifle + frag grenades.', assault: 'Flamethrower and napalm. Brutal up close.', rocket: 'Rocket launcher. Kills tanks and helicopters.', sniper: 'Scoped rifle, hold breath. One shot, one blob.', scout: 'Fast. Shotgun and sticky bombs.', medic: 'SMG and a heal burst for your squad.', tank: 'Heavy cannon on a free turret, coax MG.', ifv: 'Autocannon (hits aircraft) and TOW missiles.', arty: 'Arcing 155mm with aim preview. Smoke shells.', mlrs: 'Ripple salvo of six rockets onto the aim point.', sam: 'Lock on and shoot down aircraft.', fighter: 'Guns and rocket salvos.', interceptor: 'Air-to-air missiles.', bomber: 'Bomb sticks with an impact marker.', f16: 'Agile. Vulcan cannon and Sidewinders.', f15: 'Air superiority. Long-range AMRAAMs.', f35: 'Stealth. Laser-guided bombs.', gunship: 'Hover and strafe. Rockets and chin gun.', fpv: 'Fast goggles drone. Dive and boom.', hunter: 'Rams aircraft and drones.', destroyer: 'Deck gun and anti-air missiles.', attacksub: 'Torpedoes against ships.', nukesub: 'Torpedoes and an ICBM.'};
+    const groups = [['Infantry', ['rifle', 'assault', 'rocket', 'sniper', 'scout', 'medic', 'worker', 'wolf']], ['Vehicles', ['tank', 'ifv', 'arty', 'mlrs', 'sam']], ['Aircraft', ['fighter', 'interceptor', 'bomber', 'f16', 'f15', 'f35', 'gunship']], ['Drones', ['fpv', 'hunter']], ['Navy', ['destroyer', 'attacksub', 'nukesub']]];
+    const role = {worker: 'Carbine, and builds your base when commanded.', wolf: 'Fast melee beast. Bite and pounce.', rifle: 'All-rounder. Rifle + frag grenades.', assault: 'Flamethrower and napalm. Brutal up close.', rocket: 'Rocket launcher. Kills tanks and helicopters.', sniper: 'Scoped rifle, hold breath. One shot, one blob.', scout: 'Fast. Shotgun and sticky bombs.', medic: 'SMG and a heal burst for your squad.', tank: 'Heavy cannon on a free turret, coax MG.', ifv: 'Autocannon (hits aircraft) and TOW missiles.', arty: 'Arcing 155mm with aim preview. Smoke shells.', mlrs: 'Ripple salvo of six rockets onto the aim point.', sam: 'Lock on and shoot down aircraft.', fighter: 'Guns and rocket salvos.', interceptor: 'Air-to-air missiles.', bomber: 'Bomb sticks with an impact marker.', f16: 'Agile. Vulcan cannon and Sidewinders.', f15: 'Air superiority. Long-range AMRAAMs.', f35: 'Stealth. Laser-guided bombs.', gunship: 'Hover and strafe. Rockets and chin gun.', fpv: 'Fast goggles drone. Dive and boom.', hunter: 'Rams aircraft and drones.', destroyer: 'Deck gun and anti-air missiles.', attacksub: 'Torpedoes against ships.', nukesub: 'Torpedoes and an ICBM.'};
     const free = (p.freeT || 0) <= v.t;
     const atRow = document.createElement('div'); atRow.className = 'atrow';
     atRow.innerHTML = `Spawn at: <button data-at="hq">Capital</button><button data-at="front">Front line (next to your troops nearest the enemy)</button>`;
     this.spawnAt = this.spawnAt || 'front';
     atRow.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.at === this.spawnAt); b.onclick = () => { this.spawnAt = b.dataset.at; atRow.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     w.appendChild(atRow);
+    this.deployMode = this.deployMode || 'play';
+    const modeRow = document.createElement('div'); modeRow.className = 'atrow';
+    modeRow.innerHTML = `Then: <button data-m="play">Spawn in and play it</button><button data-m="army">Just deploy it (joins your army, stay here to send more)</button>`;
+    modeRow.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.m === this.deployMode); b.onclick = () => { this.deployMode = b.dataset.m; modeRow.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
+    w.appendChild(modeRow);
     let first = null;
     for (const [gname, ks] of groups) {
-      const list = ks.filter(k => UNITS[k] && (!UNITS[k].only || UNITS[k].only.includes(p.nat.key)) && (!UNITS[k].notNation || !UNITS[k].notNation.includes(p.nat.key)));
+      const list = ks.filter(k => v.trainable(p, k));
       if (!list.length) continue;
       const hd = document.createElement('h3'); hd.textContent = gname; w.appendChild(hd);
       const row = document.createElement('div'); row.className = 'drow'; w.appendChild(row);
       for (const k of list) {
-        const d = UNITS[k], c = v.costOf(p, d, k), isFree = k === 'rifle' && free, can = isFree || (v.trainable(p, k) && (!d.from || d.from === 'hq' || v.has(p.i, d.from))), afford = isFree || (p.steel >= c[0] && p.fuel >= c[1]);
+        const d = UNITS[k], c = v.costOf(p, d, k), isFree = k === 'rifle' && free, can = isFree || p.open || (v.trainable(p, k) && (!d.from || d.from === 'hq' || v.has(p.i, d.from))), afford = isFree || p.open || (p.steel >= c[0] && p.fuel >= c[1]);
         const b = document.createElement('button');
         b.className = 'card dcard' + (!can || !afford ? ' off' : '');
-        const need = !can ? 'Needs ' + BUILDINGS[d.from].n : !afford ? 'Need ' + c[0] + ' steel' + (c[1] ? ' ' + c[1] + ' fuel' : '') : isFree ? 'FREE respawn' : c[0] + ' steel' + (c[1] ? ' · ' + c[1] + ' fuel' : '');
+        const need = !can ? 'Needs ' + BUILDINGS[d.from].n : !afford ? 'Need ' + c[0] + ' steel' + (c[1] ? ' ' + c[1] + ' fuel' : '') : p.open ? 'Free' : isFree ? 'FREE respawn' : c[0] + ' steel' + (c[1] ? ' · ' + c[1] + ' fuel' : '');
         b.innerHTML = `<img src="${Thumbs.get(k, p.nation)}" alt=""><label>${d.n}</label><em>${role[k] || d.desc}</em><small>${need}</small>`;
         b.onclick = () => { if (!can || !afford) { Sfx.bad(); return; } Sfx.ack(); this.g.issue({c: 'deploy', u: k, at: this.spawnAt}); };
         row.appendChild(b);
         if (!first && can && afford) first = b;
       }
     }
-    if (!free) { const n = document.createElement('p'); n.className = 'msg'; n.textContent = 'Free rifleman respawn in ' + Math.ceil(p.freeT - v.t) + 's. Paid units can deploy now.'; w.prepend(n); }
+    if (!free && !p.open) { const n = document.createElement('p'); n.className = 'msg'; n.textContent = 'Free rifleman respawn in ' + Math.ceil(p.freeT - v.t) + 's. Paid units can deploy now.'; w.prepend(n); }
     $('deploy').classList.remove('hidden');
     if (first) setTimeout(() => first.focus(), 30);
   },

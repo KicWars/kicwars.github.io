@@ -14,6 +14,14 @@
 
 ## Log (newest first, Sydney time)
 
+### 2026-11-05 — Setup screen, all units, phones, aiming
+- **Setup:** Quick Battle and Play vs Bots let you choose your nation, 1 to 5 bot enemies, and each enemy's nation, difficulty and team. *All units unlocked and free* gives human players every unit from every nation.
+- **Deploy:** spawn in and play a unit, or just send it to your army. Ships now spawn in open water.
+- **Phones:** on-screen stick, drag to look, and buttons for fire and other actions. Hold your phone sideways.
+- **Aiming:** shells and rockets go to the crosshair and allow for drop, fast shots no longer pass through targets, and hit markers match real damage.
+- **Keys:** rebinding swaps clashing keys, so Fire can go on F.
+- Tested with scripts and simulated touch only, not on a real phone, not played by hand, and not in multiplayer.
+
 ### 2026-11-05 — Tracks, wheels and landing gear animate
 - Tank, IFV, artillery and MLRS tracks and wheels now roll with real movement and counter-rotate when pivoting. SAM truck wheels spin. The MLRS got detailed running gear.
 - All six jets have landing gear that retracts after leaving an airfield and lowers when low and slow.
