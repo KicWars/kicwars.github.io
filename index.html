@@ -2988,13 +2988,14 @@ function Batch() { this.parts = []; }
 // Split a turret Batch into turret body and barrel (parts centred well forward of the turret), with the barrel re-centred on its pivot.
 function splitBarrel(parts) {
   if (parts.split !== undefined) return parts.split;
-  const P = parts.t.parts, xs = P.map(p => p.m.elements[12]);
-  const isB = P.map((p, i) => xs[i] > .9);
-  const bp = P.filter((p, i) => isB[i]);
-  if (bp.length < 1) return (parts.split = null);
-  const px = Math.min(...bp.map(p => p.m.elements[12])) - .35, py = bp.reduce((a, p) => a + p.m.elements[13], 0) / bp.length;
-  const t = new Batch(), b = new Batch(), off = new THREE.Matrix4().makeTranslation(-px, -py, 0);
-  P.forEach((p, i) => { if (isB[i]) b.parts.push({g: p.g, c: p.c, m: off.clone().multiply(p.m)}); else t.parts.push(p); });
+  // barrel = thin rods that reach out past the front of the turret body; the pivot sits at the body's front face
+  const box = new THREE.Box3(), info = parts.t.parts.map(p => { if (!p.g.boundingBox) p.g.computeBoundingBox(); box.copy(p.g.boundingBox).applyMatrix4(p.m); return {p, x0: box.min.x, x1: box.max.x, cy: (box.min.y + box.max.y) / 2, thin: Math.min(box.max.y - box.min.y, box.max.z - box.min.z) < .24 && Math.max(box.max.y - box.min.y, box.max.z - box.min.z) < .34}; });
+  const body = info.filter(o => !o.thin && o.x1 - o.x0 > .12), front = body.length ? Math.max(...body.map(o => o.x1)) : 0;
+  const bar = info.filter(o => o.thin && o.x1 > front + .05 && o.x0 > -.2);
+  if (!bar.length) return (parts.split = null);
+  const px = Math.max(-.1, Math.min(front - .05, ...bar.map(o => o.x0))), py = bar.reduce((a, o) => a + o.cy, 0) / bar.length;
+  const t = new Batch(), b = new Batch(), off = new THREE.Matrix4().makeTranslation(-px, -py, 0), set = new Set(bar.map(o => o.p));
+  for (const o of info) { if (set.has(o.p)) b.parts.push({g: o.p.g, c: o.p.c, m: off.clone().multiply(o.p.m)}); else t.parts.push(o.p); }
   return (parts.split = {t, b, px, py});
 }
 const _bm = new THREE.Matrix4(), _bq = new THREE.Quaternion(), _be = new THREE.Euler(), _bp = new THREE.Vector3(), _bs = new THREE.Vector3(), _bc = new THREE.Color();
@@ -5135,7 +5136,8 @@ Renderer.prototype.drawUnit = function (e, dt, tint) {
       const ang = e.d.turret ? (e.rtu === undefined ? e.ry : e.rtu) : e.ry;
       const tX = x + c * tx, tY = y + parts.ty + bob, tZ = z + s * tx;
       const B = e.d.turret && splitBarrel(parts);
-      this.put(key + '|t', () => (B ? B.t : parts.t).geo(), 24, null, tX, tY, tZ, -ang, 0, 0, 1, tint);
+      const launcher = !B && (k === 'sam' || k === 'mlrs'); // box launchers elevate as a whole
+      this.put(key + '|t', () => (B ? B.t : parts.t).geo(), 24, null, tX, tY, tZ, -ang, launcher ? Math.max(0, e.rtp || 0) * 1.4 : 0, 0, 1, tint);
       if (B) { // the barrel pivots at its trunnion and elevates to where the gun is aimed
         const ca = Math.cos(ang), sa = Math.sin(ang);
         this.put(key + '|b', () => B.b.geo(), 24, null, tX + ca * B.px, tY + B.py, tZ + sa * B.px, -ang, e.rtp || 0, 0, 1, tint);
