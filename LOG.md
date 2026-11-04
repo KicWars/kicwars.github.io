@@ -14,6 +14,11 @@
 
 ## Log (newest first, Sydney time)
 
+### 2026-11-05 — Tracks, wheels and landing gear animate
+- Tank, IFV, artillery and MLRS tracks and wheels now roll with real movement and counter-rotate when pivoting. SAM truck wheels spin. The MLRS got detailed running gear.
+- All six jets have landing gear that retracts after leaving an airfield and lowers when low and slow.
+- Replaces the tracks, wheels and landing-gear items under the rough edges in the entry below. Not yet tried by hand in real flight or on a real GPU.
+
 ### 2026-11-05 03:34 AEDT — Published and verified; pull request opened
 - The latest build is live. I can't open github.io from here, so I checked it two other ways: the raw copy of index.html on GitHub matches what I pushed byte for byte, and GitHub's "pages build and deployment" run for commit 1884732 finished with **success**.
 - Final test pass on the exact published file: two-player over WebRTC (0 errors), GitHub relay against a fake GitHub API (0 errors), first-five-minutes flow, every jet and the gunship driven by keyboard and mouse, and the fallback when the browser refuses to lock the mouse (moving the cursor off centre steers, and the view stops at centre).
