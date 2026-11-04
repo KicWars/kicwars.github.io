@@ -14,6 +14,17 @@
 
 ## Log (newest first, Sydney time)
 
+
+### 2026-11-04 — Planes, missiles, chaff, new troops and more
+- **New aircraft (every nation, Airfield):** A-10 Thunderbolt II (GAU-8, Mavericks, Sidewinder), F/A-18 Super Hornet (Vulcan, AIM-9X, Mk 82 bombs), Eurofighter Typhoon (cannon, Meteor, IRIS-T).
+- **Air-to-air missiles on every jet and the gunship.** Press **R** in a plane to fire the extra missile (hold the nose on a jet until the lock tone goes solid). Piloted jets now have radar: enemy aircraft within 70 m show up and can be locked beyond eyesight.
+- **Chaff (Z):** 6 bundles per aircraft, +1 every 8 s. Pop it when the flashing *MISSILE INBOUND* warning appears and most missiles miss. Bots use chaff too, so your missiles can be spoofed.
+- **New infantry (Barracks):** Machine Gunner, Grenadier, and Paratrooper (parachutes onto the Barracks rally point; set the rally point behind enemy lines).
+- **Commanding:** red ground shows where a building cannot go; workers can **Excavate (L)** to flatten ground so you can build there; time controls (pause, ½×, 1×, 2×, 4×; `[` `]` and Backspace).
+- **Campaign:** budget battles from the main menu (buy troops, place them, watch the fight).
+- Tank, IFV and artillery barrels now raise and lower to the crosshair; SAM and MLRS launchers tilt. Toms special is now a Big Knife. Gilded Veil removed; nation cards show stats only.
+- Tested in headless Chromium: all-bot war at 8×, an all-jets air battle with SAMs, paratrooper drops, missile lock and launch, chaff and the warning. Zero console errors. Not tested: real GPU, phones, two real players.
+
 ### 2026-11-05 — Walk around inside ships and subs
 - In a destroyer or submarine, press **B** (rebindable) to leave the captain's chair and walk the rooms: bridge with real windows, mess, quarters, engine room and aft deck on destroyers; control room, torpedo room, bunks and reactor on subs, plus a missile bay on the Nuclear Sub. The ship coasts to a stop while nobody is at the helm. Walk back to the chair and press **B** again to take control.
 - Every nation now gets a Naval Yard in Quick Battle, even with a capital far from the sea, so all can use destroyers and attack subs. Ships spawn pointing at open water.
