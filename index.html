@@ -12,6 +12,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0a0f14;color:var(--tx
 #ov{pointer-events:none}
 #whiteout{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:40}
 .hidden{display:none!important}
+#timeCtl{display:inline-flex;gap:2px;pointer-events:auto}#timeCtl button{padding:3px 7px;font-size:12px;min-width:30px}#timeCtl button.on{outline:2px solid var(--acc);background:rgba(255,255,255,.16)}
+#pauseTag{position:fixed;top:48px;left:50%;transform:translateX(-50%);z-index:12;padding:4px 14px;background:rgba(10,14,18,.85);border:1px solid #ffd23a;border-radius:6px;font-weight:700;letter-spacing:.1em;pointer-events:none}
 button,select,input{font:inherit;color:var(--tx);background:rgba(255,255,255,.07);border:1px solid var(--bd);border-radius:6px;padding:6px 10px}
 button{cursor:pointer;transition:background .12s,transform .08s,border-color .12s}
 button:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.3)}
@@ -189,7 +191,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 
 <!-- main menu -->
 <div id="menu" class="screen">
-  <div class="brand"><h1>WARSIM</h1><p>Six nations. One island. Command the war, or jump into the fight yourself.</p></div>
+  <div class="brand"><h1>WARSIM</h1><p>Five nations. One island. Command the war, or jump into the fight yourself.</p></div>
   <div class="mcard" id="mhome">
     <button class="big primary" id="bQuick" title="Choose your nation and enemies, then start with a ready-made base and pick a unit to play straight away">Quick Battle: jump in</button>
     <button class="big" id="bCamp" title="Spend a budget on troops, place them, and beat a fixed enemy army">Campaign: budget battles</button>
@@ -221,7 +223,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
       </div>
       <div class="lcol side">
         <h3>Your enemies</h3>
-        <label id="enemyRow">Bot enemies <select id="optEnemies"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+        <label id="enemyRow">Bot enemies <select id="optEnemies"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
         <p class="small">Pick each enemy's nation and difficulty below. Different teams also fight each other; put them on the same team to gang up on you.</p>
         <div id="slots"></div>
         <button id="addBot">+ Add bot</button>
@@ -267,6 +269,8 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
     <div class="res" title="Population used / cap. Build Housing for more."><i class="ic pop"></i><b id="rPop">0</b></div>
     <div class="res"><i class="ic clock"></i><b id="rTime">0:00</b></div>
     <div id="scores"></div>
+    <span id="timeCtl" title="Game speed ([ slower, ] faster, Backspace pause)"><button data-s="0">❚❚</button><button data-s="0.5">½×</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button><button data-s="4">4×</button></span>
+<div id="pauseTag" class="hidden">PAUSED</div>
     <button id="bDeploy" title="Pick a unit, then spawn in and play it or send it to join your army [P]">Deploy [P]</button><button id="bMenu" title="Menu">Menu</button>
   </div>
   <div id="alerts"></div>
@@ -654,23 +658,20 @@ ClientLink.prototype.close = function () {
 <script>// WARSIM game data: nations, units, buildings, upgrades, powers. No DOM here, the sim also runs in Node.
 const NATIONS = [
   {key: 'licases', name: 'The Licases', leader: 'Lucas Mar', color: '#ff6b3d', dark: '#8a2f12', look: 'bike',
-   blurb: 'Road bikes and relentless speed. Infantry move 18% faster and scouts are cheap.',
+   blurb: 'Infantry speed +18% · Scouts cost −40%',
    tr: {infSpd: 1.18, scoutCost: .6}, power: 'sprint'},
   {key: 'dhruvs', name: 'The Dhruvs', leader: 'Dhruv Hari', color: '#4a90ff', dark: '#1d3f80', look: 'glasses',
-   blurb: 'Bespectacled planners. 30% more vision, research costs half, and precise aim deals 15% more damage, and smart armour adds 15% health.',
+   blurb: 'Vision +30% · Research cost −50% · Damage +15% · Health +15%',
    tr: {vision: 1.3, research: .5, dmg: 1.15, hp: 1.15}, power: 'satellite'},
   {key: 'valentinos', name: 'The Valentinos', leader: 'Valentino Felsovari', color: '#3fbf6f', dark: '#ce2b37', look: 'italian',
-   blurb: 'Italian passion. Every unit heals itself between fights, and they rally with Forza!',
+   blurb: 'All units regenerate health · Forza: +25% damage',
    tr: {regen: .45}, power: 'forza'},
   {key: 'jethroes', name: 'The Jethroes', leader: 'Alpha Jethro', color: '#e8283c', dark: '#1b2f6b', look: 'usa',
-   blurb: 'Red, white and blue. Infantry can Howl and become alpha wolves for a brutal charge.',
+   blurb: 'Damage +8% · Infantry can turn into alpha wolves',
    tr: {wolf: 1, dmg: 1.08}, power: 'howl'},
   {key: 'toms', name: 'The Toms', leader: 'Big Tom', color: '#19c8b9', dark: '#0d3b3a', look: 'toms',
-   blurb: 'Short, broad, muscly, always in sunglasses. +25% health, +20% damage, 25% dearer. F-16, F-15, F-35 and nuclear subs.',
+   blurb: 'Health +25% · Damage +20% · Costs +25% · F-16, F-15, F-35, nuclear sub',
    tr: {hp: 1.25, dmg: 1.2, cost: 1.25}, power: 'salvo'},
-  {key: 'veil', name: 'Gilded Veil', leader: 'Madam Veil', color: '#ffd60a', dark: '#7a5c00', look: 'veil',
-   blurb: 'Gold buys everything. 30% more steel, and Golden Bribe turns enemy soldiers.',
-   tr: {income: 1.3}, power: 'bribe'},
 ];
 
 // arm: light | heavy | air | sea | bld. dmg per shot, cd seconds, rng world units, spd units/sec.
@@ -830,7 +831,7 @@ const CAMPAIGN = [
   {n: 'Sniper Ridge', foe: 'dhruvs', budget: 720, seed: 23, army: [['rifle', 4], ['sniper', 4]], tip: 'Snipers sit at the back. Fast scouts can reach them.'},
   {n: 'Iron Column', foe: 'valentinos', budget: 1050, seed: 37, army: [['rifle', 6], ['tank', 2]], tip: 'Two tanks. Rocket troopers make short work of armour.'},
   {n: 'The Swarm', foe: 'licases', budget: 950, seed: 41, army: [['scout', 12], ['assault', 4]], tip: 'A horde of fast blobs. Flamethrowers and IFVs mow down crowds.'},
-  {n: 'Steel Rain', foe: 'veil', budget: 1500, seed: 53, army: [['rifle', 6], ['ifv', 2], ['arty', 2], ['mlrs', 1]], tip: 'Their guns hit hard from range. Rush them, or out-range them.'},
+  {n: 'Steel Rain', foe: 'dhruvs', budget: 1500, seed: 53, army: [['rifle', 6], ['ifv', 2], ['arty', 2], ['mlrs', 1]], tip: 'Their guns hit hard from range. Rush them, or out-range them.'},
   {n: 'Big Tom\'s Last Stand', foe: 'toms', budget: 2300, seed: 67, army: [['rifle', 6], ['rocket', 6], ['medic', 2], ['ifv', 2], ['tank', 3], ['gunship', 2]], tip: 'Everything they have. Spend wisely.'},
 ];
 // the Toms' special swaps the pilot's guns for this blade for a few seconds (sent as weapon slot 9)
@@ -1119,6 +1120,25 @@ const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const angDiff = (a, b) => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; };
 
+// Excavation: flatten a patch of ground to its average height (filling shallow water), clearing rock and trees so it becomes buildable.
+const DIG_R = 2.5, DIG_COST = 25, DIG_T = 3;
+function applyDig(M, N, x, y) {
+  const R = DIG_R, E = R + 1.2, cells = [];
+  let sum = 0, n = 0;
+  for (let j = -E; j <= E; j++) for (let i = -E; i <= E; i++) {
+    const cx = Math.round(x + i), cy = Math.round(y + j); if (cx < 1 || cy < 1 || cx >= N - 1 || cy >= N - 1) continue;
+    const d = Math.hypot(i, j); if (d > E) continue;
+    const q = cy * N + cx; cells.push([q, d]); if (d <= R) { sum += M.h[q]; n++; }
+  }
+  const lvl = Math.max(.6, n ? sum / n : .6);
+  for (const [q, d] of cells) {
+    if (M.occ[q]) continue;
+    const w = d <= R ? 1 : 1 - (d - R) / (E - R);
+    M.h[q] += (lvl - M.h[q]) * w;
+    if (d <= R) { M.block[q] = 0; M.water[q] = 0; M.tree[q] = 0; }
+  }
+}
+
 function Sim(opts) {
   this.N = opts.size || 128;
   this.seed = opts.seed || 1;
@@ -1349,6 +1369,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'build': this.cmdBuild(mine, p, c.b, c.x, c.y, !!c.q); break;
     case 'assist': { const t = this.ents.get(c.t); if (t && t.b && t.o === pi) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'build', id: t.id}; } break; }
     case 'road': this.cmdRoad(mine, p, c.x1, c.y1, c.x2, c.y2); break;
+    case 'dig': { const wk = mine.filter(e => e.k === 'worker'); for (const w of wk) { this.clearOrders(w); w.task = {type: 'dig', x: Math.round(c.x), y: Math.round(c.y), tt: 0}; } break; }
     case 'train': { const b = this.ents.get(c.b); if (b && b.o === pi) this.cmdTrain(b, p, c.u); break; }
     case 'cancel': { const b = this.ents.get(c.b); if (b && b.o === pi && b.q[c.i]) this.cancelQ(b, p, c.i); break; }
     case 'rally': { const b = this.ents.get(c.b); if (b && b.o === pi) b.rally = {x: c.x, y: c.y}; break; }
@@ -2277,6 +2298,17 @@ Sim.prototype.stepTask = function (e, p) {
         if (this.tick % 30 === 0) this.F.flush();
       }
     } else this.moveAlong(e, c[0], c[1], 0, p, c[0], c[1]);
+  } else if (T.type === 'dig') {
+    if (Math.hypot(T.x - e.x, T.y - e.y) < DIG_R + 1) {
+      e.st = 3; T.tt += DT;
+      if (T.tt >= DIG_T) {
+        e.task = null;
+        if (p.steel < DIG_COST) { this.notify(p.i, 'Not enough steel to excavate', 'bad'); return; }
+        p.steel -= DIG_COST; applyDig(M, this.N, T.x, T.y); this.F.flush();
+        for (const o of this.ents.values()) if (o.b && Math.hypot(o.x - T.x, o.y - T.y) < DIG_R + 4) o.z = hAt(M, o.x, o.y);
+        this.ev({k: 'dig', x: T.x, y: T.y});
+      }
+    } else this.moveAlong(e, T.x, T.y, 0, p, T.x, T.y);
   } else if (T.type === 'garrison') {
     const b = this.ents.get(T.id);
     if (!b || b.garrison.length >= b.d.garrison) { e.task = null; return; }
@@ -2947,11 +2979,24 @@ Mirror.prototype.applyEvent = function (e) {
     const d = BUILDINGS[e.b];
     if (!d.mine) this.footprint(d, e.x, e.y, (i, j) => { if (i >= 0 && j >= 0 && i < N && j < N && M.occ[j * N + i] === e.id) M.occ[j * N + i] = 0; });
   } else if (e.k === 'road') { M.road[e.y * N + e.x] = 1; M.tree[e.y * N + e.x] = 0; }
+  else if (e.k === 'dig') applyDig(M, N, e.x, e.y);
 };
 </script>
 
 <script>// Procedural low-poly models. Every model faces +X. Parts are merged into one geometry per kind and nation.
 function Batch() { this.parts = []; }
+// Split a turret Batch into turret body and barrel (parts centred well forward of the turret), with the barrel re-centred on its pivot.
+function splitBarrel(parts) {
+  if (parts.split !== undefined) return parts.split;
+  const P = parts.t.parts, xs = P.map(p => p.m.elements[12]);
+  const isB = P.map((p, i) => xs[i] > .9);
+  const bp = P.filter((p, i) => isB[i]);
+  if (bp.length < 1) return (parts.split = null);
+  const px = Math.min(...bp.map(p => p.m.elements[12])) - .35, py = bp.reduce((a, p) => a + p.m.elements[13], 0) / bp.length;
+  const t = new Batch(), b = new Batch(), off = new THREE.Matrix4().makeTranslation(-px, -py, 0);
+  P.forEach((p, i) => { if (isB[i]) b.parts.push({g: p.g, c: p.c, m: off.clone().multiply(p.m)}); else t.parts.push(p); });
+  return (parts.split = {t, b, px, py});
+}
 const _bm = new THREE.Matrix4(), _bq = new THREE.Quaternion(), _be = new THREE.Euler(), _bp = new THREE.Vector3(), _bs = new THREE.Vector3(), _bc = new THREE.Color();
 Batch.prototype.add = function (geo, col, x, y, z, sx, sy, sz, rx, ry, rz) {
   const g = geo.index ? (geo.__ni || (geo.__ni = geo.toNonIndexed())) : geo;
@@ -4806,6 +4851,15 @@ Renderer.prototype.paintRoad = function (x, y) {
   this.texDirty = true;
   const mg = this.mmBase.getContext('2d'); mg.fillStyle = '#b8ae98'; mg.fillRect(x / N * 256 - 1, y / N * 256 - 1, 2, 2);
 };
+Renderer.prototype.digTerrain = function (x, y) { // re-shape the terrain mesh around a dig and paint it as bare earth
+  const M = this.view.M, N = this.view.N, pos = this.terrain.geometry.attributes.position, E = Math.ceil(DIG_R + 2);
+  for (let j = -E; j <= E; j++) for (let i = -E; i <= E; i++) { const cx = x + i, cy = y + j; if (cx >= 0 && cy >= 0 && cx < N && cy < N) pos.setY(cy * N + cx, M.h[cy * N + cx]); }
+  pos.needsUpdate = true; this.terrain.geometry.computeVertexNormals();
+  const q = this.tc.width / N, g = this.tg, gr = g.createRadialGradient(x * q, y * q, 0, x * q, y * q, (DIG_R + 1.2) * q);
+  gr.addColorStop(0, 'rgba(122,98,70,.95)'); gr.addColorStop(.75, 'rgba(122,98,70,.8)'); gr.addColorStop(1, 'rgba(122,98,70,0)');
+  g.fillStyle = gr; g.beginPath(); g.arc(x * q, y * q, (DIG_R + 1.2) * q, 0, 6.3); g.fill();
+  this.texDirty = true;
+};
 Renderer.prototype.paintScar = function (x, y, r) {
   const q = this.tc.width / this.view.N, g = this.tg, gr = g.createRadialGradient(x * q, y * q, 0, x * q, y * q, r * q);
   gr.addColorStop(0, 'rgba(18,14,12,.75)'); gr.addColorStop(.7, 'rgba(30,24,20,.45)'); gr.addColorStop(1, 'rgba(30,24,20,0)');
@@ -5079,7 +5133,13 @@ Renderer.prototype.drawUnit = function (e, dt, tint) {
     if (parts.t) {
       const c = Math.cos(e.ry), s = Math.sin(e.ry), tx = parts.tx || 0;
       const ang = e.d.turret ? (e.rtu === undefined ? e.ry : e.rtu) : e.ry;
-      this.put(key + '|t', () => parts.t.geo(), 24, null, x + c * (tx - rec * .1 * 0), y + parts.ty + bob, z + s * tx, -ang, 0, 0, 1, tint);
+      const tX = x + c * tx, tY = y + parts.ty + bob, tZ = z + s * tx;
+      const B = e.d.turret && splitBarrel(parts);
+      this.put(key + '|t', () => (B ? B.t : parts.t).geo(), 24, null, tX, tY, tZ, -ang, 0, 0, 1, tint);
+      if (B) { // the barrel pivots at its trunnion and elevates to where the gun is aimed
+        const ca = Math.cos(ang), sa = Math.sin(ang);
+        this.put(key + '|b', () => B.b.geo(), 24, null, tX + ca * B.px, tY + B.py, tZ + sa * B.px, -ang, e.rtp || 0, 0, 1, tint);
+      }
     }
   } else {
     const sc = k === 'bomber' ? 1.15 : d.cat === 'drone' ? 1 : .95;
@@ -5269,6 +5329,7 @@ Renderer.prototype.handle = function (ev, view) {
     case 'pj': this.projAdd(ev, view); break;
     case 'pjx': this.projEnd(ev, view); break;
     case 'road': this.paintRoad(ev.x, ev.y); break;
+    case 'dig': this.digTerrain(ev.x, ev.y); break;
     case 'dead': {
       if (ev.quiet) break;
       if (!this.isVisible(ev.x, ev.y)) break;
@@ -5531,12 +5592,16 @@ Renderer.prototype.drawEntities = function (dt, v) {
   for (const e of v.ents.values()) {
     if (e.inside) continue;
     if (e.rx === undefined) { e.rx = e.x; e.ryy = e.y; e.rz = e.z; e.ry = e.h; e.rr = e.r; e.rp = e.p; e.rtu = e.tu === undefined ? e.h : e.tu; }
-    if (e.id === this.fpId && this.fpPose) { e.rx = this.fpPose.x; e.ryy = this.fpPose.y; e.rz = this.fpPose.z; e.ry = this.fpPose.h; e.rp = this.fpPose.p; e.rr = this.fpPose.r; }
+    if (e.id === this.fpId && this.fpPose) { e.rx = this.fpPose.x; e.ryy = this.fpPose.y; e.rz = this.fpPose.z; e.ry = this.fpPose.h; e.rp = this.fpPose.p; e.rr = this.fpPose.r; if (this.fpPose.tu !== undefined) e.rtu = this.fpPose.tu; e.rtp = this.fpPose.tp || 0; }
     else {
       const kk = e.air ? kFast : k;
       e.rx += (e.x - e.rx) * kk; e.ryy += (e.y - e.ryy) * kk; e.rz += (e.z - e.rz) * kk;
       e.ry += angDiff(e.ry, e.h) * kk; e.rr += ((e.r || 0) - (e.rr || 0)) * kk; e.rp += ((e.p || 0) - (e.rp || 0)) * kk;
       if (e.tu !== undefined) e.rtu += angDiff(e.rtu, e.tu) * kk * .7;
+      if (e.d.turret) { // AI guns elevate toward their target
+        const t = e.tid && v.ents.get(e.tid), want = t ? clamp(Math.atan2((t.z || 0) + .5 - (e.z || 0) - 1, Math.hypot(t.x - e.x, t.y - e.y) || 1), -.15, .4) : .03;
+        e.rtp = (e.rtp || 0) + (want - (e.rtp || 0)) * kk * .5;
+      }
     }
     const mine = v.friendly(e.o, me);
     let seen = mine || myAll;
@@ -6191,9 +6256,10 @@ const Direct = {
     this.mv = Math.abs(this.hullSpd) > .2;
     p.z = sea ? (d.sub ? -.25 : 0) : hAt(M, p.x, p.y);
     // turret traverses toward where you look, at a limited speed (feels heavy, still precise)
-    const trav = e.k === 'tank' ? 1.5 : e.k === 'arty' ? 1 : 2.6;
+    const trav = e.k === 'tank' ? 2.2 : e.k === 'arty' ? 1 : 2.6;
     if (d.turret || sea) this.turret += clamp(angDiff(this.turret, this.camYaw), -trav * dt, trav * dt); else this.turret = p.h;
     p.tu = this.turret; p.p = 0; p.r = 0;
+    p.tp = (p.tp || 0) + (clamp(this.camPitch, -.17, .4) - (p.tp || 0)) * Math.min(1, dt * 4); // gun elevation follows the crosshair
     this.aimYaw = this.turret; this.aimPitch = this.camPitch;
   },
 
@@ -7104,12 +7170,12 @@ const UI = {
     const hj = /[#&]join=([A-Za-z0-9_-]+)/.exec(location.hash);
     if (hj) setTimeout(() => { this.openJoin(); $('joinIn').value = INVITE_TAG + hj[1]; history.replaceState(null, '', location.pathname + location.search); this.join($('joinIn').value); }, 50);
     $('lBack').onclick = () => this.leaveLobby();
-    $('addBot').onclick = () => { if (this.lobby.slots.length < 6) { const used = this.lobby.slots.map(s => s.nation), n = [0, 1, 2, 3, 4, 5].find(x => !used.includes(x)); this.lobby.slots.push({kind: 'bot', level: 'normal', nation: n === undefined ? 0 : n, team: this.lobby.slots.length}); this.pushLobby(); } };
+    $('addBot').onclick = () => { if (this.lobby.slots.length < NATIONS.length) { const used = this.lobby.slots.map(s => s.nation), n = NATIONS.map((_, i) => i).find(x => !used.includes(x)); this.lobby.slots.push({kind: 'bot', level: 'normal', nation: n === undefined ? 0 : n, team: this.lobby.slots.length}); this.pushLobby(); } };
     $('bStart').onclick = () => this.startGame();
     $('optEnemies').onchange = () => { // add or remove bots until the count matches; friends are never removed
       const L = this.lobby, want = +$('optEnemies').value;
       while (L.slots.filter(s => s.kind === 'bot').length > want) L.slots.splice(L.slots.map(s => s.kind).lastIndexOf('bot'), 1);
-      while (L.slots.filter(s => s.kind === 'bot').length < want && L.slots.length < 6) $('addBot').onclick();
+      while (L.slots.filter(s => s.kind === 'bot').length < want && L.slots.length < NATIONS.length) $('addBot').onclick();
       this.pushLobby();
     };
     $('bResume').onclick = () => $('pause').classList.add('hidden');
@@ -7121,6 +7187,7 @@ const UI = {
     $('bMenu').onclick = () => $('pause').classList.remove('hidden');
     $('bDeploy').onclick = () => this.openDeploy();
     $('dClose').onclick = () => { this.deployed = false; this.closeDeploy(); };
+    $('timeCtl').querySelectorAll('button').forEach(b => b.onclick = () => this.setSpeed(+b.dataset.s));
     $('bAgain').onclick = () => { const c = this.camp; this.quit(); if (c) this.openCamp(); };
     $('bCamp').onclick = () => { Sfx.init(); Sfx.ui(); this.openCamp(); };
     $('campBack').onclick = () => { $('campScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
@@ -7134,7 +7201,7 @@ const UI = {
     NATIONS.forEach((n, i) => {
       const d = document.createElement('div');
       d.className = 'nat'; d.style.setProperty('--c', n.color);
-      d.innerHTML = `<div class="pic"><img src="${Thumbs.get('rifle', i)}" alt=""></div><div class="t"><b>${n.name}</b><small>Led by ${n.leader}</small><p>${n.blurb}</p></div>`;
+      d.innerHTML = `<div class="pic"><img src="${Thumbs.get('rifle', i)}" alt=""></div><div class="t"><b>${n.name}</b><p>${n.blurb}</p></div>`;
       d.onclick = () => { Sfx.ui(); this.pickNation(i); };
       w.appendChild(d);
     });
@@ -7160,7 +7227,7 @@ const UI = {
       $('invPanel').classList.remove('hidden');
       this.link = new HostLink(code, {
         onJoin: id => {
-          const used = this.lobby.slots.map(s => s.nation), n = [0, 1, 2, 3, 4, 5].find(x => !used.includes(x));
+          const used = this.lobby.slots.map(s => s.nation), n = NATIONS.map((_, i) => i).find(x => !used.includes(x));
           // a friend replaces the default bot opponent
           const bi = this.lobby.slots.findIndex(s => s.kind === 'bot' && s.auto);
           const slot = {kind: 'human', name: 'Friend ' + this.lobby.slots.filter(s => s.kind === 'human').length, nation: n === undefined ? 0 : n, team: 1, id};
@@ -7353,6 +7420,13 @@ const UI = {
     if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id)}});
     this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, tut: $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick});
   },
+  setSpeed(v) { // time control: host-side only, so a friend's game stays in sync with the host's clock
+    if (!this.g || this.g.mode === 'client') { this.addAlert('Only the host can change game speed', 'bad'); return; }
+    if (this.g.speed) this.prevSpeed = this.g.speed;
+    this.g.speed = v;
+    $('timeCtl').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.s === v));
+    $('pauseTag').classList.toggle('hidden', v !== 0);
+  },
   // ---------- campaign ----------
   campDone() { try { return +localStorage.getItem('warsim-camp') || 0; } catch (e) { return 0; } },
   openCamp() {
@@ -7412,6 +7486,7 @@ const UI = {
     this.demo = false;
     o.R = this.R;
     this.g = new Game(o);
+    $('timeCtl').classList.toggle('hidden', o.mode === 'client'); if (o.mode !== 'client') this.setSpeed(1);
     this.g.onEvent = ev => this.onEvent(ev);
     this.sel = this.R.sel = new Set(); this.groups = {}; this.mode = null; this.page = 1; this.alerts = []; this.nukes = []; this.lastAlert = null; this.overShown = false;
     $('alerts').innerHTML = '';
@@ -7686,6 +7761,8 @@ const UI = {
         return;
       }
     }
+    if (c === 'BracketLeft' || c === 'BracketRight') { const L = [0, .5, 1, 2, 4], i = Math.max(0, L.indexOf(this.g.speed)); this.setSpeed(L[clamp(i + (c === 'BracketRight' ? 1 : -1), 0, 4)]); return; }
+    if (c === 'Backspace') { e.preventDefault(); this.setSpeed(this.g.speed === 0 ? (this.prevSpeed || 1) : 0); return; }
     if (c === 'Equal' || c === 'NumpadAdd') { this.cam.tdist *= .85; return; }
     if (c === 'Minus' || c === 'NumpadSubtract') { this.cam.tdist *= 1.18; return; }
     if (c === Settings.binds.chooser) { this.openDeploy(); return; }
@@ -7794,7 +7871,7 @@ const UI = {
       m.ok = ok;
       m.mat.color.set(ok ? 0x6dff9a : 0xff4a3a);
       if (R.ghost) R.ghost.position.set(x, Math.max(hAt(M, x, y), 0) + .05, y);
-    } else if (m.t === 'target' || m.t === 'road') {
+    } else if (m.t === 'target' || m.t === 'road' || m.t === 'dig') {
       const r = m.r || 0;
       R.rangeRing.visible = r > 0;
       if (r) { R.rangeRing.position.set(g.x, Math.max(hAt(M, g.x, g.y), 0) + .5, g.y); R.rangeRing.scale.setScalar(r); }
@@ -7808,6 +7885,9 @@ const UI = {
       const ids = this.ids();
       this.g.issue({c: 'build', ids, b: m.b, x: m.x, y: m.y});
       Sfx.ack();
+      if (!shift) this.cancelMode();
+    } else if (m.t === 'dig') {
+      this.g.issue({c: 'dig', ids: this.ids(), x: Math.round(g.x), y: Math.round(g.y)}); this.R.ping(Math.round(g.x), Math.round(g.y), 0xc9a26b); Sfx.ack();
       if (!shift) this.cancelMode();
     } else if (m.t === 'road') {
       const x = Math.round(g.x), y = Math.round(g.y);
@@ -7842,6 +7922,7 @@ const UI = {
           S.push({hk: d.hk, name: d.n, img: Thumbs.get(k, nat), cost: c, desc: d.desc, off: !reqOk || p.steel < c[0] || p.fuel < c[1], why: !reqOk ? 'Requires ' + BUILDINGS[d.req].n : (p.steel < c[0] || p.fuel < c[1]) ? 'Not enough resources' : '', act: () => this.startPlace(k)});
         }
         S.push({hk: 'Z', name: page === 1 ? 'More...' : 'Back', gl: page === 1 ? '»' : '«', desc: page === 1 ? 'AA guns, jammers, mines, Patriots and missile silos.' : 'Main buildings.', act: () => { this.page = page === 1 ? 2 : 1; this.refreshHud(true); }});
+        S.push({hk: 'L', name: 'Excavate', gl: '⛏', cost: [DIG_COST, 0], desc: 'Flatten a patch of ground (rock, slopes, shallows) so you can build on it. ' + DIG_COST + ' steel.', act: () => this.setMode({t: 'dig', r: DIG_R}, 'Click the ground to excavate  (right click cancels)')});
         S.push({hk: 'X', name: 'Road', gl: '⛙', desc: 'Lay a road between two points (2 steel per tile). Units move 50% faster on roads.', act: () => this.setMode({t: 'road'}, 'Click the start of the road')});
         S.push({hk: 'C', name: 'Stop', gl: '■', desc: 'Stop what they are doing.', act: () => G.issue({c: 'stop', ids})});
         return S;
@@ -7980,6 +8061,27 @@ const UI = {
   },
 
   // ---------- overlay: selection box, health bars, names ----------
+  // while placing a building: tint every nearby cell where its centre cannot go
+  drawBuildMask(c) {
+    const m = this.mode, v = this.g.view, M = v.M, N = v.N, R = 13;
+    const key = m.b + '|' + m.x + '|' + m.y;
+    if (m.maskKey !== key || (this.maskT = (this.maskT || 0) + 1) % 20 === 0) {
+      m.maskKey = key; const bad = [];
+      for (let y = m.y - R; y <= m.y + R; y++) for (let x = m.x - R; x <= m.x + R; x++) {
+        if (x < 0 || y < 0 || x >= N || y >= N || (x - m.x) ** 2 + (y - m.y) ** 2 > R * R) continue;
+        if (!v.canPlace(m.b, x, y, this.g.me)) bad.push(x, y);
+      }
+      m.bad = bad;
+    }
+    const P = (x, y) => this.project(x, Math.max(0, hAt(M, x, y)) + .08, y);
+    c.fillStyle = 'rgba(255,50,40,.28)'; c.beginPath();
+    for (let i = 0; i < m.bad.length; i += 2) {
+      const x = m.bad[i], y = m.bad[i + 1], a = P(x - .5, y - .5), b = P(x + .5, y - .5), d = P(x + .5, y + .5), e = P(x - .5, y + .5);
+      if (!a.ok || !b.ok || !d.ok || !e.ok) continue;
+      c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.lineTo(d.x, d.y); c.lineTo(e.x, e.y); c.closePath();
+    }
+    c.fill();
+  },
   drawZones(c) {
     const S = this.g.sim, M = S.M;
     S.battle.zones.forEach((Z, i) => {
@@ -8001,6 +8103,7 @@ const UI = {
     if (Direct.on) { Direct.drawHud(c, this.ov.width, this.ov.height); return; }
     if (!this.g || this.demo) return;
     if (this.camp && !this.campLive()) this.drawZones(c);
+    if (this.mode && this.mode.t === 'place' && this.mode.x !== undefined) this.drawBuildMask(c);
     const G = this.g, v = G.view, list = this.R.visEnts || [];
     for (const e of list) {
       const sel = this.sel.has(e.id), hurt = e.hp < e.hpm && (!e.d.mine);
