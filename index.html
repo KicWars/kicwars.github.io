@@ -23,6 +23,12 @@ select option{background:#141b22}
 .brand p{margin:8px 0 26px;color:#c7d3da;font-size:17px;max-width:520px}
 .mcard{display:flex;flex-direction:column;gap:10px;width:340px;max-width:92vw}
 .mcard.wide{width:520px}
+.camplist{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow:auto}.camplist button{text-align:left;display:flex;justify-content:space-between;gap:8px}.camplist button small{color:#9fb0ba}.camplist button:disabled{opacity:.4}
+#campHud{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:25;width:min(900px,calc(100vw - 32px));padding:8px 10px;background:rgba(10,14,18,.9);border:1px solid var(--bd);border-radius:10px;display:flex;flex-direction:column;gap:6px}
+#campHud .ch-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}#campHud .ch-top b{flex:1;font-size:16px}#chBudget{font-variant-numeric:tabular-nums;color:#ffd23a;font-weight:700}
+#chUnits{display:flex;gap:4px;flex-wrap:wrap}#chUnits button{padding:4px 8px;font-size:12px}#chUnits button.on{outline:2px solid var(--acc);background:rgba(255,255,255,.14)}#chUnits button:disabled{opacity:.4}
+body.camp #powers,body.camp #bDeploy,body.camp #cards,body.direct-mode #campHud{display:none!important}
+#campHud .ch-tip{font-size:12px;color:#9fb0ba}#campHud.live #chUnits,#campHud.live #chClear,#campHud.live #chStart,#campHud.live .ch-tip{display:none}
 .big{padding:13px 18px;font-size:16px;font-weight:600;text-align:left;background:rgba(16,23,30,.82)}
 .primary{background:linear-gradient(180deg,#2fb565,#1d8a4a);border-color:#47d680;text-align:center}
 .primary:hover{background:linear-gradient(180deg,#3bcb75,#229a53)}
@@ -186,6 +192,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
   <div class="brand"><h1>WARSIM</h1><p>Six nations. One island. Command the war, or jump into the fight yourself.</p></div>
   <div class="mcard" id="mhome">
     <button class="big primary" id="bQuick" title="Choose your nation and enemies, then start with a ready-made base and pick a unit to play straight away">Quick Battle: jump in</button>
+    <button class="big" id="bCamp" title="Spend a budget on troops, place them, and beat a fixed enemy army">Campaign: budget battles</button>
     <button class="big" id="bPlay">Play vs Bots (choose nations)</button>
     <button class="big" id="bHost">Play with a Friend: host</button>
     <button class="big" id="bJoin">Join a Friend</button>
@@ -325,6 +332,10 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 
 <div id="deploy" class="screen hidden"><div class="lobbybox dbox"><div class="lhead"><h2>Deploy: choose a unit</h2><button id="dClose">Back to command</button></div><div id="dList"></div></div></div>
 <div id="pause" class="screen hidden"><div class="mcard"><h2>Menu</h2><p class="msg">The war keeps running.</p><button class="big primary" id="bResume">Resume</button><button class="big" id="bSettings2">Controls and settings</button><button class="big" id="bQuit">Quit to menu</button></div></div>
+<div id="campScr" class="screen hidden"><div class="mcard wide"><h2 style="margin:0">Campaign</h2><p style="margin:0;color:#c7d3da">You get a budget. Buy troops, place them in your zone, then press Start and watch the battle. Wipe out the enemy army to unlock the next level.</p>
+  <label style="display:flex;gap:8px;align-items:center">Your nation <select id="campNat"></select></label><div id="campList" class="camplist"></div><button class="big" id="campBack">Back</button></div></div>
+<div id="campHud" class="hidden"><div class="ch-top"><b id="chName"></b><span id="chBudget"></span><button id="chClear">Clear</button><button id="chStart" class="primary">Start battle</button><button id="chQuit">Quit</button></div>
+  <div id="chUnits"></div><div class="ch-tip">Click inside the blue zone to place the selected troop. Right click a troop to sell it back. <span id="chTip"></span></div></div>
 <div id="over" class="screen hidden"><div class="mcard wide"><h1 id="oTitle"></h1><p id="oSub"></p><table id="oStats"></table><button class="big primary" id="bAgain">Back to menu</button><button class="big" id="bWatch">Keep watching</button></div></div>
 
 <script>/**
@@ -811,11 +822,26 @@ const PWPN = {
 const PILOT_HP = 1.35;
 
 // National special ability when you play a unit yourself (key G). cd seconds.
+// Campaign: budget battles. Spend a budget on troops, place them in your zone, then watch them fight a fixed enemy army.
+const CAMP_UNITS = ['rifle', 'scout', 'assault', 'medic', 'rocket', 'sniper', 'ifv', 'tank', 'arty', 'mlrs', 'gunship'];
+const campCost = k => UNITS[k].cost[0] + UNITS[k].cost[1];
+const CAMPAIGN = [
+  {n: 'First Blood', foe: 'jethroes', budget: 480, seed: 11, army: [['rifle', 6]], tip: 'Six riflemen. Match them, or outgun them.'},
+  {n: 'Sniper Ridge', foe: 'dhruvs', budget: 720, seed: 23, army: [['rifle', 4], ['sniper', 4]], tip: 'Snipers sit at the back. Fast scouts can reach them.'},
+  {n: 'Iron Column', foe: 'valentinos', budget: 1050, seed: 37, army: [['rifle', 6], ['tank', 2]], tip: 'Two tanks. Rocket troopers make short work of armour.'},
+  {n: 'The Swarm', foe: 'licases', budget: 950, seed: 41, army: [['scout', 12], ['assault', 4]], tip: 'A horde of fast blobs. Flamethrowers and IFVs mow down crowds.'},
+  {n: 'Steel Rain', foe: 'veil', budget: 1500, seed: 53, army: [['rifle', 6], ['ifv', 2], ['arty', 2], ['mlrs', 1]], tip: 'Their guns hit hard from range. Rush them, or out-range them.'},
+  {n: 'Big Tom\'s Last Stand', foe: 'toms', budget: 2300, seed: 67, army: [['rifle', 6], ['rocket', 6], ['medic', 2], ['ifv', 2], ['tank', 3], ['gunship', 2]], tip: 'Everything they have. Spend wisely.'},
+];
+// the Toms' special swaps the pilot's guns for this blade for a few seconds (sent as weapon slot 9)
+const KNIFE = {n: 'Big Knife', t: 'mel', dmg: 75, vs: 'bite', rpm: 95, rng: 2.8, crit: 1.5, sp: 0, snd: 'bite', kick: 1.2, knife: 1};
+const KNIFE_T = 8;
 const PSPECIAL = {
   licases: {n: 'Peloton Dash', cd: 20, desc: 'Three seconds of flat-out speed.'},
   dhruvs: {n: 'Smart Scan', cd: 30, desc: 'Reveals every enemy within 25 m for 8 seconds.'},
   valentinos: {n: 'Rally Flag', cd: 35, desc: 'Heals friends around you and gives them +30% damage for 8 seconds.'},
   jethroes: {n: 'Alpha Howl', cd: 40, desc: 'Turn into an alpha wolf blob for 14 seconds.'},
+  toms: {n: 'Big Knife', cd: 25, desc: 'Pull out a huge knife for 8 seconds. Massive melee slashes.'},
   veil: {n: 'Pocket Bribe', cd: 35, desc: 'The nearest enemy soldier in front of you switches sides.'},
 };
 </script>
@@ -1111,8 +1137,74 @@ function Sim(opts) {
       steel: 400, fuel: 100, pop: 0, popCap: 15, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0,
       buffs: {}, reveal: 0, spawn: this.M.spawns[i]};
   });
-  for (const p of this.players) this.setupPlayer(p);
+  if (opts.battle) this.setupBattle(opts.battle); else for (const p of this.players) this.setupPlayer(p);
 }
+
+// Campaign battle: no bases. Find the stretch of land between the two spawns with the most ground, mark the two deploy zones and place the enemy army.
+Sim.prototype.landOk = function (x, y) {
+  const M = this.M, N = this.N, i = Math.round(x), j = Math.round(y);
+  if (i < 2 || j < 2 || i >= N - 2 || j >= N - 2) return false;
+  const q = j * N + i; return !M.water[q] && !M.block[q] && !M.occ[q] && M.h[q] > .1;
+};
+Sim.prototype.setupBattle = function (lv) {
+  // search the whole island for a centre and direction with two good zones and an all-land corridor between them
+  let best = null, bs = -1;
+  const zone = (c, d, side) => ({cx: c.x - d.x * side * 16, cy: c.y - d.y * side * 16, ax: d.x * side, ay: d.y * side, len: 10, wid: 18}); // ax/ay points toward the enemy
+  const land = Z => { let n = 0, ok = 0; for (let u = -Z.len; u <= Z.len; u += 2) for (let v = -Z.wid; v <= Z.wid; v += 3) { n++; if (this.landOk(Z.cx + Z.ax * u - Z.ay * v, Z.cy + Z.ay * u + Z.ax * v)) ok++; } return ok / n; };
+  const lane = (c, d) => { let n = 0, ok = 0; for (let u = -16; u <= 16; u += 1.5) for (let v = -9; v <= 9; v += 3) { n++; if (this.landOk(c.x + d.x * u - d.y * v, c.y + d.y * u + d.x * v)) ok++; } return ok / n; };
+  for (let y = 20; y <= this.N - 20; y += 5) for (let x = 20; x <= this.N - 20; x += 5) for (let k = 0; k < 8; k++) {
+    const c = {x, y}, d = {x: Math.cos(k * Math.PI / 8), y: Math.sin(k * Math.PI / 8)}, ln = lane(c, d);
+    if (ln < .97) continue;
+    const sc = Math.min(land(zone(c, d, 1)), land(zone(c, d, -1))) + ln * .05;
+    if (sc > bs) { bs = sc; best = {c, d}; }
+  }
+  if (!best) best = {c: {x: this.N / 2, y: this.N / 2}, d: {x: 1, y: 0}};
+  this.battle = {live: false, lv, zones: [zone(best.c, best.d, 1), zone(best.c, best.d, -1)], score: bs};
+  for (const p of this.players) { p.steel = 0; p.fuel = 0; p.popCap = 999; }
+  this.players[0].reveal = 1e9;
+  // enemy army: infantry in front rows, vehicles behind
+  const Z = this.battle.zones[1], list = [];
+  for (const [k, n] of lv.army) for (let i = 0; i < n; i++) list.push(k);
+  const rows = {};
+  list.forEach(k => { const r = UNITS[k].cat === 'inf' ? (k === 'sniper' || k === 'medic' ? 1 : 0) : UNITS[k].cat === 'heli' ? 3 : 2; (rows[r] = rows[r] || []).push(k); });
+  for (const r in rows) rows[r].forEach((k, i, arr) => {
+    const v = (i - (arr.length - 1) / 2) * (UNITS[k].cat === 'inf' ? 2.2 : 4.5), u = Z.len - 1.5 - r * 3.5; // the zone's front edge faces the player
+    for (let tries = 0; tries < 30; tries++) {
+      const vv = v + (tries % 2 ? 1 : -1) * Math.ceil(tries / 2) * 1.3, uu = u - (tries > 14 ? 2 : 0);
+      const x = Z.cx + Z.ax * uu - Z.ay * vv, y = Z.cy + Z.ay * uu + Z.ax * vv;
+      if (this.inZone(1, x, y) && this.landOk(x, y)) { const e = this.addUnit(k, 1, x, y); e.h = Math.atan2(Z.ay, Z.ax); break; }
+    }
+  });
+};
+Sim.prototype.inZone = function (i, x, y) {
+  const Z = this.battle.zones[i], rx = x - Z.cx, ry = y - Z.cy, u = rx * Z.ax + ry * Z.ay, v = -rx * Z.ay + ry * Z.ax;
+  return Math.abs(u) <= Z.len && Math.abs(v) <= Z.wid;
+};
+Sim.prototype.startBattle = function () {
+  const B = this.battle; if (!B || B.live) return;
+  B.live = true; this.t = 0;
+  for (const i of [0, 1]) {
+    const Z = B.zones[1 - i], mine = [...this.ents.values()].filter(e => e.o === i && !e.b);
+    if (mine.length) this.cmdMove(mine, Z.cx, Z.cy, true, false);
+  }
+};
+Sim.prototype.battleCheck = function () {
+  const n = [0, 0]; for (const e of this.ents.values()) if (!e.b && e.hp > 0 && e.o < 2) n[e.o]++;
+  if (n[0] && n[1]) {
+    // TABS-style: nobody holds back. Idle troops march on the closest enemy.
+    if (this.tick % 20 === 0) for (const e of this.ents.values()) {
+      if (e.b || e.hp <= 0 || e.pilot || e.o > 1 || (e.tid && this.ents.get(e.tid)) || (e.goal && e.amove)) continue;
+      let best = null, bd = 1e9;
+      for (const t of this.ents.values()) if (!t.b && t.hp > 0 && t.o !== e.o && t.o < 2) { const d = Math.hypot(t.x - e.x, t.y - e.y); if (d < bd) { bd = d; best = t; } }
+      if (best) this.cmdMove([e], best.x, best.y, true, false);
+    }
+    return;
+  }
+  const w = n[0] ? 0 : n[1] ? 1 : 1; // a wipe-out on both sides counts as a loss
+  this.players[1 - w].alive = false;
+  this.over = {winner: w, team: this.players[w].team, t: this.t};
+  this.ev({k: 'over', winner: w, team: this.over.team});
+};
 
 Sim.prototype.ev = function (o) { this.events.push(o); };
 Sim.prototype.notify = function (p, text, kind, x, y) { this.ev({k: 'msg', p, text, kind: kind || 'info', x, y}); };
@@ -1776,6 +1868,8 @@ Sim.prototype.explodeDrone = function (a) {
 // ---------- main tick ----------
 Sim.prototype.step = function () {
   if (this.over) { this.t += DT; this.tick++; return; }
+  if (this.battle && !this.battle.live) { this.rebuildGrid(); return; } // deploying: the world is frozen
+  if (this.battle && this.tick % 10 === 0) this.battleCheck();
   this.t += DT; this.tick++;
   this.F.budget = 5;
   this.rebuildGrid();
@@ -2343,7 +2437,7 @@ Sim.prototype.eyeOf = function (a) { return {x: a.x, y: a.y, z: (a.z || 0) + (a.
 // {c:'phit', id, w, t, crit, n}: the pilot's client saw its bullet(s) hit target t.
 Sim.prototype.pilotHit = function (c, pi) {
   const a = this.pilotOk(c, pi); if (!a) return;
-  const W = (PWPN[a.k] || [])[c.w | 0]; if (!W || !W.dmg) return;
+  const W = (c.w | 0) === 9 ? ((a.knifeT || 0) > this.t ? KNIFE : null) : (PWPN[a.k] || [])[c.w | 0]; if (!W || !W.dmg) return;
   const n = Math.max(1, Math.min(W.pel || 1, c.n | 0 || 1));
   // ammo budget: refills at the weapon's fire rate (plus slack for latency), so a hacked client cannot fire faster
   const now = this.t, rate = (W.rpm || 60) / 60 * (W.pel || 1) * 1.4 + 2;
@@ -2465,6 +2559,7 @@ Sim.prototype.pilotSpecial = function (c, pi) {
   if (k === 'dhruvs') this.near(a.x, a.y, 25, t => { if (!this.friendly(t.o, pi)) t.revealed = this.t + 8; });
   else if (k === 'valentinos') this.near(a.x, a.y, 6, t => { if (t.o === pi && !t.b) { t.hp = Math.min(t.hpm, t.hp + 40); t.rallyT = this.t + 8; this.ev({k: 'heal', t: t.id}); } });
   else if (k === 'jethroes') { if (a.d.cat === 'inf' && a.k !== 'wolf') { const hp = a.hp / a.hpm; this.toWolf(a, 14); a.hpm *= PILOT_HP; a.hp = a.hpm; a.wolf.frac = hp; } }
+  else if (k === 'toms') { if (a.d.cat !== 'inf') { p.specT = this.t + 1; return; } a.knifeT = this.t + KNIFE_T + .5; }
   else if (k === 'veil') {
     let best = null, bd = 9;
     this.near(a.x, a.y, 9, t => { if (t.b || t.d.cat !== 'inf' || t.k === 'worker' || this.friendly(t.o, pi) || t.pilot) return; const d = Math.hypot(t.x - a.x, t.y - a.y), ang = Math.abs(angDiff(a.h, Math.atan2(t.y - a.y, t.x - a.x))); if (ang < .8 && d < bd) { bd = d; best = t; } });
@@ -5707,7 +5802,7 @@ function Game(cfg) {
     this.view = new Mirror(cfg);
     this.bots = [];
   } else {
-    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick});
+    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle});
     this.bots = cfg.players.map((p, i) => p.bot ? new Bot(this.sim, i, p.bot) : null).filter(Boolean);
   }
   this.view.me = this.me;
@@ -5828,7 +5923,7 @@ const Direct = {
 
   exit(msg) {
     if (!this.on) return;
-    this.on = false; this.aboard = null;
+    this.on = false; this.aboard = null; this.knifeEnd = 0; this.savedW = null; VM.knife = false;
     const ui = this.ui, R = ui.g.R, e = ui.g.view.ents.get(this.id);
     if (e) ui.g.issue({c: 'pilot', ids: [this.id], on: 0});
     R.fpId = 0; R.fpPose = null; R.hideId = 0; R.post = null;
@@ -5961,6 +6056,21 @@ const Direct = {
     p.specT = g.view.t + S.cd; this.msg(S.n + '!', 1.2); Sfx.good();
     if (p.nat.key === 'licases') this.dashT = performance.now() + 3000;
     if (p.nat.key === 'jethroes') Sfx.howl();
+    if (p.nat.key === 'toms') this.drawKnife();
+  },
+  drawKnife() {
+    if (this.mode !== 'soldier' || this.knifeEnd) { if (this.mode !== 'soldier') this.msg('Knife only works on foot', 1.2); return; }
+    this.savedW = this.W; this.savedSlot = this.slot;
+    this.W = [{w: KNIFE, ammo: 1, rl: 0, cd: 0}]; this.slot = 0; this.ads = false;
+    this.knifeEnd = performance.now() + KNIFE_T * 1000;
+    VM.knife = true; VM.build(this.e, this.ui.g.view.players[this.e.o].nation, 0);
+    this.msg('BIG KNIFE! ' + Settings.keyName(Settings.binds.fire) + ' to slash', 1.5);
+  },
+  sheatheKnife() {
+    if (!this.knifeEnd) return;
+    this.knifeEnd = 0; VM.knife = false;
+    if (this.savedW) { this.W = this.savedW; this.slot = this.savedSlot || 0; this.savedW = null; }
+    if (this.e && this.ui.g) VM.build(this.e, this.ui.g.view.players[this.e.o].nation, this.slot);
   },
   toggleAds() {
     if (this.e && this.e.k === 'arty') { this.direct = !this.direct; this.msg(this.direct ? 'Direct fire: shells fly straight at the crosshair' : 'Indirect fire: shells arc onto the aim point', 1.6); return; }
@@ -5972,6 +6082,7 @@ const Direct = {
     if (!e) { this.exit(this.mode === 'fpv' ? 'Signal lost' : this.e.d.n + ' destroyed'); return; }
     if (e.k !== this.e.k) { this.W = (PWPN[e.k] || []).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0})); this.slot = 0; VM.build(e, g.view.players[e.o].nation, 0); this.msg(e.k === 'wolf' ? 'ALPHA WOLF! ' + Settings.keyName(Settings.binds.fire) + ' bites, ' + Settings.keyName(Settings.binds.alt) + ' pounces' : 'Back to blob form', 2); }
     this.e = e; this.g = g;
+    if (this.knifeEnd && performance.now() > this.knifeEnd) { this.sheatheKnife(); this.msg('Knife away', .8); }
     const k = this.keys, B = Settings.binds, M = g.view.M;
     // look input: mouse (locked), cursor offset (fallback), arrow keys (keyboard and trackpad friendly)
     let lx = this.mx, ly = this.my; this.mx = this.my = 0;
@@ -6381,7 +6492,7 @@ const Direct = {
     for (const o of hitsBy.values()) {
       const t = o.e;
       if (g.view.friendly(t.o, g.me) || !Hit.canHurt(t, W, g.view)) { R.impact(o.p.x, o.p.y, o.p.z, false, true); continue; }
-      g.issue({c: 'phit', id: this.id, w: s, t: t.id, crit: o.crit ? 1 : 0, n: o.n, px: o.p.x, py: o.p.y, pz: o.p.z});
+      g.issue({c: 'phit', id: this.id, w: this.W[s] && this.W[s].w.knife ? 9 : s, t: t.id, crit: o.crit ? 1 : 0, n: o.n, px: o.p.x, py: o.p.y, pz: o.p.z});
       this.predictHit(t, W, o.n, o.crit, o.p, g);
     }
     if (nearMiss && !hitsBy.size) g.issue({c: 'pnear', id: this.id, x: nearMiss.x, y: nearMiss.y});
@@ -6396,7 +6507,7 @@ const Direct = {
       const S = Hit.shape(t, g.view), dx = S.x - E.x, dy = S.y - E.y, dz = S.z - E.z, L = Math.hypot(dx, dy, dz);
       if (L > reach + (S.r || S.hx || 0)) continue;
       if ((dx * f.x + dy * f.y + dz * f.z) / (L || 1) < Math.cos(W.sp * Math.PI / 180) && L > .8) continue;
-      g.issue({c: 'phit', id: this.id, w: s, t: t.id, crit: 0, n: 1});
+      g.issue({c: 'phit', id: this.id, w: this.W[s] && this.W[s].w.knife ? 9 : s, t: t.id, crit: 0, n: 1});
       if (Math.random() < .25) this.predictHit(t, W, 1, false, S, g);
     }
   },
@@ -6822,14 +6933,21 @@ const VM = {
   },
   build(e, nat, slot) {
     if (!this.scene) this.init();
-    const k = e.k, W = (PWPN[k] || [])[slot || 0], key = k + '|' + nat + '|' + (slot || 0);
+    const k = e.k, W = this.knife ? KNIFE : (PWPN[k] || [])[slot || 0], key = k + '|' + nat + '|' + (slot || 0) + (this.knife ? '|knife' : '');
     if (this.key === key) return; this.key = key;
     if (this.mesh) { this.scene.remove(this.mesh); this.mesh.geometry.dispose(); }
     const b = new Batch(), P = palette(nat), skin = k === 'wolf' ? 0x7a808c : blobColor(k, P), G = GUN, T = P.look === 'toms';
     const hs = T ? 1.35 : 1; // the Toms have huge hands
     // the gun sits along -Z (camera forward); hands are little blob mitts
     const gun = W ? W.n : '';
-    if (k === 'wolf') { [-1, 1].forEach(s => { b.add(GEO.blob, skin, s * .14, -.12, -.3, .08, .07, .12); for (let i = -1; i <= 1; i++) b.add(GEO.cone, 0xf1f1ec, s * .14 + i * .03, -.12, -.43, .012, .05, .012, -Math.PI / 2, 0, 0); }); }
+    if (this.knife) { // a big blade held point-forward, with a guard and a wrapped handle
+      b.box(.016, .085, .42, .07, -.06, -.42, 0xd5dadf); b.box(.018, .02, .42, .07, -.02, -.42, 0xf4f6f8);
+      b.add(GEO.cone, 0xd5dadf, .07, -.06, -.66, .012, .1, .045, -Math.PI / 2, 0, 0);
+      b.box(.03, .14, .03, .07, -.07, -.2, 0x3a3d40); b.box(.04, .05, .12, .07, -.08, -.12, 0x2a1b10);
+      b.add(GEO.blob, skin, .07, -.09, -.12, .05 * hs, .045 * hs, .055 * hs);
+      if (T) b.add(GEO.blob, 0x2fb3a7, .12, -.2, .02, .07, .06, .1);
+    }
+    else if (k === 'wolf') { [-1, 1].forEach(s => { b.add(GEO.blob, skin, s * .14, -.12, -.3, .08, .07, .12); for (let i = -1; i <= 1; i++) b.add(GEO.cone, 0xf1f1ec, s * .14 + i * .03, -.12, -.43, .012, .05, .012, -Math.PI / 2, 0, 0); }); }
     else {
       const long = /Sniper/.test(gun) ? .75 : /Rocket/.test(gun) ? .7 : /Shotgun/.test(gun) ? .5 : /Flame/.test(gun) ? .5 : /SMG|Sidearm|Carbine/.test(gun) ? .32 : .55;
       if (/Rocket/.test(gun)) { b.add(GEO.cyl, 0x3b4a30, .05, -.02, -.25, .055, long, .055, Math.PI / 2, 0, 0); b.add(GEO.cone, 0x8a8a7a, .05, -.02, -.62, .05, .12, .05, -Math.PI / 2, 0, 0); b.box(.03, .07, .05, .05, -.08, -.18, G); b.box(.05, .05, .08, .1, .03, -.2, 0x222); }
@@ -7003,7 +7121,12 @@ const UI = {
     $('bMenu').onclick = () => $('pause').classList.remove('hidden');
     $('bDeploy').onclick = () => this.openDeploy();
     $('dClose').onclick = () => { this.deployed = false; this.closeDeploy(); };
-    $('bAgain').onclick = () => this.quit();
+    $('bAgain').onclick = () => { const c = this.camp; this.quit(); if (c) this.openCamp(); };
+    $('bCamp').onclick = () => { Sfx.init(); Sfx.ui(); this.openCamp(); };
+    $('campBack').onclick = () => { $('campScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
+    $('chClear').onclick = () => this.campClear();
+    $('chStart').onclick = () => this.campStart();
+    $('chQuit').onclick = () => { this.quit(); this.openCamp(); };
     $('bWatch').onclick = () => { $('over').classList.add('hidden'); this.R.spectate = true; };
   },
   renderNations() {
@@ -7230,6 +7353,60 @@ const UI = {
     if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id)}});
     this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, tut: $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick});
   },
+  // ---------- campaign ----------
+  campDone() { try { return +localStorage.getItem('warsim-camp') || 0; } catch (e) { return 0; } },
+  openCamp() {
+    $('menu').classList.add('hidden'); $('campScr').classList.remove('hidden');
+    const sel = $('campNat'); let nat = 4; try { nat = +(localStorage.getItem('warsim-camp-nat') || 4); } catch (e) {}
+    sel.innerHTML = NATIONS.map((n, i) => `<option value="${i}"${i === nat ? ' selected' : ''}>${n.name}</option>`).join('');
+    sel.onchange = () => { try { localStorage.setItem('warsim-camp-nat', sel.value); } catch (e) {} };
+    const done = this.campDone();
+    $('campList').innerHTML = CAMPAIGN.map((L, i) => `<button class="big" data-i="${i}"${i > done ? ' disabled' : ''}><span>${i + 1}. ${L.n}${i < done ? ' ✓' : ''}</span><small>vs ${NATIONS.find(n => n.key === L.foe).name} · budget ${L.budget}</small></button>`).join('');
+    $('campList').querySelectorAll('button').forEach(b => b.onclick = () => this.campLaunch(+b.dataset.i));
+  },
+  campLaunch(i) {
+    Sfx.init();
+    const L = CAMPAIGN[i], me = +$('campNat').value, foe = NATIONS.findIndex(n => n.key === L.foe);
+    $('campScr').classList.add('hidden');
+    this.launch({mode: 'host', size: 96, seed: L.seed, players: [{nation: me, name: 'You'}, {nation: foe, name: NATIONS[foe].name}], me: 0, link: null, tut: false, quick: false, battle: L});
+    this.camp = {i, L, sel: 'rifle', spent: 0}; document.body.classList.add('camp');
+    const Z = this.g.sim.battle.zones[0];
+    this.cam.tx = this.cam.x = Z.cx + Z.ax * 12; this.cam.tz = this.cam.z = Z.cy + Z.ay * 12; this.cam.tdist = this.cam.dist = 62; this.cam.pitch = 1;
+    this.cam.yaw = this.cam.tyaw = Math.atan2(Z.ay, Z.ax) + Math.PI;
+    $('campHud').classList.remove('hidden', 'live'); $('chName').textContent = (i + 1) + '. ' + L.n; $('chTip').textContent = L.tip;
+    this.sel.clear(); this.refreshHud(true); this.campRefresh();
+  },
+  campRefresh() {
+    const c = this.camp; if (!c) return;
+    const left = c.L.budget - c.spent;
+    $('chBudget').textContent = 'Budget ' + left + ' / ' + c.L.budget;
+    $('chUnits').innerHTML = CAMP_UNITS.map(k => `<button data-k="${k}" class="${k === c.sel ? 'on' : ''}"${campCost(k) > left ? ' disabled' : ''} title="${UNITS[k].desc || ''}">${UNITS[k].n} · ${campCost(k)}</button>`).join('');
+    $('chUnits').querySelectorAll('button').forEach(b => b.onclick = () => { c.sel = b.dataset.k; this.campRefresh(); });
+  },
+  campLive() { return this.camp && this.g && this.g.sim && this.g.sim.battle && this.g.sim.battle.live; },
+  campPlace(mx, my) {
+    const c = this.camp, S = this.g.sim, p = this.ground(mx, my); if (!p) return;
+    if (!S.inZone(0, p.x, p.y) || !S.landOk(p.x, p.y)) { this.addAlert('Place troops on land inside the blue zone', 'bad'); Sfx.bad(); return; }
+    const cost = campCost(c.sel); if (c.spent + cost > c.L.budget) { this.addAlert('Not enough budget', 'bad'); Sfx.bad(); return; }
+    const Z = S.battle.zones[0], e = S.addUnit(c.sel, 0, p.x, p.y); e.h = Math.atan2(Z.ay, Z.ax);
+    c.spent += cost; Sfx.ui(); this.campRefresh();
+  },
+  campRemove(mx, my) {
+    const c = this.camp, S = this.g.sim, p = this.ground(mx, my); if (!p) return;
+    let best = null, bd = 2.2;
+    for (const e of S.ents.values()) if (e.o === 0 && !e.b) { const d = Math.hypot(e.x - p.x, e.y - p.y); if (d < bd) { bd = d; best = e; } }
+    if (best) this.campSell(best);
+  },
+  campSell(e) {
+    const S = this.g.sim; S.ents.delete(e.id); S.players[0].pop -= e.d.pop; this.camp.spent -= campCost(e.k);
+    S.ev({k: 'dead', id: e.id, x: e.x, y: e.y, z: e.z, kk: e.k, o: 0, quiet: 1});
+    this.campRefresh();
+  },
+  campClear() { for (const e of [...this.g.sim.ents.values()]) if (e.o === 0 && !e.b) this.campSell(e); },
+  campStart() {
+    if (!this.camp.spent) { this.addAlert('Place some troops first', 'bad'); Sfx.bad(); return; }
+    this.g.sim.startBattle(); $('campHud').classList.add('live'); this.addAlert('Charge!', 'gold'); Sfx.good();
+  },
   launch(o) {
     if (this.g) this.g.stop();
     this.demo = false;
@@ -7261,6 +7438,7 @@ const UI = {
   },
   quit() {
     if (Direct.on) Direct.exit();
+    this.camp = null; $('campHud').classList.add('hidden'); document.body.classList.remove('camp');
     if (this.link) { this.link.close(); this.link = null; }
     this.net = 'off';
     $('hud').classList.add('hidden'); $('over').classList.add('hidden'); $('pause').classList.add('hidden'); $('menu').classList.remove('hidden');
@@ -7306,6 +7484,13 @@ const UI = {
     $('oTitle').textContent = won ? 'Victory' : 'Defeat';
     $('oTitle').style.color = won ? '#6dff9a' : '#ff5a4a';
     $('oSub').textContent = won ? 'The island is yours.' : 'Your capital has fallen.';
+    $('bAgain').textContent = this.camp ? 'Back to campaign' : 'Back to menu';
+    if (this.camp) {
+      const c = this.camp, next = CAMPAIGN[c.i + 1];
+      if (won) { try { if (this.campDone() < c.i + 1) localStorage.setItem('warsim-camp', c.i + 1); } catch (e) {} }
+      $('oSub').textContent = won ? 'Level cleared, ' + (c.L.budget - c.spent) + ' budget to spare. ' + (next ? 'Unlocked: ' + next.n + '.' : 'Campaign complete!') : 'Your army was wiped out. Try a different mix.';
+      $('campHud').classList.add('hidden');
+    }
     $('oStats').innerHTML = '<tr><th align="left">Nation</th><th>Kills</th><th>Losses</th><th>Trained</th></tr>' + v.players.map(p => `<tr><td style="color:${p.nat.color}">${p.name}</td><td align="center">${p.kills}</td><td align="center">${p.losses}</td><td align="center">${p.built}</td></tr>`).join('');
     $('over').classList.remove('hidden');
     won ? Sfx.good() : Sfx.bad();
@@ -7403,6 +7588,7 @@ const UI = {
       Sfx.init();
       if (Direct.on) { Direct.onMouseDown(e); e.preventDefault(); return; }
       if (!this.g || this.demo) return;
+      if (this.camp && !this.campLive()) { if (e.button === 0) this.campPlace(e.clientX, e.clientY); else if (e.button === 2) this.campRemove(e.clientX, e.clientY); return; }
       if (e.button === 0) { this.mouse.down = true; this.mouse.sx = e.clientX; this.mouse.sy = e.clientY; this.mouse.box = false; }
       else if (e.button === 2) { if (this.mode) this.cancelMode(); else this.rightClick(e.clientX, e.clientY, e.shiftKey); }
       if (e.button === 0 && e.altKey && !this.mode) { this.mouse.down = false; this.rightClick(e.clientX, e.clientY, e.shiftKey); }
@@ -7794,11 +7980,27 @@ const UI = {
   },
 
   // ---------- overlay: selection box, health bars, names ----------
+  drawZones(c) {
+    const S = this.g.sim, M = S.M;
+    S.battle.zones.forEach((Z, i) => {
+      c.beginPath(); let ok = true;
+      const pts = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+      for (let s = 0; s < 4; s++) for (let t = 0; t < 8; t++) { // walk each edge so the outline hugs the terrain
+        const [u0, v0] = pts[s], [u1, v1] = pts[(s + 1) % 4], f = t / 8, u = (u0 + (u1 - u0) * f) * Z.len, w = (v0 + (v1 - v0) * f) * Z.wid;
+        const x = Z.cx + Z.ax * u - Z.ay * w, y = Z.cy + Z.ay * u + Z.ax * w, p = this.project(x, Math.max(0, hAt(M, x, y)) + .15, y);
+        if (!p.ok) ok = false; if (s + t === 0) c.moveTo(p.x, p.y); else c.lineTo(p.x, p.y);
+      }
+      if (!ok) return;
+      c.closePath(); c.fillStyle = i ? 'rgba(255,70,60,.1)' : 'rgba(70,150,255,.14)'; c.fill();
+      c.lineWidth = 2; c.strokeStyle = i ? 'rgba(255,90,80,.8)' : 'rgba(110,180,255,.95)'; c.stroke();
+    });
+  },
   drawOverlay() {
     const c = this.ovx, m = this.mouse;
     c.clearRect(0, 0, this.ov.width, this.ov.height);
     if (Direct.on) { Direct.drawHud(c, this.ov.width, this.ov.height); return; }
     if (!this.g || this.demo) return;
+    if (this.camp && !this.campLive()) this.drawZones(c);
     const G = this.g, v = G.view, list = this.R.visEnts || [];
     for (const e of list) {
       const sel = this.sel.has(e.id), hurt = e.hp < e.hpm && (!e.d.mine);
@@ -7853,6 +8055,7 @@ const UI = {
 
   // ---------- deploy chooser: pick a unit, spawn at the capital, play it, come back here when it dies ----------
   openDeploy() {
+    if (this.camp) return;
     const v = this.g.view, p = v.players[this.g.me];
     if (!p || !p.alive) return;
     if (Direct.on) { this.deployed = true; Direct.exit(); }
