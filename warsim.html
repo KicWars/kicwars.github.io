@@ -2850,7 +2850,7 @@ Sim.prototype.fire = function (a, t) {
     this.hurt(t, md, a.o); if (t.hp <= 0) this.creditKill(a, t);
     a.st = 2; a.cd = Math.min(a.cd, 0) + .75; return;
   }
-  if (t.d.turret && !t.b) {                               // flanking armour
+  if (t.d.turret && !t.b && !(this.scen && this.scen.arc === 'ground')) {  // flanking armour (tank battles use the full armour model)
     const from = Math.atan2(a.y - t.y, a.x - t.x);
     if (Math.abs(angDiff(t.h, from)) > 2.2) dm *= 1.35;
   }
@@ -3091,7 +3091,12 @@ Sim.prototype.stepShots = function () {
       if (t && t.hp > 0 && s.ty === 'missile' && (t.chaffT || 0) > this.t - .3 && this.rnd() < .8) { this.ev({k: 'boom', x: t.x + (this.rnd() - .5) * 6, y: t.y + (this.rnd() - .5) * 6, z: t.z + 1, s: .5, ty: 'missile'}); if (t.pilot) this.notify(t.o, 'Chaff spoofed the missile!', 'good'); continue; }
       if (t && t.hp > 0) {
         if (src) { t.srcX = src.x; t.srcY = src.y; }
-        this.hurt(t, s.dmg, s.o);
+        let k = 1;
+        if (src && s.ty === 'shell' && t.d.cat === 'veh' && this.scen && this.scen.arc === 'ground') { // bots aim centre mass, now and then low or high
+          const r = this.rnd(), hz = r < .12 ? (t.z || 0) + .2 : r > .8 ? (t.z || 0) + 1.1 : undefined, R = this.armorHit(t, t.x - src.x, t.y - src.y, hz); k = R.k;
+          if (t.pilot) this.ev({k: 'msg', p: t.o, text: R.ric ? 'Ricochet! Their shell bounced off' : R.face === 'rear' || R.face === 'weak' ? 'Hit in the ' + (R.face === 'rear' ? 'rear' : 'weak spot') + '!' : R.k < .55 ? 'Hit: armour held' : 'Hit: penetrated!', kind: R.ric || R.k < .55 ? 'good' : 'bad'});
+        }
+        if (k > 0) this.hurt(t, s.dmg * k, s.o);
         if (src) this.creditKill(src, t);
         if (s.ty === 'rocket' || s.ty === 'missile' || s.ty === 'torpedo') this.ev({k: 'boom', x: t.x, y: t.y, z: t.z, s: .6, ty: s.ty});
       }
@@ -3829,7 +3834,14 @@ Sim.prototype.stepProjs = function () {
     if (W.smoke) { this.smokes.push({x: p.x, y: p.y, r: W.smoke, until: this.t + 18}); this.ev({k: 'smoke', x: p.x, y: p.y, r: W.smoke, d: 18}); }
     else {
       const heK = p.he ? (hit && !hit.b && hit.d.cat === 'veh' ? .45 : 1.6) : 1; // HE: weak against armour, strong against everything else
-      if (hit && !hit.b && !W.fuse) { const v = VS[W.vs][hit.d.arm] || 0; hit.srcX = p.x - p.vx * .1; hit.srcY = p.y - p.vy * .1; this.hurt(hit, dm * v * .6 * heK, p.o); if (src) this.creditKill(src, hit); }
+      let armK = 1;
+      if (hit && !hit.b && hit.d.cat === 'veh' && (W.vs === 'shell' || W.vs === 'cannon' || W.vs === 'rocket')) { // where you hit the tank matters
+        const R = this.armorHit(hit, p.vx, p.vy, p.z); armK = R.ric ? 0 : R.k * (W.vs === 'shell' ? 1 : .8 + R.k * .2);
+        if (src && src.pilot) this.ev({k: 'pen', p: src.pilot - 1, txt: R.ric ? 'RICOCHET' : R.k < .55 ? 'NON-PENETRATION' : PEN_TXT[R.face], good: R.ric || R.k < .55 ? 0 : 1});
+        if (hit.pilot && R.ric) this.notify(hit.o, 'Ricochet! Their shell bounced off', 'good');
+        if (!R.ric && R.k >= 1.2 && this.scen && this.scen.arc === 'ground' && this.rnd() < .5) this.knockModule(hit, p.o);
+      }
+      if (hit && !hit.b && !W.fuse) { const v = VS[W.vs][hit.d.arm] || 0; hit.srcX = p.x - p.vx * .1; hit.srcY = p.y - p.vy * .1; if (armK > 0) this.hurt(hit, dm * v * .6 * heK * armK, p.o); if (src) this.creditKill(src, hit); }
       if (W.spl) this.splash(p.x, p.y, W.spl * (p.he ? 2.2 : 1), dm * (hit && !W.fuse ? .5 : 1) * (p.he ? 1.3 : 1), p.o, W.vs, src);
       if (W.vs === 'flame') this.smokes.length; // napalm leaves fire on the ground: drawn by the renderer
       if (W.spl >= 2) this.ev({k: 'scar', x: p.x, y: p.y, r: W.spl});
@@ -4437,6 +4449,25 @@ Sim.prototype.knockModule = function (t, by) {
   for (const e of this.ents.values()) if (e.pilot && e.o === by && Math.hypot(e.x - t.x, e.y - t.y) < 70) { this.notify(by, 'Enemy ' + M.n.toLowerCase() + ' knocked out!', 'good'); break; }
 };
 const modOut = (e, m, t) => e.mod && (e.mod[m] || 0) > t;
+// Armour: thick front, thinner sides, weak rear; the turret has its own facing. Weak spots: the lower front plate and the rear deck.
+// Glancing hits on angled plates can bounce off. Values multiply the shell's damage.
+const ARMOR = {htank: {front: .3, side: .75, rear: 1.3, tur: .85}, tank: {front: .5, side: 1, rear: 1.5, tur: .9}, ltank: {front: .85, side: 1.2, rear: 1.6, tur: 1},
+  td: {front: .4, side: 1.15, rear: 1.7, tur: 1.25}, def: {front: .8, side: 1.15, rear: 1.5, tur: 1}};
+function armorFace(t, vx, vy, hz) { // vx,vy: the shell's travel direction; hz: height of the hit (undefined = centre mass)
+  const L = Math.hypot(vx, vy) || 1, ix = -vx / L, iy = -vy / L, sc = t.d.vsc || 1, z0 = t.z || 0;
+  const tur = hz !== undefined && hz > z0 + .78 * sc, f = tur && t.tu !== undefined ? t.tu : t.h;
+  const c = ix * Math.cos(f) + iy * Math.sin(f), sn = Math.abs(-ix * Math.sin(f) + iy * Math.cos(f));
+  let face, obl; if (c > .707) { face = 'front'; obl = Math.acos(Math.min(1, c)); } else if (c < -.707) { face = 'rear'; obl = Math.acos(Math.min(1, -c)); } else { face = 'side'; obl = Math.acos(Math.min(1, sn)); }
+  const A = ARMOR[t.k] || ARMOR.def;
+  const weak = face === 'front' && !tur && hz !== undefined && hz < z0 + .32 * sc; // lower glacis
+  let k = weak ? A.side : A[face]; if (tur && face === 'front') k *= A.tur; else if (tur) k = A.side * .95;
+  return {k, face: weak ? 'weak' : face, tur, obl, ricoK: face === 'rear' || weak ? 0 : clamp((obl - .9) / .35, 0, 1) * (face === 'front' ? .65 : .45)};
+}
+Sim.prototype.armorHit = function (t, vx, vy, hz) {
+  const A = armorFace(t, vx, vy, hz), ric = this.rnd() < A.ricoK;
+  return {k: ric ? 0 : A.k, ric, face: A.face, tur: A.tur};
+};
+const PEN_TXT = {weak: 'WEAK SPOT HIT!', rear: 'REAR HIT!', side: 'SIDE PENETRATION', front: 'FRONT HIT'};
 Sim.prototype.arcSpawn = function (o, k) {
   const H = this.M.spawns, sp = H[o], en = H[1 - o], d = UNITS[k], N = this.N, h = Math.atan2(en.y - sp.y, en.x - sp.x);
   if (d.cat === 'air' || d.cat === 'heli') { // planes spawn in the air, already flying toward the fight
@@ -8372,7 +8403,7 @@ Game.prototype.issue = function (c) {
 // Shots: hitscan weapons are resolved on this client against what you see (instant feedback) and the host checks them;
 // projectiles (rockets, shells, bombs, missiles, grenades) are simulated by the host.
 
-const BIND_DEFAULTS = {ammo: 'KeyH', vlock: 'KeyL', fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', walk: 'KeyB', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP', chaff: 'KeyZ'};
+const BIND_DEFAULTS = {ammo: 'KeyN', vlock: 'KeyL', fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', walk: 'KeyB', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP', chaff: 'KeyZ'};
 const Settings = {
   view: 'fp', sens: 1, invert: false, assist: false, autofire: false, flightAssist: true, gritty: true, blobs: true,
   binds: Object.assign({}, BIND_DEFAULTS),
@@ -8563,7 +8594,8 @@ const Direct = {
     if (c === 'KeyJ' && this.strikeBank > 0) { const P = this.aimPt; if (!P) { this.msg('Aim at the ground to call artillery', 1.5); return true; } this.strikeBank--; if (this.ui.g.sim && this.ui.g.sim.scen && this.ui.g.sim.scen.arc) this.artT = performance.now() + 60000; this.ui.g.issue({c: 'streak', id: this.id, x: P.x, y: P.y, big: this.bigStrike ? 1 : 0}); this.bigStrike = false; return true; }
     if (c === B.cycle) { this.cycleLock(); return true; }
     if (c === (B.vlock || 'KeyL') && this.mode === 'plane') { this.toggleViewLock(); return true; }
-    if (c === (B.ammo || 'KeyH') && this.mode === 'vehicle' && this.W.some(s => s.w.vs === 'shell')) { this.he = !this.he; this.msg(this.he ? 'HE shells: big blast, for infantry, guns and buildings' : 'AP shells: punch through armour', 1.6); Sfx.ack(); return true; }
+    if (c === 'KeyZ' && this.ads && (this.mode === 'vehicle' || this.mode === 'soldier' || this.mode === 'ship')) { this.zoom2 = (this.zoom2 || 1) > .7 ? .5 : (this.zoom2 > .4 ? .3 : 1); this.msg('Zoom ×' + (1 / this.zoom2).toFixed(1), .6); return true; }
+    if (c === (B.ammo || 'KeyN') && this.mode === 'vehicle' && this.W.some(s => s.w.vs === 'shell')) { this.he = !this.he; this.msg(this.he ? 'HE shells: big blast, for infantry, guns and buildings' : 'AP shells: punch through armour', 1.6); Sfx.ack(); return true; }
     if (c === B.special) { this.special(); return true; }
     if (c === 'KeyH') { document.getElementById('dhelp').classList.toggle('mini'); return true; }
     if (c === 'KeyY' && this.mode === 'soldier' && this.e.k !== 'wolf') { // shovel: click to dig the ground in front of you, bit by bit
@@ -9049,7 +9081,8 @@ const Direct = {
     // field of view: aiming zooms; scopes zoom a lot; sprint widens a touch
     const W = this.W[this.slot] && this.W[this.slot].w, base = this.mode === 'fpv' ? 92 : this.mode === 'plane' ? (fp ? 74 : 66) : 72;
     this.adsK += ((this.ads ? 1 : 0) - this.adsK) * Math.min(1, dt * 12);
-    const z = W && W.zoom ? 1 + (W.zoom - 1) * this.adsK : 1;
+    if (!this.ads) this.zoom2 = this.zoom2 || 1;
+    const z = (W && W.zoom ? 1 + (W.zoom - 1) * this.adsK : 1) * (1 - (1 - (this.zoom2 || 1)) * this.adsK); // scoped: the wheel (or Z) zooms further
     this.curZoom = z;
     cam.fov = base * z * (this.sprinting ? 1.06 : 1) + (this.fovPunch || 0) * (this.mode === 'soldier' ? 1 : .3) + (this.mode === 'plane' ? clamp((this.speed / this.e.d.spd - 1) * 14, -3, 9) : 0); // speed rush cam.near = fp ? .03 : .1; cam.updateProjectionMatrix();
     if (this.mode === 'plane' && (this.stalled || (this.gLoad || 1) > 2.6 || this.afterburner)) { const sh = this.stalled ? .5 : this.afterburner ? .06 : clamp(((this.gLoad || 1) - 2.6) * .15, 0, .4); cam.position.x += (Math.random() - .5) * sh; cam.position.y += (Math.random() - .5) * sh; cam.rotateZ((Math.random() - .5) * sh * .04); } // buffet in stalls, hard pulls and afterburner
@@ -9096,6 +9129,11 @@ const Direct = {
   angTo(t) {
     const E = this.eye(), dx = (t.rx === undefined ? t.x : t.rx) - E.x, dy = (t.ryy === undefined ? t.y : t.ryy) - E.y, dz = (t.rz === undefined ? t.z : t.rz) + (t.air ? 0 : .5) - E.z, L = Math.hypot(dx, dy, dz) || 1, f = this.shotDir || this.fw;
     return {ang: Math.acos(clamp((dx * f.x + dy * f.y + dz * f.z) / L, -1, 1)), dd: L};
+  },
+  wheel(dy) { // extra zoom on top of the scope, like a sight's magnification steps
+    if (!this.ads || this.mode === 'plane' || this.mode === 'fpv') return;
+    this.zoom2 = clamp((this.zoom2 || 1) * (dy > 0 ? 1.25 : .8), .3, 1);
+    this.msg('Zoom ×' + (1 / this.zoom2).toFixed(1), .6);
   },
   reload(s) {
     const S = this.W[s]; if (!S || !S.w.mag || S.rl > 0 || S.ammo >= S.w.mag) return;
@@ -9465,7 +9503,7 @@ const Direct = {
     // ammo, weapon, health bar (bottom right)
     if (S && W) {
       c.textAlign = 'right'; c.font = '800 30px system-ui'; c.fillStyle = 'rgba(255,255,255,.95)'; c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = 4;
-      const am = S.msl !== undefined ? S.msl + ' / ' + MSL_LOAD + ' missiles' : W.vs === 'shell' && this.mode === 'vehicle' ? (this.he ? 'HE' : 'AP') + (S.rl > 0 ? ' · RELOADING' : '') + '  (' + Settings.keyName(Settings.binds.ammo || 'KeyH') + ')' : !W.mag ? '' : S.rl > 0 ? 'RELOADING' : S.ammo + ' / ' + W.mag;
+      const am = S.msl !== undefined ? S.msl + ' / ' + MSL_LOAD + ' missiles' : W.vs === 'shell' && this.mode === 'vehicle' ? (this.he ? 'HE' : 'AP') + (S.rl > 0 ? ' · RELOADING' : '') + '  (' + Settings.keyName(Settings.binds.ammo || 'KeyN') + ')' : !W.mag ? '' : S.rl > 0 ? 'RELOADING' : S.ammo + ' / ' + W.mag;
       c.fillText(am, w - 24, h - 54);
       c.font = '600 13px system-ui'; const o = this.W[this.slot === 0 ? 1 : 0];
       c.fillText(W.n + (o ? '   ·   ' + Settings.keyName(Settings.binds.alt) + ': ' + o.w.n + (o.cd > 0 && !o.w.mag ? ' (' + o.cd.toFixed(1) + 's)' : o.w.mag > 1 && this.mode !== 'soldier' ? ' ' + o.ammo : '') : ''), w - 24, h - 32);
@@ -9493,6 +9531,7 @@ const Direct = {
     this.drawRadar(c, w, h);
     if (this.mode === 'plane') this.drawFlightHud(c, w, h);
     if (fp && !this.aboard && (this.mode === 'vehicle' || this.mode === 'ship') && !(W && W.arc && !this.direct)) this.drawGunsight(c, w, h);
+    if (this.mode === 'vehicle' && !this.aboard && W && W.vs === 'shell') this.drawTankAim(c, w, h, S, W);
     if (!this.helpSeen) { this.helpSeen = 1; }
     c.textAlign = 'left'; c.font = '600 11px system-ui'; c.fillStyle = 'rgba(255,255,255,.55)'; if (!this.isTouch()) c.fillText('H: controls' + (this.mode === 'soldier' ? '  ·  Y: shovel' + (this.shovel ? ' (ON)' : '') : ''), 24, h - 74);
     // state of the mouse
@@ -9689,6 +9728,27 @@ const Direct = {
     { const sx = w / 2 + clamp(this.rollRate || 0, -2, 2) * 18 * U, syy = h + 10 + clamp(-(this.pRate || 0), -2, 2) * 10 * U;
       c.strokeStyle = '#111'; c.lineWidth = 16 * U; c.beginPath(); c.moveTo(w / 2, h + 60 * U); c.lineTo(sx, syy - 40 * U); c.stroke();
       c.fillStyle = '#23272b'; c.beginPath(); c.ellipse(sx, syy - 48 * U, 16 * U, 22 * U, 0, 0, 6.283); c.fill(); c.fillStyle = '#b22'; c.beginPath(); c.arc(sx + 6 * U, syy - 62 * U, 4 * U, 0, 6.283); c.fill(); }
+    c.restore();
+  },
+  // Arcade tank aim: a ring where the shell will land, coloured by whether it would get through the armour you are pointing at
+  // (green: penetrates, yellow: maybe, red: will not), with range and a reload arc. Text under it reports what the last shell did.
+  drawTankAim(c, w, h, S, W) {
+    const g = this.ui.g, P = this.aimPt; if (!P) return;
+    const q = this.toScreen(P.x, P.y, P.z); if (!q) return;
+    const t = this.aimHit && this.aimHit.ent, foe = t && !t.b && t.d.cat === 'veh' && !g.view.friendly(t.o, g.me);
+    let col = 'rgba(255,255,255,.9)', tip = '';
+    if (foe) { const mz = this.muzzle(), A = armorFace(t, P.x - mz.x, P.y - mz.y, P.z), k = A.k * (this.he ? .45 : 1);
+      col = k >= .95 && A.ricoK < .2 ? '#4dff7a' : k >= .55 && A.ricoK < .5 ? '#ffd23a' : '#ff4a3a';
+      tip = A.face === 'weak' ? 'WEAK SPOT' : A.face === 'rear' ? 'REAR' : A.tur ? 'TURRET ' + A.face.toUpperCase() : A.face.toUpperCase(); }
+    const rl = S && S.rl > 0 && W.rl ? 1 - S.rl / W.rl : 1, r = 13;
+    c.save(); c.lineWidth = 2.5; c.strokeStyle = 'rgba(0,0,0,.55)'; c.beginPath(); c.arc(q.x, q.y, r + 1, 0, 6.2832); c.stroke();
+    c.strokeStyle = col; c.lineWidth = 2; c.beginPath(); c.arc(q.x, q.y, r, -Math.PI / 2, -Math.PI / 2 + rl * 6.2832); c.stroke();
+    c.fillStyle = col; c.beginPath(); c.arc(q.x, q.y, 2.2, 0, 6.2832); c.fill();
+    for (const a of [0, 1.5708, 3.1416, 4.7124]) { c.beginPath(); c.moveTo(q.x + Math.cos(a) * (r + 4), q.y + Math.sin(a) * (r + 4)); c.lineTo(q.x + Math.cos(a) * (r + 9), q.y + Math.sin(a) * (r + 9)); c.stroke(); }
+    c.font = '700 11px system-ui'; c.textAlign = 'left'; c.shadowColor = '#000'; c.shadowBlur = 3;
+    const mz = this.muzzle(); c.fillText((Math.hypot(P.x - mz.x, P.y - mz.y) * 10 | 0) + ' m' + (tip ? '  ' + tip : ''), q.x + r + 12, q.y + 4);
+    if (rl < 1) { c.fillStyle = 'rgba(255,255,255,.8)'; c.fillText('LOADING ' + (this.he ? 'HE' : 'AP'), q.x + r + 12, q.y + 18); }
+    const pt = this.penTxt; if (pt && performance.now() - pt.at < 1400) { c.font = '800 15px system-ui'; c.textAlign = 'center'; c.fillStyle = pt.good ? '#4dff7a' : '#ff9a3a'; c.fillText(pt.t, w / 2, h / 2 + 70); }
     c.restore();
   },
   drawGunsight(c, w, h) {
@@ -10814,6 +10874,7 @@ const UI = {
       case 'over': this.showOver(ev.wins ? ev.wins.includes(me) : v.players[me].team === ev.team); break;
       case 'diplo': if (this.diploOpen) this.renderDiplo(); break;
       case 'rearm': if (ev.p === me && Direct.on && Direct.id === ev.id) { for (const W of Direct.W) if (W && W.w) { W.ammo = W.w.mag || 1; W.rl = 0; if (W.msl !== undefined) W.msl = MSL_LOAD; } if (!Direct.rearmMsg || performance.now() - Direct.rearmMsg > 3000) { Direct.rearmMsg = performance.now(); Direct.msg('AIRFIELD: repairing and rearming', 1.8); } } break;
+      case 'pen': if (ev.p === me && Direct.on) { Direct.penTxt = {t: ev.txt, good: ev.good, at: performance.now()}; ev.good ? Sfx.hitTick(true) : Sfx.empty(); } break;
       case 'capd': if (ev.p === me) { const A = this.arcMe = this.arcMe || {k: 0, d: 0, cap: 0}; A.cap++; } break;
       case 'feed': if (this.scen) {
         const A = this.arcMe = this.arcMe || {k: 0, d: 0, cap: 0}, side = o => o === me || v.friendly(o, me) ? 'a' : 'e', nm = (k, o, pl) => (pl === me ? 'You' : (side(o) === 'a' ? 'Ally ' : 'Enemy ') + UNITS[k].n);
@@ -11115,7 +11176,8 @@ const UI = {
     // wheel: mouse wheel zooms; trackpad pinch (ctrl+wheel) zooms; trackpad two-finger scroll pans
     gl.addEventListener('wheel', e => {
       e.preventDefault();
-      if (Direct.on || this.demo || !this.g) return;
+      if (Direct.on) { Direct.wheel(e.deltaY); return; }
+      if (this.demo || !this.g) return;
       const trackpadPan = !e.ctrlKey && (Math.abs(e.deltaX) > .5 || (e.deltaMode === 0 && Math.abs(e.deltaY) < 40 && e.deltaY % 1 !== 0));
       if (trackpadPan) this.pan(e.deltaX, e.deltaY);
       else if (e.ctrlKey) this.cam.tdist = clamp(this.cam.tdist * Math.exp(e.deltaY * .01), 8, 140);
@@ -11804,7 +11866,7 @@ const UI = {
     const K = c => '<b>' + Settings.keyName(Settings.binds[c]) + '</b>', W = D.W, w2 = W[1] ? W[1].w.n : '';
     const help = {
       soldier: `${K('fwd')}${K('left')}${K('back')}${K('right')} move · mouse aims (no click needed) · ${K('fire')} or click fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} aim · ${K('reload')} reload · ${K('jump')} jump · ${K('sprint')} sprint`,
-      vehicle: `${K('fwd')}${K('back')} drive · ${K('left')}${K('right')} turn hull · mouse aims turret · ${K('fire')} fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} ${D.e.k === 'arty' ? 'direct/indirect fire' : 'zoom'}`,
+      vehicle: `${K('fwd')}${K('back')} drive · ${K('left')}${K('right')} turn hull · mouse aims turret · ${K('fire')} fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} ${D.e.k === 'arty' ? 'direct/indirect fire' : 'zoom (then wheel or <kbd>Z</kbd> zooms more)'}${D.W.some(q => q.w.vs === 'shell') ? ' · ' + K('ammo') + ' AP/HE' : ''}`,
       ship: `${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} steer · mouse aims · ${K('fire')} fire${w2 ? ' · ' + K('alt') + ' ' + w2 : ''} · ${K('walk')} leave the chair and walk`,
       plane: `mouse or arrows steer · ${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} roll · ${K('fire')} guns · ${K('alt')} ${w2} · ${D.W[2] ? K('reload') + ' ' + D.W[2].w.n + ' · ' : ''}${K('chaff')} chaff · ${K('cycle')} next target · ${K('vlock')} lock view`,
       heli: `${K('fwd')}${K('left')}${K('back')}${K('right')} fly · ${K('up')} up · ${K('down')} down · mouse aims · ${K('fire')} guns · ${K('alt')} ${w2}`,
