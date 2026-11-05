@@ -283,6 +283,8 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 #mhome .mtile b{font-size:15px;font-weight:700}
 #mhome .mtile small{font-size:12px;font-weight:500;color:#a9b8c2}
 #mhome .hero{grid-column:1/-1;align-items:center;padding:15px}#mhome .hero b{font-size:19px}#mhome .hero small{color:#d9f5e3}
+.fbtype{display:flex;gap:8px}.fbtype button{flex:1;padding:9px;font-weight:700}.fbtype button.on{border-color:#ffd97a;background:#ffd97a22;color:#ffd97a}
+#fbScr{align-items:center;justify-content:center}#fbScr input,#fbScr textarea{width:100%;box-sizing:border-box;padding:10px 12px;font:14px system-ui;color:#e8eef2;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);border-radius:8px;user-select:text;-webkit-user-select:text;resize:vertical}#fbScr .mcard{gap:10px}
 .mgroup em{font-style:normal;color:#ffb45a;letter-spacing:.04em;text-transform:none;font-weight:600}
 .mgroup{grid-column:1/-1;font:700 11px system-ui;letter-spacing:.12em;text-transform:uppercase;color:#8fa1ad;margin:6px 0 -2px 2px}
 .mfoot{grid-column:1/-1;display:flex;gap:9px;margin-top:4px}.mfoot .sm{flex:1;padding:9px 12px;font-size:13px;text-align:center}
@@ -330,6 +332,7 @@ body.cbDeut{filter:url(#cbDeut)}
     <div class="mfoot">
       <button class="big sm" id="bSettings">⚙ Controls &amp; settings</button>
       <button class="big sm" id="bLog">✦ What's new</button>
+      <button class="big sm" id="bFb">🐞 Bug report / idea</button>
     </div>
     <details class="how"><summary>How to play</summary>
       <ul>
@@ -500,6 +503,16 @@ body.cbDeut{filter:url(#cbDeut)}
 <div id="scenSpawn" class="hidden"><h3>Choose your soldier</h3><div id="ssInfo"></div><div id="ssBtns"></div><p class="small">Press 1 to 7, or click. You land with the next boat, or at the forward position once you have captured an objective.</p></div>
 <div id="campHud" class="hidden"><div class="ch-top"><b id="chName"></b><span id="chBudget"></span><button id="chClear">Clear</button><button id="chStart" class="primary">Start battle</button><button id="chQuit">Quit</button></div>
   <div id="chUnits"></div><div class="ch-tip">Click inside the blue zone to place the selected troop. Right click a troop to sell it back. <span id="chTip"></span></div></div>
+<div id="fbScr" class="screen hidden"><div class="mcard wide">
+  <h2 style="margin:0">Bug report or idea</h2>
+  <p class="small" style="margin:0;color:#a9b8c2">Sends it to the game's GitHub page, where the devs read every one. You need a free GitHub account to post (it opens in a new tab with everything filled in). No account? Press Copy and send it to the devs another way.</p>
+  <div class="fbtype"><button data-t="bug" class="on">🐞 Bug</button><button data-t="idea">💡 Suggestion</button></div>
+  <input id="fbTitle" maxlength="90" placeholder="Short title, e.g. Tanks fall through the bridge">
+  <textarea id="fbBody" rows="6" placeholder="What happened? What did you expect? How do we make it happen again?"></textarea>
+  <input id="fbName" maxlength="40" placeholder="Your name (optional)">
+  <div class="mfoot"><button class="big sm primary" id="fbSend">Post on GitHub</button><button class="big sm" id="fbCopy">Copy</button><button class="big sm" id="fbBack">Back</button></div>
+  <p id="fbMsg" class="small" style="margin:0;color:#9fe0b0"></p>
+</div></div>
 <div id="logScr" class="screen hidden"><div class="mcard wide"><h2 style="margin:0">What's new</h2><p class="small" style="margin:0">Newest first. Hard refresh (Ctrl+Shift+R) if you don't see the latest.</p><div id="logList"></div><button class="big" id="logBack">Back</button></div></div>
 <div id="over" class="screen hidden"><div class="mcard wide"><h1 id="oTitle"></h1><p id="oSub"></p><button class="big primary hidden" id="bNext">Next level</button><button class="big" id="bAgain">Back to menu</button><button class="big" id="bWatch">Keep watching</button><div id="oStats"></div></div></div>
 
@@ -11462,7 +11475,7 @@ window.Tension = (() => {
 // Settings opens over the menu or pause screen, so closing it brings that screen back. Esc closes the top panel or settings first.
 (() => {
   const $ = id => document.getElementById(id);
-  const SCREENS = ['menu', 'lobby', 'settings', 'joinScr', 'deploy', 'pause', 'campScr', 'batScr', 'over', 'logScr'], PANELS = ['diplo', 'techScr', 'statsScr'];
+  const SCREENS = ['menu', 'lobby', 'settings', 'joinScr', 'deploy', 'pause', 'campScr', 'batScr', 'over', 'logScr', 'fbScr'], PANELS = ['diplo', 'techScr', 'statsScr'];
   const vis = id => { const e = $(id); return !!e && !e.classList.contains('hidden'); };
   const hide = id => $(id).classList.add('hidden');
   const last = {}; let displaced = [];
@@ -11516,6 +11529,24 @@ window.Tension = (() => {
   $('logList').innerHTML = CHANGELOG.map(c => '<div><h3>' + c.d + '</h3><ul>' + c.items.map(i => '<li>' + i.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</li>').join('') + '</ul></div>').join('');
   $('bLog').onclick = () => { $('menu').classList.add('hidden'); $('logScr').classList.remove('hidden'); };
   $('logBack').onclick = () => { $('logScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
+  { // bug reports and ideas: a pre-filled GitHub issue on the game's repository
+    let fbT = 'bug';
+    const REPO = 'https://github.com/finndoolan-m/warplayable-game/issues/new';
+    const text = () => {
+      const t = ($('fbTitle').value || '').trim(), b = ($('fbBody').value || '').trim(), n = ($('fbName').value || '').trim();
+      const info = `Browser: ${navigator.userAgent}\nScreen: ${innerWidth}x${innerHeight} @${devicePixelRatio}x\nPage: ${location.href}\nTime: ${new Date().toISOString()}`;
+      return {title: (fbT === 'bug' ? '[Bug] ' : '[Idea] ') + (t || (fbT === 'bug' ? 'Bug report' : 'Suggestion')), body: (b || '(no details)') + (n ? '\n\nFrom: ' + n : '') + '\n\n---\n' + info};
+    };
+    $('bFb').onclick = () => { $('menu').classList.add('hidden'); $('fbScr').classList.remove('hidden'); $('fbMsg').textContent = ''; };
+    $('fbBack').onclick = () => { $('fbScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
+    document.querySelectorAll('.fbtype button').forEach(b => b.onclick = () => { fbT = b.dataset.t; document.querySelectorAll('.fbtype button').forEach(x => x.classList.toggle('on', x === b)); $('fbTitle').placeholder = fbT === 'bug' ? 'Short title, e.g. Tanks fall through the bridge' : 'Short title, e.g. Add aircraft carriers'; $('fbBody').placeholder = fbT === 'bug' ? 'What happened? What did you expect? How do we make it happen again?' : 'What should we add or change, and why would it be fun?'; });
+    $('fbSend').onclick = () => {
+      if (!($('fbTitle').value.trim() || $('fbBody').value.trim())) { $('fbMsg').textContent = 'Write a title or some details first.'; return; }
+      const T = text(), url = REPO + '?title=' + encodeURIComponent(T.title) + '&body=' + encodeURIComponent(T.body.slice(0, 6000));
+      window.open(url, '_blank', 'noopener'); $('fbMsg').textContent = 'Opened GitHub in a new tab: press "Create" there to send it. Thanks!';
+    };
+    $('fbCopy').onclick = () => { const T = text(), all = T.title + '\n\n' + T.body; (navigator.clipboard ? navigator.clipboard.writeText(all) : Promise.reject()).then(() => { $('fbMsg').textContent = 'Copied. Paste it to the devs.'; }, () => { $('fbBody').value = all; $('fbBody').select(); $('fbMsg').textContent = 'Select-all is on: press Ctrl+C to copy.'; }); };
+  }
   const obs = new MutationObserver(sync);
   for (const id of SCREENS.concat(PANELS)) { const e = $(id); if (e) { last[id] = vis(id); obs.observe(e, {attributes: true, attributeFilter: ['class']}); } }
   document.addEventListener('keydown', e => {
