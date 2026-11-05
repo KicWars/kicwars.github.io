@@ -1160,6 +1160,8 @@ BATTLES.push(
 // Progression: XP from battles unlocks stronger tank tiers. Tier = more armour (hp), harder hitting, a little faster.
 const TIERS = [{n: 'I', xp: 0, k: 1, sp: 1}, {n: 'II', xp: 1500, k: 1.3, sp: 1.06}, {n: 'III', xp: 5000, k: 1.65, sp: 1.12}];
 const tierK = e => e && e.tier ? TIERS[e.tier - 1].k : 1;
+const TIER_ROCKETS = {n: 'Rocket Pods', t: 'proj', dmg: 120, vs: 'rocket', spd: 42, g: .4, spl: 1.8, mag: 6, rl: 9, rpm: 300, sp: .8, rng: 70, auto: 1, rk: 1, snd: 'rocket'};
+const pwpnOf = e => (PWPN[e.k] || []).concat(e.tier >= 3 && TANK_CLASSES.includes(e.k) ? [TIER_ROCKETS] : []); // tier III tanks: rocket pods as a 3rd weapon
 const XP = {
   get() { try { return +localStorage.getItem('kw-xp') || 0; } catch (e) { return 0; } },
   add(n) { const v = this.get() + n; try { localStorage.setItem('kw-xp', v); } catch (e) {} return v; },
@@ -3782,7 +3784,7 @@ Sim.prototype.pilotNear = function (c, pi) {
 };
 Sim.prototype.pilotProj = function (c, pi) {
   const a = this.pilotOk(c, pi); if (!a) return;
-  const W = (PWPN[a.k] || [])[c.w | 0]; if (!W) return;
+  const W = pwpnOf(a)[c.w | 0]; if (!W) return;
   a.pcdw = a.pcdw || [0, 0];
   const cd = W.cd || (W.mag && W.mag > 1 ? 60 / W.rpm : W.rl) || 1;
   if (a.pcdw[c.w | 0] > this.t + .05) return;
@@ -4951,6 +4953,14 @@ const LCVP_GEO = (() => { const cache = {}; return part => {
   return (cache[part] = b.geo());
 }; })();
 // Split a turret Batch into turret body and barrel (parts centred well forward of the turret), with the barrel re-centred on its pivot.
+function tierHullGeo() { const b = new Batch(), A = 0x4b5141, D = 0x2e322a;
+  for (const s of [-1, 1]) { b.box(1.9, .26, .06, 0, .44, s * .67, A); for (let i = 0; i < 5; i++) b.box(.3, .2, .03, -.72 + i * .36, .44, s * .705, D); }
+  b.box(.08, .24, 1.1, 1.17, .38, 0, A, 0, 0, -.5); return b.geo(); }
+function tierTurretGeo(t) { const b = new Batch(), A = 0x4b5141, D = 0x2e322a;
+  for (const s of [-1, 1]) b.box(.42, .24, .16, .42, .16, s * .34, A, s * .35);           // wedge armour on the turret cheeks
+  b.box(.5, .06, .5, -.1, .34, 0, D);                                                     // roof plate
+  if (t >= 3) for (const s of [-1, 1]) { b.box(.72, .26, .26, -.05, .3, s * .58, 0x3a3f35); b.box(.04, .2, .2, .32, .3, s * .58, 0x1c1c1c); for (const o of [-.05, .05]) b.box(.03, .05, .05, .345, .3 + o, s * .58 + o, 0xb03a2a); }
+  return b.geo(); }
 function splitBarrel(parts) {
   if (parts.split !== undefined) return parts.split;
   // barrel = thin rods that reach out past the front of the turret body; the pivot sits at the body's front face
@@ -7511,6 +7521,10 @@ Renderer.prototype.drawUnit = function (e, dt, tint) {
         const ca = Math.cos(ang), sa = Math.sin(ang);
         this.put(key + '|b', () => B.b.geo(), 24, null, tX + ca * B.px * vs, tY + B.py * vs, tZ + sa * B.px * vs, -ang, e.rtp || 0, 0, vs, tint);
       }
+      if (e.tier >= 2) { // tier II: bolt-on hull and turret armour; tier III adds twin rocket pods on the turret
+        this.put('tierH', tierHullGeo, 24, null, x, y + bob, z, h, tilt + pitch, roll, vs, tint);
+        this.put('tierT' + e.tier, () => tierTurretGeo(e.tier), 24, null, tX, tY, tZ, -ang, 0, 0, vs, tint);
+      }
     }
   } else {
     const sc = k === 'bomber' ? 1.15 : d.cat === 'drone' ? 1 : .95;
@@ -8460,7 +8474,7 @@ const Direct = {
     this.speed = this.mode === 'plane' ? d.spd : this.mode === 'fpv' ? d.spd : 0; this.batt = 1; this.vel = {x: 0, y: 0}; this.hullSpd = 0;
     this.aimYaw = this.yaw; this.aimPitch = 0; this.camYaw = this.yaw; this.camPitch = this.mode === 'plane' ? -.05 : 0;
     const arcAir = ui.g && ((ui.g.view && ui.g.view.scen) || (ui.g.sim && ui.g.sim.scen) || {}).arc === 'air';
-    this.W = (PWPN[e.k] || []).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0, msl: arcAir && w.t === 'msl' ? MSL_LOAD : undefined}));
+    this.W = pwpnOf(e).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0, msl: arcAir && w.t === 'msl' ? MSL_LOAD : undefined}));
     this.slot = 0; this.ads = false; this.adsK = 0; this.bloom = 0; this.recoilP = 0; this.recoilY = 0; this.breath = 1; this.lockId = 0; this.lockK = 0;
     this.hits = []; this.nums = []; this.dmgDir = []; this.kick = 0; this.flyT = 0; this.reloadK = 0; this.bobT = 0; this.flashT = 0; this.stickT = 0; this.salvo = 0; this.dead = false;
     const p = this.pose; p.x = e.x; p.y = e.y; p.z = e.z; p.h = e.h; p.p = 0; p.r = 0; p.tu = e.tu === undefined ? e.h : e.tu;
@@ -8622,7 +8636,7 @@ const Direct = {
     if (c === B.view) { if (this.aboard) this.msg('Walking is first person only', 1.2); else this.toggleView(); return true; }
     if (c === B.chooser) { this.ui.deployed = true; this.exit(); this.ui.openDeploy(); return true; }
     if (c === B.ads) { this.toggleAds(); return true; }
-    if (c === B.reload) { if ((this.mode === 'plane' || this.mode === 'heli') && this.W[2]) this.tryFire(2, this.ui.g); else this.reload(this.slot); return true; }
+    if (c === B.reload) { if ((this.mode === 'plane' || this.mode === 'heli' || this.mode === 'vehicle') && this.W[2]) this.tryFire(2, this.ui.g); else this.reload(this.slot); return true; }
     if (c === B.chaff) { this.chaff(); return true; }
     if (c === 'KeyJ' && this.strikeBank > 0) { const P = this.aimPt; if (!P) { this.msg('Aim at the ground to call artillery', 1.5); return true; } this.strikeBank--; if (this.ui.g.sim && this.ui.g.sim.scen && this.ui.g.sim.scen.arc) this.artT = performance.now() + 60000; this.ui.g.issue({c: 'streak', id: this.id, x: P.x, y: P.y, big: this.bigStrike ? 1 : 0}); this.bigStrike = false; return true; }
     if (c === B.cycle) { this.cycleLock(); return true; }
@@ -8750,7 +8764,7 @@ const Direct = {
       this.endCut(); this.exit(c.wrong ? 'Executed as a spy' : 'Your spy was killed'); return; }
     if (!e) { if (this.mode !== 'fpv' && window.Tension && window.Tension.dead(this, dt, g)) return; this.exit(this.mode === 'fpv' ? 'Signal lost' : this.e.d.n + ' destroyed'); return; }
     if (window.Tension) window.Tension.tick(this, e, dt);
-    if (e.k !== this.e.k) { this.W = (PWPN[e.k] || []).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0})); this.slot = 0; VM.build(e, g.view.players[e.o].nation, 0); this.msg(e.k === 'wolf' ? 'ALPHA WOLF! ' + Settings.keyName(Settings.binds.fire) + ' bites, ' + Settings.keyName(Settings.binds.alt) + ' pounces' : 'Back to blob form', 2); }
+    if (e.k !== this.e.k) { this.W = pwpnOf(e).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0})); this.slot = 0; VM.build(e, g.view.players[e.o].nation, 0); this.msg(e.k === 'wolf' ? 'ALPHA WOLF! ' + Settings.keyName(Settings.binds.fire) + ' bites, ' + Settings.keyName(Settings.binds.alt) + ' pounces' : 'Back to blob form', 2); }
     this.e = e; this.g = g;
     if (e.d.spy) this.spyHud(e, g);
     if (this.cut) { this.cutStep(dt, g, e); return; }
@@ -11913,7 +11927,7 @@ const UI = {
     const K = c => '<b>' + Settings.keyName(Settings.binds[c]) + '</b>', W = D.W, w2 = W[1] ? W[1].w.n : '';
     const help = {
       soldier: `${K('fwd')}${K('left')}${K('back')}${K('right')} move · mouse aims (no click needed) · ${K('fire')} or click fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} aim · ${K('reload')} reload · ${K('jump')} jump · ${K('sprint')} sprint`,
-      vehicle: `${K('fwd')}${K('back')} drive · ${K('left')}${K('right')} turn hull · mouse aims turret · ${K('fire')} fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} ${D.e.k === 'arty' ? 'direct/indirect fire' : 'zoom (then wheel or <kbd>Z</kbd> zooms more)'}${D.W.some(q => q.w.vs === 'shell') ? ' · ' + K('ammo') + ' AP/HE' : ''}`,
+      vehicle: `${K('fwd')}${K('back')} drive · ${K('left')}${K('right')} turn hull · mouse aims turret · ${K('fire')} fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} ${D.e.k === 'arty' ? 'direct/indirect fire' : 'zoom (then wheel or <kbd>Z</kbd> zooms more)'}${D.W.some(q => q.w.vs === 'shell') ? ' · ' + K('ammo') + ' AP/HE' : ''}${D.W[2] ? ' · ' + K('reload') + ' ' + D.W[2].w.n + ' (' + D.W[2].ammo + ')' : ''}`,
       ship: `${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} steer · mouse aims · ${K('fire')} fire${w2 ? ' · ' + K('alt') + ' ' + w2 : ''} · ${K('walk')} leave the chair and walk`,
       plane: `mouse or arrows steer · ${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} roll · ${K('fire')} guns · ${K('alt')} ${w2} · ${D.W[2] ? K('reload') + ' ' + D.W[2].w.n + ' · ' : ''}${K('chaff')} chaff · ${K('cycle')} next target · ${K('vlock')} lock view`,
       heli: `${K('fwd')}${K('left')}${K('back')}${K('right')} fly · ${K('up')} up · ${K('down')} down · mouse aims · ${K('fire')} guns · ${K('alt')} ${w2}`,
