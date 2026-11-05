@@ -6679,7 +6679,7 @@ Renderer.prototype.updateFog = function (dt) {
     if (!all) for (const e of v.ents.values()) {
       if (v.friendly && !v.friendly(e.o, me)) continue;
       if (e.inside) continue;
-      const x = e.rx === undefined ? e.x : e.rx, y = e.rz === undefined ? e.y : e.rz, ci = Math.round(clamp(y, 0, N - 1)) * N + Math.round(clamp(x, 0, N - 1));
+      const x = e.rx === undefined ? e.x : e.rx, y = e.ryy === undefined ? e.y : e.ryy, ci = Math.round(clamp(y, 0, N - 1)) * N + Math.round(clamp(x, 0, N - 1));
       let r = (e.d.vis || 8) * boost;
       if (!e.b && !e.air) { if (M.tree[ci]) r *= .85; r *= 1 + clamp(M.h[ci] - 2, 0, 8) * .035; } // high ground sees further
       if (e.air) r *= 1.1;
