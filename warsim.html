@@ -266,6 +266,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 #deathScr .bar{width:min(360px,60vw);height:3px;background:rgba(255,255,255,.12);margin-top:6px}#deathScr .bar i{display:block;height:100%;width:0;background:#d8332a}
 body.dying #gl{filter:grayscale(.85) brightness(.6) contrast(1.15);transition:filter .6s}
 #gl{transition:filter .6s}
+#over{overflow:auto;align-items:flex-start}#over .mcard{margin:auto}#oStats{max-height:42vh;overflow:auto;border-top:1px solid rgba(255,255,255,.1);padding-top:8px}
 </style>
 </head>
 <body>
@@ -453,7 +454,7 @@ body.dying #gl{filter:grayscale(.85) brightness(.6) contrast(1.15);transition:fi
 <div id="scenSpawn" class="hidden"><h3>Choose your soldier</h3><div id="ssInfo"></div><div id="ssBtns"></div><p class="small">Press 1 to 7, or click. You land with the next boat, or at the forward position once you have captured an objective.</p></div>
 <div id="campHud" class="hidden"><div class="ch-top"><b id="chName"></b><span id="chBudget"></span><button id="chClear">Clear</button><button id="chStart" class="primary">Start battle</button><button id="chQuit">Quit</button></div>
   <div id="chUnits"></div><div class="ch-tip">Click inside the blue zone to place the selected troop. Right click a troop to sell it back. <span id="chTip"></span></div></div>
-<div id="over" class="screen hidden"><div class="mcard wide"><h1 id="oTitle"></h1><p id="oSub"></p><div id="oStats"></div><button class="big primary" id="bAgain">Back to menu</button><button class="big" id="bWatch">Keep watching</button></div></div>
+<div id="over" class="screen hidden"><div class="mcard wide"><h1 id="oTitle"></h1><p id="oSub"></p><button class="big primary hidden" id="bNext">Next level</button><button class="big" id="bAgain">Back to menu</button><button class="big" id="bWatch">Keep watching</button><div id="oStats"></div></div></div>
 
 <script>/**
  * @license
@@ -9457,6 +9458,7 @@ const UI = {
     $('dClose').onclick = () => { this.deployed = false; this.closeDeploy(); };
     $('timeCtl').querySelectorAll('button').forEach(b => b.onclick = () => this.setSpeed(+b.dataset.s));
     $('bAgain').onclick = () => { const c = this.camp; this.quit(); if (c) this.openCamp(); };
+    $('bNext').onclick = () => { const c = this.camp; if (!c || !CAMPAIGN[c.i + 1]) return; this.quit(); this.openCamp(); this.campLaunch(c.i + 1); };
     $('bCamp').onclick = () => { Sfx.init(); Sfx.ui(); this.openCamp(); };
     $('bTut').onclick = () => { Sfx.init(); Sfx.ui(); this.startTutorial(); };
     $('bBat').onclick = () => { Sfx.init(); Sfx.ui(); this.openBat(); };
@@ -10061,6 +10063,7 @@ const UI = {
     $('oTitle').style.color = won ? '#6dff9a' : '#ff5a4a';
     $('oSub').textContent = won ? 'The island is yours.' : 'Your capital has fallen.';
     $('bAgain').textContent = this.camp ? 'Back to campaign' : 'Back to menu';
+    { const nx = this.camp && won && CAMPAIGN[this.camp.i + 1]; $('bNext').classList.toggle('hidden', !nx); if (nx) $('bNext').textContent = 'Next level: ' + (this.camp.i + 2) + '. ' + nx.n; $('bAgain').classList.toggle('primary', !nx); }
     if (this.scen) { $('oSub').textContent = this.scen.B.tdm ? (won ? 'Your team hit the kill limit first!' : 'The enemy team reached the kill limit.') : won ? 'Every objective taken. The landing succeeded!' : 'The assault failed: you ran out of reinforcements.'; $('scenSpawn').classList.add('hidden'); }
     if (this.camp) {
       const c = this.camp, next = CAMPAIGN[c.i + 1];
