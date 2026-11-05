@@ -289,6 +289,8 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 .fbtype{display:flex;gap:8px}.fbtype button{flex:1;padding:9px;font-weight:700}.fbtype button.on{border-color:#ffd97a;background:#ffd97a22;color:#ffd97a}
 #fbScr{align-items:center;justify-content:center}#fbScr input,#fbScr textarea{width:100%;box-sizing:border-box;padding:10px 12px;font:14px system-ui;color:#e8eef2;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);border-radius:8px;user-select:text;-webkit-user-select:text;resize:vertical}#fbScr .mcard{gap:10px}
 .mgroup em{font-style:normal;color:#ffb45a;letter-spacing:.04em;text-transform:none;font-weight:600}
+.tierRow{width:100%;display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 6px;font:600 12px system-ui;color:#c9d4da}.tierRow button{padding:4px 10px}.tierRow button[disabled]{opacity:.45}
+#codeBox{position:fixed;right:14px;bottom:12px;display:flex;gap:6px;align-items:center;font:600 12px system-ui;color:#9fb0bb;z-index:5}#codeBox input{width:110px;padding:5px 8px;background:rgba(16,23,30,.85);border:1px solid #ffffff22;color:#fff;border-radius:6px;user-select:text;-webkit-user-select:text}#codeBox button{padding:5px 10px}#xpLine{grid-column:1/-1;text-align:center;font:600 12px system-ui;color:#ffd97a}
 .mquick{grid-column:1/-1;display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:center;font:600 12px system-ui;color:#9fb0bb}.mquick label{display:flex;gap:6px;align-items:center}.mquick input{width:110px}.mquick select{padding:3px 6px}
 .mgroup{grid-column:1/-1;font:700 11px system-ui;letter-spacing:.12em;text-transform:uppercase;color:#8fa1ad;margin:6px 0 -2px 2px}
 .mfoot{grid-column:1/-1;display:flex;gap:9px;margin-top:4px}.mfoot .sm{flex:1;padding:9px 12px;font-size:13px;text-align:center}
@@ -317,7 +319,7 @@ body.cbDeut #gl,body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDe
 <div id="whiteout"></div>
 
 <!-- main menu -->
-<div id="menu" class="screen">
+<div id="menu" class="screen"><div id="codeBox"><input id="codeIn" placeholder="Enter code" maxlength="24" autocomplete="off"><button id="codeGo">OK</button></div>
   <div class="brand"><h1>KICwars</h1><p>Six nations. One island. Command the war, or jump into the fight yourself.</p>
     <div class="natstrip">
       <span style="--c:#ff6b3d">The Licases</span><span style="--c:#4a90ff">The Dhruvs</span><span style="--c:#3fbf6f">The Valentinos</span><span style="--c:#e8283c">The Jethroes</span><span style="--c:#19c8b9">The Toms</span><span style="--c:#2fa84f">The Charlies</span>
@@ -340,6 +342,7 @@ body.cbDeut #gl,body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDe
       <button class="big sm" id="bLog">✦ What's new</button>
       <button class="big sm" id="bFb">🐞 Bug report / idea</button>
     </div>
+    <div id="xpLine"></div>
     <div class="mquick"><label>🔊 Sound <input type="range" id="hmVol" min="0" max="100" step="5"></label><label>🖥 Graphics <select id="hmQ"><option value="auto">Auto</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low (school laptops)</option></select></label></div>
     <details class="how"><summary>How to play</summary>
       <ul>
@@ -1154,6 +1157,14 @@ BATTLES.push(
     comp: ['rifle', 'sniper', 'mg', 'rifle', 'rocket', 'assault', 'rifle', 'scout', 'grenadier', 'rifle']});
 // Arcade battles (in the spirit of arcade air and ground realistic-lite): two teams, endless respawns, tickets.
 // Air: shoot down planes and destroy the enemy's ground targets. Ground: hold the capture points, kill tanks.
+// Progression: XP from battles unlocks stronger tank tiers. Tier = more armour (hp), harder hitting, a little faster.
+const TIERS = [{n: 'I', xp: 0, k: 1, sp: 1}, {n: 'II', xp: 1500, k: 1.3, sp: 1.06}, {n: 'III', xp: 5000, k: 1.65, sp: 1.12}];
+const tierK = e => e && e.tier ? TIERS[e.tier - 1].k : 1;
+const XP = {
+  get() { try { return +localStorage.getItem('kw-xp') || 0; } catch (e) { return 0; } },
+  add(n) { const v = this.get() + n; try { localStorage.setItem('kw-xp', v); } catch (e) {} return v; },
+  tier() { const x = this.get(); let t = 1; TIERS.forEach((T, i) => { if (x >= T.xp) t = i + 1; }); return t; },
+};
 const MSL_LOAD = 4; // missiles per sortie in arcade air battles (each missile weapon)
 const AIR_CLASSES = ['fighter', 'f16', 'interceptor', 'typhoon', 'fa18', 'a10', 'bomber'], TANK_CLASSES = ['tank', 'htank', 'ltank', 'td', 'ifv', 'sam'];
 BATTLES.push(
@@ -2207,7 +2218,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'research': { const b = this.ents.get(c.b); if (b && b.o === pi && b.d.research) this.cmdResearch(b, p, c.u); break; }
     case 'power': break; // commander powers were removed
     case 'diplo': this.cmdDiplo(c, pi); break;
-    case 'scenSpawn': this.scenSpawn(pi, c.u); break;
+    case 'scenSpawn': this.scenSpawn(pi, c.u, c.t); break;
     case 'recon': this.sendRecon(p, Math.min(4, c.n || 1), false, c.x === undefined ? undefined : clamp(+c.x, 4, this.N - 5), c.y === undefined ? undefined : clamp(+c.y, 4, this.N - 5)); break;
     case 'autorecon': p.autoRecon = !!c.on; this.notify(pi, p.autoRecon ? 'Scouts will patrol and report automatically' : 'Automatic scouting off', 'info'); if (p.autoRecon) this.sendRecon(p, 1, true); break;
     case 'nuke': { const e = this.ents.get(c.id); if (e && e.o === pi && e.nukeReady) this.launchNuke(e, c.x, c.y); break; }
@@ -2835,7 +2846,7 @@ Sim.prototype.fire = function (a, t) {
   const d = a.d, ty = d.shot, p = this.players[a.o];
   let miss = false;
   if (t.pilot && !t.b && !a.pilot) { const r = this.aimAtPilot(a, t); if (r === 'wait') { a.cd = .15; return; } miss = r === 'miss'; }
-  let dm = d.dmg * this.dmgMult(p, d);
+  let dm = d.dmg * this.dmgMult(p, d) * tierK(a);
   if (a.vet) dm *= 1 + a.vet * .15;
   if ((a.rallyT || 0) > this.t) dm *= 1.3;
   const tgh = t.z || 0, hd = (a.z || 0) - tgh;
@@ -3308,6 +3319,7 @@ Sim.prototype.medic = function (e) {
 Sim.prototype.moveSpeed = function (e, p) {
   let s = e.d.spd;
   if (e.mod) { if (modOut(e, 'trk', this.t)) return 0; if (modOut(e, 'eng', this.t)) s *= .35; }
+  if (e.tier) s *= TIERS[e.tier - 1].sp;
   if (e.sea) return s;
   const c = Math.round(e.y) * this.N + Math.round(e.x), M = this.M;
   if (c >= 0 && c < M.road.length) {
@@ -3830,7 +3842,7 @@ Sim.prototype.stepProjs = function () {
       if (p.life <= 0) boom = true;
     }
     if (!boom) { keep.push(p); continue; }
-    const W = p.W, src = this.ents.get(p.src), dm = W.dmg * this.dmgMult(this.players[p.o], src ? src.d : null);
+    const W = p.W, src = this.ents.get(p.src), dm = W.dmg * this.dmgMult(this.players[p.o], src ? src.d : null) * tierK(src);
     if (W.smoke) { this.smokes.push({x: p.x, y: p.y, r: W.smoke, until: this.t + 18}); this.ev({k: 'smoke', x: p.x, y: p.y, r: W.smoke, d: 18}); }
     else {
       const heK = p.he ? (hit && !hit.b && hit.d.cat === 'veh' ? .45 : 1.6) : 1; // HE: weak against armour, strong against everything else
@@ -4341,13 +4353,15 @@ Sim.prototype.scenStep = function () {
     if (!alive) this.scenOver(false);
   }
 };
-Sim.prototype.scenSpawn = function (pi, k) {
+Sim.prototype.setTier = function (e, t) { if (!(t > 1)) return; e.tier = Math.min(TIERS.length, t | 0); e.hp = e.hpm = e.hpm * TIERS[e.tier - 1].k; };
+Sim.prototype.scenSpawn = function (pi, k, tier) {
   const S = this.scen; if (!S || this.over || !batClasses(S.B).includes(k)) return;
   if (S.arc && k === 'a10' && S.arc === 'ground' && !(S.strike && S.strike[pi] > 0)) { this.notify(pi, 'Get 3 kills in one life to earn a strike plane', 'bad'); return; }
   if (S.queue.some(q => q.you === pi) || (S.spawnT || 0) > this.t) return;
   if (S.tickets <= 0) { this.notify(pi, 'No reinforcements left', 'bad'); return; }
   S.tickets--; S.spawnT = this.t + 1;
-  if (S.tdm || S.arc) { S.queue.push({t: this.t + 1.5, k, x: 0, y: 0, you: pi}); return; }
+  const tr = S.arc === 'ground' && TANK_CLASSES.includes(k) ? clamp(tier | 0 || 1, 1, TIERS.length) : 1; if (S.arc === 'ground') S.youTier = Math.max(S.youTier || 1, tr);
+  if (S.tdm || S.arc) { S.queue.push({t: this.t + 1.5, k, x: 0, y: 0, you: pi, tier: tr}); return; }
   if (S.fwd) S.queue.push({t: this.t + .5, k, x: S.fwd.x + (this.rnd() - .5) * 3, y: S.fwd.y + S.B.sea[1] * 3, you: pi});
   else { let best = S.land[0]; for (const L of S.land) if (Math.abs(L.x - this.N / 2) < Math.abs(best.x - this.N / 2)) best = L; this.scenLanding(best, [k], pi); }
 };
@@ -4414,7 +4428,7 @@ Sim.prototype.arcStep = function () {
     const want = B.team + o;
     S.spT = S.spT || [0, 0];
     if (n[o] < want && this.t >= S.spT[o]) { S.spT[o] = this.t + 1.2;
-      const kk = B.comp[(S.spawnI++) % B.comp.length], e = this.arcSpawn(o, kk); if (e) n[o]++;
+      const kk = B.comp[(S.spawnI++) % B.comp.length], e = this.arcSpawn(o, kk); if (e) { n[o]++; if (!air && S.youTier > 1) this.setTier(e, 1 + Math.floor(this.rnd() * S.youTier)); } // bots are matched to your tier
     }
   }
   // air: ground targets come back in waves
@@ -4424,7 +4438,7 @@ Sim.prototype.arcStep = function () {
   }
   S.queue = S.queue.filter(q => {
     if (q.t > this.t) return true;
-    const e = this.arcSpawn(0, q.k);
+    const e = this.arcSpawn(0, q.k); if (e && q.tier > 1) this.setTier(e, q.tier);
     if (e) { this.ev({k: 'scenYou', p: q.you, id: e.id}); if (q.k === 'a10' && !air) S.strike[q.you] = Math.max(0, (S.strike[q.you] || 0) - 1); }
     return false;
   });
@@ -8887,7 +8901,7 @@ const Direct = {
     const k = this.keys, B = Settings.binds, d = e.d, p = this.pose, sea = this.mode === 'ship';
     this.camYaw += this.lookX; this.camPitch = clamp(this.camPitch - this.lookY, -.6, .7);
     const thr = ((k[B.fwd] || k.KeyW) ? 1 : 0) - ((k[B.back] || k.KeyS) ? 1 : 0), steer = ((k[B.right] || k.KeyD) ? 1 : 0) - ((k[B.left] || k.KeyA) ? 1 : 0);
-    const tt = this.ui.g.view.t, top = d.spd * 1.3 * (modOut(e, 'trk', tt) ? 0 : modOut(e, 'eng', tt) ? .35 : 1), want = thr > 0 ? top : thr < 0 ? -top * .45 : 0;
+    const tt = this.ui.g.view.t, top = d.spd * 1.3 * (e.tier ? TIERS[e.tier - 1].sp : 1) * (modOut(e, 'trk', tt) ? 0 : modOut(e, 'eng', tt) ? .35 : 1), want = thr > 0 ? top : thr < 0 ? -top * .45 : 0;
     this.hullSpd += (want - this.hullSpd) * (1 - Math.exp(-dt * (thr ? 1.6 : 2.4)));
     const turn = (sea ? .55 : 1.5) * (sea ? Math.min(1, Math.abs(this.hullSpd) / (top * .3) + .15) : 1);
     p.h += steer * turn * dt * (this.hullSpd < -.1 ? -1 : 1);
@@ -10400,6 +10414,12 @@ const UI = {
     try { const q = localStorage.getItem('warsim-gfx'); if (q) $('optQ').value = q; } catch (e) {}
     $('optQ').onchange = () => { const q = $('optQ').value; try { localStorage.setItem('warsim-gfx', q); } catch (e) {} this.gfxAuto = q === 'auto'; this.R.setQuality(q === 'auto' ? 'high' : q); };
     this.gfxAuto = $('optQ').value === 'auto';
+    const xpLine = () => { const x = XP.get(), t = XP.tier(); $('xpLine').textContent = `⭐ ${x} XP · Tank tier ${TIERS[t - 1].n} unlocked` + (t < TIERS.length ? ` · tier ${TIERS[t].n} at ${TIERS[t].xp} XP` : ' · all tiers unlocked'); };
+    xpLine(); this.xpLine = xpLine;
+    const code = () => { const v = $('codeIn').value.trim().toLowerCase(); $('codeIn').value = '';
+      if (v === 'tester') { XP.add(Math.max(0, TIERS[TIERS.length - 1].xp + 1000 - XP.get())); try { localStorage.setItem('warsim-camp', CAMPAIGN.length); } catch (e) {} xpLine(); this.addAlert ? this.addAlert('Tester code: everything unlocked', 'gold') : 0; $('codeIn').placeholder = 'Unlocked!'; }
+      else $('codeIn').placeholder = v ? 'Unknown code' : 'Enter code'; };
+    $('codeGo').onclick = code; $('codeIn').onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') code(); };
     $('hmQ').value = $('optQ').value; $('hmQ').onchange = () => { $('optQ').value = $('hmQ').value; $('optQ').onchange(); };
     try { const vv = localStorage.getItem('warsim-vol'); if (vv !== null) Sfx.vol = +vv; } catch (e) {}
     $('hmVol').value = Math.round(Sfx.vol / .6 * 100);
@@ -10719,12 +10739,18 @@ const UI = {
     const CL = batClasses(S.B).concat(S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ['a10'] : []);
     $('ssBtns').innerHTML = CL.map((k, i) => `<button data-k="${k}" class="${k === this.scen.cls ? 'primary' : ''}"><kbd>${i + 1}</kbd>${UNITS[k].n}</button>`).join('');
     $('ssBtns').querySelectorAll('button').forEach(b => b.onclick = () => this.scenPick(b.dataset.k));
+    if (S.arc === 'ground') { // tank tier picker: locked tiers show the XP they need
+      const top = XP.tier(); if (!this.tierSel || this.tierSel > top) this.tierSel = top;
+      const row = document.createElement('div'); row.className = 'tierRow';
+      row.innerHTML = 'Tank tier: ' + TIERS.map((T, i) => `<button data-t="${i + 1}" class="${i + 1 === this.tierSel ? 'primary' : ''}" ${i + 1 > top ? 'disabled title="Needs ' + T.xp + ' XP"' : ''}>${T.n}${i + 1 > top ? ' 🔒 ' + T.xp + ' XP' : ''}</button>`).join('') + `<span class="small"> · ${XP.get()} XP</span>`;
+      $('ssBtns').prepend(row); row.querySelectorAll('button[data-t]').forEach(b => b.onclick = () => { this.tierSel = +b.dataset.t; this.showScenSpawn(true); });
+    }
     el.classList.remove('hidden');
   },
   scenPick(k) {
     if (!this.scen) return;
-    this.scen.cls = k; this.g.issue({c: 'scenSpawn', u: k}); Sfx.ui();
-    $('ssInfo').textContent = (this.g.sim.scen && this.g.sim.scen.arc ? 'Spawning as ' : 'Coming ashore as ') + UNITS[k].n + '...';
+    this.scen.cls = k; this.g.issue({c: 'scenSpawn', u: k, t: this.tierSel || 1}); Sfx.ui();
+    $('ssInfo').textContent = (this.g.sim.scen && this.g.sim.scen.arc ? 'Spawning as ' : 'Coming ashore as ') + UNITS[k].n + (this.g.sim.scen && this.g.sim.scen.arc === 'ground' && TANK_CLASSES.includes(k) && this.tierSel > 1 ? ' ' + TIERS[this.tierSel - 1].n : '') + '...';
   },
   campRefresh() {
     const c = this.camp; if (!c) return;
@@ -10894,10 +10920,10 @@ const UI = {
       case 'diplo': if (this.diploOpen) this.renderDiplo(); break;
       case 'rearm': if (ev.p === me && Direct.on && Direct.id === ev.id) { for (const W of Direct.W) if (W && W.w) { W.ammo = W.w.mag || 1; W.rl = 0; if (W.msl !== undefined) W.msl = MSL_LOAD; } if (!Direct.rearmMsg || performance.now() - Direct.rearmMsg > 3000) { Direct.rearmMsg = performance.now(); Direct.msg('AIRFIELD: repairing and rearming', 1.8); } } break;
       case 'pen': if (ev.p === me && Direct.on) { Direct.penTxt = {t: ev.txt, good: ev.good, at: performance.now()}; ev.good ? Sfx.hitTick(true) : Sfx.empty(); } break;
-      case 'capd': if (ev.p === me) { const A = this.arcMe = this.arcMe || {k: 0, d: 0, cap: 0}; A.cap++; } break;
+      case 'capd': if (ev.p === me) { const A = this.arcMe = this.arcMe || {k: 0, d: 0, cap: 0}; A.cap++; A.xp = (A.xp || 0) + 100; XP.add(100); } break;
       case 'feed': if (this.scen) {
         const A = this.arcMe = this.arcMe || {k: 0, d: 0, cap: 0}, side = o => o === me || v.friendly(o, me) ? 'a' : 'e', nm = (k, o, pl) => (pl === me ? 'You' : (side(o) === 'a' ? 'Ally ' : 'Enemy ') + UNITS[k].n);
-        if (ev.ap === me) A.k++;
+        if (ev.ap === me) { A.k++; const g = UNITS[ev.tk] && (UNITS[ev.tk].cat === 'veh' || UNITS[ev.tk].cat === 'air') ? 60 : 25; A.xp = (A.xp || 0) + g; XP.add(g); }
         if (ev.tp === me) { A.d++; this.killedBy = 'Killed by ' + nm(ev.ak, ev.ao, ev.ap); }
         let F = $('feed'); if (!F) { F = document.createElement('div'); F.id = 'feed'; document.body.appendChild(F); }
         const row = document.createElement('div'); if (ev.ap === me || ev.tp === me) row.className = 'me';
@@ -11079,7 +11105,9 @@ const UI = {
       const box = document.createElement('div');
       box.innerHTML = `<table class="arcBoard"><tr><th></th><th>Your team</th><th>Enemy</th></tr><tr><td>Tickets left</td><td>${tix[0]}</td><td>${tix[1]}</td></tr><tr><td>Kills</td><td>${P[0].kills}</td><td>${P[1].kills}</td></tr>${S && S.caps.length ? `<tr><td>Points held</td><td>${S.caps.filter(C => C.own === 0).length}</td><td>${S.caps.filter(C => C.own === 1).length}</td></tr>` : ''}</table>`
         + `<table class="arcBoard"><tr><th>You</th><th>Kills</th><th>Deaths</th><th>K/D</th>${S && S.caps.length ? '<th>Captures</th>' : ''}</tr><tr><td>⭐</td><td>${A.k}</td><td>${A.d}</td><td>${(A.k / Math.max(1, A.d)).toFixed(1)}</td>${S && S.caps.length ? `<td>${A.cap}</td>` : ''}</tr></table>`;
-      $('oStats').prepend(box); this.arcMe = null;
+      const before = XP.tier(), bonus = won ? 300 : 100; XP.add(bonus); const gained = (A.xp || 0) + bonus, after = XP.tier();
+      box.innerHTML += `<p style="text-align:center;font-weight:700;color:#ffd97a">+${gained} XP · total ${XP.get()} XP${after > before ? ' · TIER ' + TIERS[after - 1].n + ' TANKS UNLOCKED!' : after < TIERS.length ? ' · next tier at ' + TIERS[after].xp : ''}</p>`;
+      $('oStats').prepend(box); this.arcMe = null; if (this.xpLine) this.xpLine();
     }
     if (this.tut) this.tutEnd(true);
     $('over').classList.remove('hidden');
