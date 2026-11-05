@@ -912,7 +912,7 @@ const VS = {
 };
 
 const HERO_NAMES = ['Iron', 'Ghost', 'Hammer', 'Viper', 'Maverick', 'Saint', 'Reaper', 'Duke', 'Bishop', 'Havoc', 'Sparrow', 'Tex'];
-const WAR_CRIES = {licases: 'Pedal to victory!', dhruvs: 'As calculated.', valentinos: 'Forza! Avanti!', jethroes: 'Awoooooo!', toms: 'Nice shades. Shame about your army.', veil: 'Everyone has a price.'};
+const WAR_CRIES = {licases: 'Pedal to victory!', dhruvs: 'As calculated.', valentinos: 'Forza! Avanti!', jethroes: 'Awoooooo!', toms: 'Nice shades. Shame about your army.'};
 
 // ---------- weapons when a player controls a unit directly ----------
 // t: hit (hitscan), pel (pellets), cone (flame), mel (melee), proj (projectile), bomb (falls), msl (homing missile), det (FPV warhead)
@@ -1078,7 +1078,6 @@ const PSPECIAL = {
   valentinos: {n: 'Rally Flag', cd: 35, desc: 'Heals friends around you, gives them +30% damage for 8 seconds, and you draw a combat knife.'},
   jethroes: {n: 'Alpha Howl', cd: 40, desc: 'Turn into an alpha wolf blob for 14 seconds.'},
   toms: {n: 'Big Knife', cd: 25, desc: 'Pull out a huge knife for 8 seconds. Massive melee slashes.'},
-  veil: {n: 'Pocket Bribe', cd: 35, desc: 'The nearest enemy soldier in front of you switches sides.'},
 };
 </script>
 
@@ -3822,12 +3821,6 @@ Sim.prototype.pilotSpecial = function (c, pi) {
   else if (k === 'valentinos') { this.near(a.x, a.y, 6, t => { if (t.o === pi && !t.b) { t.hp = Math.min(t.hpm, t.hp + 40); t.rallyT = this.t + 8; this.ev({k: 'heal', t: t.id}); } }); if (a.d.cat === 'inf') a.knifeT = this.t + KNIFE_T + .5; }
   else if (k === 'jethroes') { if (a.d.cat === 'inf' && a.k !== 'wolf') { const hp = a.hp / a.hpm; this.toWolf(a, 14); a.hpm *= PILOT_HP; a.hp = a.hpm; a.wolf.frac = hp; } }
   else if (k === 'toms') { if (a.d.cat !== 'inf') { p.specT = this.t + 1; return; } a.knifeT = this.t + KNIFE_T + .5; }
-  else if (k === 'veil') {
-    let best = null, bd = 9;
-    this.near(a.x, a.y, 9, t => { if (t.b || t.d.cat !== 'inf' || t.k === 'worker' || this.friendly(t.o, pi) || t.pilot) return; const d = Math.hypot(t.x - a.x, t.y - a.y), ang = Math.abs(angDiff(a.h, Math.atan2(t.y - a.y, t.x - a.x))); if (ang < .8 && d < bd) { bd = d; best = t; } });
-    if (best) { this.players[best.o].pop -= best.d.pop; p.pop += best.d.pop; best.o = pi; best.tid = 0; best.force = 0; best.goal = null; this.ev({k: 'msg', p: pi, text: 'Bribed a ' + best.d.n + '!', kind: 'gold'}); }
-    else p.specT = this.t + 2;
-  }
   this.ev({k: 'special', p: pi, id: a.id, n: k});
 };
 </script>
@@ -4355,7 +4348,6 @@ function palette(nat) {
   if (c.look === 'usa') { p.uni = 0x1b2f6b; p.trim = 0xd8202f; p.alt = WHITE; }
   else if (c.look === 'italian') { p.uni = 0xf0f0e8; p.trim = 0x009246; p.alt = 0xce2b37; }
   else if (c.look === 'toms') { p.uni = 0x24353a; p.trim = 0x19c8b9; p.alt = 0x0f1a1c; }
-  else if (c.look === 'veil') { p.uni = 0x3a2c10; p.trim = 0xffd60a; p.alt = 0xc69a18; }
   else if (c.look === 'glasses') { p.uni = 0x274a86; p.trim = 0x4a90ff; p.alt = 0xcfe0ff; }
   else { p.uni = 0x4a5530; p.trim = 0x6b7a42; p.alt = 0x8a7a55; } // Licases: woodland camo
   return p;
@@ -4374,7 +4366,6 @@ function blobColor(kind, P) {
   if (P.look === 'italian') return 0xf3f1ea;
   if (P.look === 'toms') return 0x2b9e94;
   if (P.look === 'usa') return 0xd8283a;
-  if (P.look === 'veil') return 0xe7b928;
   if (P.look === 'glasses') return 0x4a86e8;
   return 0x5b6a3a; // Licases: camo green
 }
@@ -4388,7 +4379,6 @@ function soldierBody(kind, nat, lo) {
   // nation markings wrapped round the body
   if (P.look === 'italian') { b.add(GEO.torus, 0x009246, 0, cy + ry * .18, 0, rx * 1.0, rz * 1.0, ry * .5, Math.PI / 2, 0, 0); b.add(GEO.torus, 0xce2b37, 0, cy - ry * .12, 0, rx * 1.0, rz * 1.0, ry * .5, Math.PI / 2, 0, 0); }
   if (P.look === 'usa') { b.add(GEO.torus, WHITE, 0, cy - ry * .05, 0, rx * 1.0, rz * 1.0, ry * .45, Math.PI / 2, 0, 0); b.add(GEO.torus, 0x1b2f6b, 0, cy - ry * .4, 0, rx * .93, rz * .93, ry * .45, Math.PI / 2, 0, 0); }
-  if (P.look === 'veil') b.add(GEO.torus, 0x7a5c00, 0, cy - ry * .25, 0, rx * .98, rz * .98, ry * .45, Math.PI / 2, 0, 0);
   if (P.look === 'toms') { sph(rx * .5, ry * .42, rz * .36, rx * .55, cy + ry * .1, rz * .33, 0x2fb3a7); sph(rx * .5, ry * .42, rz * .36, rx * .55, cy + ry * .1, -rz * .33, 0x2fb3a7); } // pecs
   if (P.look === 'bike' && kind !== 'medic') { // woodland camo blotches all over the blob
     const cm = [0x3c4526, 0x6e5a3a, 0x2c3020, 0x7a8450];
@@ -4408,7 +4398,6 @@ function soldierBody(kind, nat, lo) {
   if (P.look === 'bike') { b.box(.07, .075, rz * 1.5, ex + .03, ey, 0, 0x0a0b0c); b.box(.02, .012, rz * 1.55, ex + .06, ey + .035, 0, 0x2a2d30); b.box(.012, .03, rz * .6, ex + .065, ey + .005, rz * .35, 0x3a4a5a); } // wraparound sunnies
   if (P.look === 'glasses') { [-1, 1].forEach(s => b.add(GEO.torus, 0x0d0f12, ex + .09, ey, s * rz * .32, .1, .1, .12, 0, Math.PI / 2, 0)); b.box(.015, .015, .07, ex + .1, ey + .01, 0, 0x0d0f12); }
   if (P.look === 'italian') { [-1, 1].forEach(s => b.add(GEO.sph, 0x1a120c, rx * .97, cy + ry * .1, s * .06, .03, .028, .075, s * .5, 0, 0)); [-1, 1].forEach(s => b.box(.03, .022, .11, ex + .04, ey + .11, s * rz * .32, 0x1a120c, 0, 0, s * .15)); }
-  if (P.look === 'veil') b.add(S, 0xffd60a, rx * .86, cy + ry * .02, 0, .09, ry * .28, rz * .7); // veil over the lower face
   if (P.look === 'usa') [-1, 1].forEach(s => b.box(.03, .022, .1, ex + .04, ey + .11, s * rz * .32, 0x2a1a0e, 0, 0, -s * .2));
   // headgear
   const top = cy + ry;
@@ -4422,7 +4411,6 @@ function soldierBody(kind, nat, lo) {
     b.add(GEO.torus, 0x2c3020, -.01, top - ry * .33, 0, rx * .95, rz * .95, ry * .35, Math.PI / 2, 0, 0); }
   else if (P.look === 'usa') { sph(rx * .78, ry * .3, rz * .78, 0, top - ry * .12, 0, 0x1b2f6b); b.box(rx * .55, .03, rz * .9, rx * .55, top - ry * .28, 0, 0x1b2f6b); b.add(GEO.cone4, WHITE, -.02, top + ry * .2, 0, .04, .04, .015); }
   else if (P.look === 'italian') { sph(rx * .74, ry * .26, rz * .74, 0, top - ry * .1, 0, 0x2e3a24); b.add(GEO.cone, 0x123d12, -.05, top + ry * .15, 0, .03, .18, .03, 0, 0, .6); } // bersaglieri-style plume
-  else if (P.look === 'veil') b.add(GEO.cone, P.trim, 0, top + ry * .2, 0, rx * .55, ry * 1, rz * .55);
   else if (P.look === 'toms') { b.box(rx * 1.2, .05, rz * 1.1, -.02, top - ry * .1, 0, 0x101415); b.box(rx * .9, .04, rz * .7, -.02, top - ry * .02, 0, 0x101415); } // flat-top haircut
   else if (P.look === 'glasses') { sph(rx * .75, ry * .28, rz * .75, -.01, top - ry * .1, 0, 0x1d3f80); }
   if (kind === 'sniper') for (let i = 0; i < 9; i++) { const a = i * 2.4, yy = cy + ry * (.2 + (i % 3) * .25); b.add(GEO.cone4, 0x4e5a2e, Math.cos(a) * rx * .9 - .05, yy, Math.sin(a) * rz * .9, .05, .14, .05, Math.sin(a) * .6, 0, Math.cos(a) * .6); }
@@ -4461,7 +4449,7 @@ function soldierBody(kind, nat, lo) {
 // Human soldiers in muted field uniforms, nation colour only on armbands and helmet bands. Same footprint as the
 // blobs (feet at 0, about .68 tall, facing +X) so hit tests and the first-person camera agree. Legs are drawn
 // separately by the renderer so they can stride; this is everything above the hips plus a seated biker's legs.
-const UNIFORM = {bike: [0x6b5a45, 0x4e4232, 0x8a7558], glasses: [0x4d5763, 0x363e48, 0x6a7684], italian: [0x5c6146, 0x464a35, 0x7b7f60], usa: [0x55603f, 0x3e472e, 0x6f7a55], toms: [0x3b4547, 0x2a3234, 0x56625f], veil: [0x6a5a3a, 0x4c412a, 0x8a7a55]};
+const UNIFORM = {bike: [0x6b5a45, 0x4e4232, 0x8a7558], glasses: [0x4d5763, 0x363e48, 0x6a7684], italian: [0x5c6146, 0x464a35, 0x7b7f60], usa: [0x55603f, 0x3e472e, 0x6f7a55], toms: [0x3b4547, 0x2a3234, 0x56625f]};
 const HUM = {hip: .33, sh: .55, head: .615, hr: .052, eye: .6};
 function limb(b, a, c, r, col, geo) { // a cylinder from point a to point c
   const dx = c[0] - a[0], dy = c[1] - a[1], dz = c[2] - a[2], L = Math.hypot(dx, dy, dz) || 1e-4, ux = dx / L, uy = dy / L, uz = dz / L;
@@ -4478,7 +4466,7 @@ function humanLeg(nat, kind) {
 function soldierHuman(kind, nat, lo) {
   const P = palette(nat), look = P.look, U = UNIFORM[look] || UNIFORM.usa, b = new Batch(), bike = isBiker(kind, nat);
   const L = bike ? BLOB.bike : 0, hip = HUM.hip + L, sh = HUM.sh + L, hy = HUM.head + L, hr = HUM.hr;
-  const skin = look === 'toms' ? 0xc89a78 : look === 'usa' ? 0xd8a888 : look === 'italian' ? 0xcf9e78 : look === 'glasses' ? 0xa8764e : look === 'veil' ? 0xb88a62 : 0xd9a985;
+  const skin = look === 'toms' ? 0xc89a78 : look === 'usa' ? 0xd8a888 : look === 'italian' ? 0xcf9e78 : look === 'glasses' ? 0xa8764e : 0xd9a985;
   const S = lo ? GEO.sph6 : GEO.sph, cam = U[0], dk = U[1], lt = U[2], tough = look === 'toms' ? 1.14 : 1;
   // torso: jacket, plate carrier, belt with pouches
   b.add(GEO.box, cam, 0, (hip + sh) / 2 - .005, 0, .12 * tough, sh - hip + .03, .17 * tough);
@@ -4505,7 +4493,6 @@ function soldierHuman(kind, nat, lo) {
     if (look === 'italian' && !lo) b.add(GEO.cone, 0x1d3a1a, -.05, hy + .06, -.03, .015, .09, .015, .5, 0, .9); } // capercaillie feathers
   if (look === 'glasses' && !lo) b.box(.012, .014, .075, hr * .93, hy + .005, 0, 0x101214);
   if (look === 'toms' && !lo) b.box(.014, .016, .08, hr * .93, hy + .006, 0, 0x070809);
-  if (look === 'veil') b.box(.02, .035, .085, hr * .9, hy - .02, 0, P.trim);
   // arms holding the weapon: right hand on the grip, left on the foregrip
   const shR = [0, sh - .015, -.1 * tough], shL = [0, sh - .015, .1 * tough];
   let gx = .1, gy = sh - .14, fz = 0;
@@ -4572,7 +4559,7 @@ function wolfBody() {
 }
 
 // ---------- vehicles (hull + separate turret) ----------
-function camo(P) { return P.look === 'usa' ? 0x54633a : P.look === 'italian' ? 0x7b7f53 : P.look === 'toms' ? 0x2e3f42 : P.look === 'veil' ? 0x9d7f25 : P.look === 'glasses' ? 0x5b6c6e : 0x8c6c44; }
+function camo(P) { return P.look === 'usa' ? 0x54633a : P.look === 'italian' ? 0x7b7f53 : P.look === 'toms' ? 0x2e3f42 : P.look === 'glasses' ? 0x5b6c6e : 0x8c6c44; }
 function tracks(b, l, w, h, x) {
   [-1, 1].forEach(s => {
     b.box(l, h, .26, x || 0, h / 2, s * w, 0x1d1e1f);
@@ -4706,7 +4693,7 @@ function flag(b, P, x, y, z, h) {
   else if (P.look === 'italian') { b.box(.3, .42, .02, x + .15, top - .21, z, 0x009246); b.box(.3, .42, .02, x + .45, top - .21, z, WHITE); b.box(.3, .42, .02, x + .75, top - .21, z, 0xce2b37); }
   else b.box(L, .42, .02, x + L / 2, top - .21, z, P.main).box(.3, .14, .03, x + .45, top - .21, z, P.dark);
 }
-function wallStone(P) { return P.look === 'veil' ? 0xb8a26b : P.look === 'usa' ? 0xa5a39a : P.look === 'italian' ? 0xc9b89a : P.look === 'toms' ? 0x6b7375 : P.look === 'glasses' ? 0x93a0ad : 0xa58f78; }
+function wallStone(P) { return P.look === 'usa' ? 0xa5a39a : P.look === 'italian' ? 0xc9b89a : P.look === 'toms' ? 0x6b7375 : P.look === 'glasses' ? 0x93a0ad : 0xa58f78; }
 
 // ---- transports and support machines ----
 VEH.truck = function (P) {
