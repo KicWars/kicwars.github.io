@@ -15,6 +15,17 @@
 ## Log (newest first, Sydney time)
 
 
+### 2026-11-05 — FPS beach landings, diplomacy, patrols, new maps and cockpit
+- **FPS Battles (main menu):** *D-Day: Omaha Beach* and *Pacific: Island Landing*. Ride the landing craft in as one soldier among waves of troops, with destroyers offshore and fighters or gunships flying in. Capture four objectives in turn. Each soldier costs a reinforcement ticket; capturing an objective moves your respawn forward and gives 15 more. When you die, pick your class (1 to 7).
+- **Diplomacy (F6):** ceasefires (4 min), alliances, tribute demands, trades and gifts. Bots judge by army strength, gifts and grudges, sue for peace when losing and gang up on a runaway leader. Allies win together.
+- **Select-all buttons:** F1 workers, F2 ground, F3 air, F4 naval (also clickable on the right).
+- **Auto patrol:** your troops walk a beat around wherever you last sent them. *Patrol area (U)* sets a new one; Stop (T) makes them stand still.
+- **Kill confirmation:** ENEMY DOWNED / VEHICLE DESTROYED banner with streak counter when you kill something yourself; alerts when your forces shoot down enemy aircraft.
+- **Maps:** choose Island, Continent, Archipelago or Highlands. Every map has highways (with causeways over water) linking the capitals, plus a rich central plateau, *the Crown*. Fewer impassable rocks. **Tab** opens a big tactical map.
+- **New cockpit:** canopy frame, radar scope with sweep and contacts, attitude ball, stores page with ammo and chaff, throttle gauge, warning lights and a moving stick.
+- **Balance:** commander powers bar removed (airstrikes, barrages, drone swarms) for you and the bots. Steel is much easier (more to start, higher tax, bigger loads, richer nodes). Bots wait longer before attacking, build far fewer aircraft and drones, and only hard bots nuke, late. Bots pick weaker or hated targets, pull back broken waves, build AA against air and rockets against armour, and help allies.
+- Fixed: the PULL UP warning stuck on after leaving a plane.
+
 ### 2026-11-04 — Planes, missiles, chaff, new troops and more
 - **New aircraft (every nation, Airfield):** A-10 Thunderbolt II (GAU-8, Mavericks, Sidewinder), F/A-18 Super Hornet (Vulcan, AIM-9X, Mk 82 bombs), Eurofighter Typhoon (cannon, Meteor, IRIS-T).
 - **Air-to-air missiles on every jet and the gunship.** Press **R** in a plane to fire the extra missile (hold the nose on a jet until the lock tone goes solid). Piloted jets now have radar: enemy aircraft within 70 m show up and can be locked beyond eyesight.

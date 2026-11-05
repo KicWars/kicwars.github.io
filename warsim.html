@@ -25,6 +25,7 @@ select option{background:#141b22}
 .brand p{margin:8px 0 26px;color:#c7d3da;font-size:17px;max-width:520px}
 .mcard{display:flex;flex-direction:column;gap:10px;width:340px;max-width:92vw}
 .mcard.wide{width:520px}
+.camplist button.camplv{flex-direction:column;align-items:flex-start;gap:3px}.camplist button.camplv span{font-weight:400;color:#c7d3da;font-size:13px}
 .camplist{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow:auto}.camplist button{text-align:left;display:flex;justify-content:space-between;gap:8px}.camplist button small{color:#9fb0ba}.camplist button:disabled{opacity:.4}
 #campHud{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:25;width:min(900px,calc(100vw - 32px));padding:8px 10px;background:rgba(10,14,18,.9);border:1px solid var(--bd);border-radius:10px;display:flex;flex-direction:column;gap:6px}
 #campHud .ch-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}#campHud .ch-top b{flex:1;font-size:16px}#chBudget{font-variant-numeric:tabular-nums;color:#ffd23a;font-weight:700}
@@ -90,6 +91,9 @@ body.camp #powers,body.camp #bDeploy,body.camp #cards,body.direct-mode #campHud{
 #diplo .row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}#diplo .row button{font-size:11px;padding:4px 8px}#diplo .meta{font-size:11px;opacity:.7;margin-top:3px}
 #diplo button.bad{border-color:var(--red);color:#ffb3a8}
 #diplo .offer{background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.4);border-radius:6px;padding:6px 8px;margin-top:6px}
+#scenSpawn{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:40;background:rgba(6,10,14,.92);border:1px solid var(--bd);border-radius:10px;padding:12px 16px;text-align:center;width:min(640px,calc(100vw - 32px))}
+#scenSpawn h3{margin:0 0 4px}#ssBtns{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0}#ssBtns button{padding:7px 10px}#ssBtns kbd{opacity:.6;margin-right:4px}
+body.scen #top .res:nth-of-type(2),body.scen #top .res:nth-of-type(3),body.scen #top .res:nth-of-type(4),body.scen #bottom,body.scen #selBar,body.scen #bDeploy,body.scen #timeCtl,body.scen #objectives,body.scen #diplo{display:none!important}
 #objectives{position:absolute;right:12px;top:48px;width:260px;background:rgba(6,10,14,.72);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;font-size:13px}
 #objectives h4{margin:0 0 5px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 .obj{padding:2px 0;color:#d6dee3}.obj.done{color:var(--acc);text-decoration:line-through;opacity:.7}.obj.cur{font-weight:600;color:#fff}
@@ -211,6 +215,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
   <div class="mcard" id="mhome">
     <button class="big primary" id="bQuick" title="Choose your nation and enemies, then start with a ready-made base and pick a unit to play straight away">Quick Battle: jump in</button>
     <button class="big" id="bCamp" title="Spend a budget on troops, place them, and beat a fixed enemy army">Campaign: budget battles</button>
+    <button class="big" id="bBat" title="Fight as one soldier in a beach landing">FPS Battles: D-Day and Pacific landings</button>
     <button class="big" id="bPlay">Play vs Bots (choose nations)</button>
     <button class="big" id="bHost">Play with a Friend: host</button>
     <button class="big" id="bJoin">Join a Friend</button>
@@ -222,7 +227,9 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
         <li><b>Planes</b>: the jet follows your mouse. <b>W/S</b> throttle, <b>A/D</b> roll, <b>Space</b> guns, <b>E</b> missiles or bombs, <b>R</b> air-to-air missile (hold the nose on a jet until the tone goes solid), <b>Z</b> chaff when the MISSILE warning flashes.</li>
         <li><b>Commanding</b>: click or drag to select, right click (or Alt+click, two-finger tap, long press) to move or attack. <b>WASD</b>, screen edges or two-finger scroll pan; wheel or pinch zoom; <b>Q E</b> rotate.</li>
         <li><b>Ctrl+1-9</b> make a group, <b>1-9</b> recall it. <b>.</b> finds an idle worker. <b>Space</b> jumps to the latest alert.</li>
-        <li>Destroy every enemy capital to win. Lose yours and you are out.</li>
+        <li><b>F1</b> all workers, <b>F2</b> all ground troops, <b>F3</b> all aircraft, <b>F4</b> all ships. <b>Tab</b> opens the big map. Troops patrol by themselves around wherever you last sent them; <b>Patrol area (U)</b> picks a new beat.</li>
+        <li><b>Diplomacy (F6)</b>: offer ceasefires, alliances, tribute and trades. Bots weigh your army, your gifts and their grudges.</li>
+        <li>Destroy every enemy capital to win, or end the war allied with everyone left. Lose yours and you are out.</li>
       </ul>
     </details>
   </div>
@@ -363,6 +370,9 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 <div id="pause" class="screen hidden"><div class="mcard"><h2>Menu</h2><p class="msg">The war keeps running.</p><button class="big primary" id="bResume">Resume</button><button class="big" id="bSettings2">Controls and settings</button><button class="big" id="bQuit">Quit to menu</button></div></div>
 <div id="campScr" class="screen hidden"><div class="mcard wide"><h2 style="margin:0">Campaign</h2><p style="margin:0;color:#c7d3da">You get a budget. Buy troops, place them in your zone, then press Start and watch the battle. Wipe out the enemy army to unlock the next level.</p>
   <label style="display:flex;gap:8px;align-items:center">Your nation <select id="campNat"></select></label><div id="campList" class="camplist"></div><button class="big" id="campBack">Back</button></div></div>
+<div id="batScr" class="screen hidden"><div class="mcard wide"><h2 style="margin:0">FPS Battles</h2><p style="margin:0;color:#c7d3da">You are one soldier in a huge amphibious assault. Ride the landing craft in, fight up the beach and capture each objective in turn. Every soldier who lands costs a reinforcement ticket; run out and the assault fails. Capture objectives to land closer to the front.</p>
+  <label style="display:flex;gap:8px;align-items:center">Your nation <select id="batNat"></select></label><div id="batList" class="camplist"></div><button class="big" id="batBack">Back</button></div></div>
+<div id="scenSpawn" class="hidden"><h3>Choose your soldier</h3><div id="ssInfo"></div><div id="ssBtns"></div><p class="small">Press 1 to 7, or click. You land with the next boat, or at the forward position once you have captured an objective.</p></div>
 <div id="campHud" class="hidden"><div class="ch-top"><b id="chName"></b><span id="chBudget"></span><button id="chClear">Clear</button><button id="chStart" class="primary">Start battle</button><button id="chQuit">Quit</button></div>
   <div id="chUnits"></div><div class="ch-tip">Click inside the blue zone to place the selected troop. Right click a troop to sell it back. <span id="chTip"></span></div></div>
 <div id="over" class="screen hidden"><div class="mcard wide"><h1 id="oTitle"></h1><p id="oSub"></p><table id="oStats"></table><button class="big primary" id="bAgain">Back to menu</button><button class="big" id="bWatch">Keep watching</button></div></div>
@@ -893,6 +903,32 @@ const CAMPAIGN = [
   {n: 'Steel Rain', foe: 'dhruvs', budget: 1500, seed: 53, army: [['rifle', 6], ['ifv', 2], ['arty', 2], ['mlrs', 1]], tip: 'Their guns hit hard from range. Rush them, or out-range them.'},
   {n: 'Big Tom\'s Last Stand', foe: 'toms', budget: 2300, seed: 67, army: [['rifle', 6], ['rocket', 6], ['medic', 2], ['ifv', 2], ['tank', 3], ['gunship', 2]], tip: 'Everything they have. Spend wisely.'},
 ];
+// FPS battles: you are one soldier in an amphibious assault. Positions are fractions of the map (u = x / N, v = y / N).
+// def rows: [unit or building, u, v, count, spread, hold position]
+const BATTLES = [
+  {n: 'D-Day: Omaha Beach', map: 4, seed: 6, size: 112, foe: 'toms', tickets: 180, wave: 24, waveN: 10, rein: 35, sea: [0, 1], air: 'fighter',
+    blurb: 'Hit the beach from the landing craft, climb the bluff through the draws, break the bunker line and take the command post. The fleet and fighters back you up.',
+    comp: ['rifle', 'rifle', 'mg', 'rocket', 'rifle', 'assault', 'medic', 'rifle', 'grenadier', 'sniper', 'rifle', 'rifle'],
+    land: [[.3, .71], [.4, .71], [.5, .71], [.6, .71], [.7, .71]],
+    obj: [{n: 'Beach shingle', u: .5, v: .645}, {n: 'Central draw', u: .5, v: .52}, {n: 'Bunker line', u: .72, v: .47}, {n: 'Command post', u: .55, v: .22}],
+    fleet: [['destroyer', .36, .82], ['destroyer', .64, .83]],
+    def: [['bunker', .22, .5], ['bunker', .4, .5], ['bunker', .6, .5], ['bunker', .8, .5], ['tower', .3, .49], ['tower', .7, .49],
+      ['mg', .45, .505, 2, 1.5, 1], ['mg', .56, .505, 2, 1.5, 1], ['mg', .27, .5, 1, 0, 1], ['mg', .74, .5, 1, 0, 1],
+      ['rifle', .5, .5, 6, 4], ['rifle', .3, .48, 4, 3], ['rifle', .7, .48, 4, 3], ['sniper', .4, .45, 2, 2, 1], ['rifle', .5, .625, 3, 3],
+      ['rifle', .72, .45, 5, 3], ['rocket', .72, .45, 2, 2], ['assault', .5, .36, 3, 2],
+      ['bunker', .55, .2], ['tower', .5, .2], ['rifle', .55, .24, 8, 4], ['mg', .55, .25, 2, 2, 1], ['tank', .62, .21, 1], ['arty', .4, .16, 2, 3, 1]]},
+  {n: 'Pacific: Island Landing', map: 5, seed: 9, size: 112, foe: 'jethroes', tickets: 170, wave: 22, waveN: 10, rein: 30, sea: [0, 1], air: 'gunship',
+    blurb: 'Storm a jungle island: take the beachhead, seize the airstrip, clear the ridge and plant your flag on the summit. Gunships fly in with every third wave.',
+    comp: ['rifle', 'rifle', 'assault', 'mg', 'rifle', 'rocket', 'medic', 'rifle', 'grenadier', 'rifle', 'sniper', 'assault'],
+    land: [[.38, .85], [.44, .86], [.5, .86], [.56, .85]],
+    obj: [{n: 'Beachhead', u: .47, v: .78}, {n: 'Airstrip', u: .49, v: .5}, {n: 'Jungle ridge', u: .33, v: .37}, {n: 'Summit', u: .66, v: .28}],
+    fleet: [['destroyer', .36, .94], ['destroyer', .6, .95]],
+    def: [['bunker', .52, .7], ['mg', .43, .71, 1, 0, 1], ['rifle', .47, .73, 3, 4],
+      ['aa', .42, .48], ['aa', .58, .53], ['tower', .5, .46], ['rifle', .49, .5, 6, 5], ['mg', .45, .52, 1, 0, 1], ['ifv', .56, .49, 1], ['bunker', .62, .5],
+      ['rifle', .33, .37, 9, 4], ['sniper', .3, .39, 3, 3, 1], ['assault', .35, .35, 4, 2], ['bunker', .33, .34], ['mg', .34, .38, 2, 2, 1], ['tower', .3, .35],
+      ['bunker', .66, .265], ['bunker', .62, .31], ['mg', .66, .29, 3, 1.5, 1], ['rifle', .66, .29, 10, 3], ['arty', .71, .24, 1, 0, 1], ['rocket', .63, .3, 3, 2], ['sniper', .69, .27, 2, 2, 1]]},
+];
+const BAT_CLASSES = ['rifle', 'mg', 'rocket', 'assault', 'sniper', 'medic', 'grenadier'];
 // the Toms' special swaps the pilot's guns for this blade for a few seconds (sent as weapon slot 9)
 const KNIFE = {n: 'Big Knife', t: 'mel', dmg: 75, vs: 'bite', rpm: 95, rng: 2.8, crit: 1.5, sp: 0, snd: 'bite', kick: 1.2, knife: 1};
 const KNIFE_T = 8;
@@ -949,7 +985,61 @@ function rankField(f, n) {
 // Map styles ride along in the seed (seed / 1e7), so every client rebuilds the same world from it.
 const MAP_TYPES = ['Island', 'Continent', 'Archipelago', 'Highlands'];
 const mapType = seed => Math.floor(seed / 1e7) % MAP_TYPES.length;
+// Battle maps for the FPS landings: 4 = a beach under bluffs, 5 = a jungle island with a mountain.
+function genBattleMap(N, seed, BT) {
+  const rnd = mulberry(seed * 7919 + 29), nz = makeNoise(rnd), nz2 = makeNoise(rnd);
+  const A = N * N, h = new Float32Array(A), bio = new Uint8Array(A), tree = new Uint8Array(A), water = new Uint8Array(A), block = new Uint8Array(A), road = new Uint8Array(A), occ = new Int32Array(A);
+  const sm = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  let spawns;
+  if (BT === 4) {
+    const draws = [.28, .5, .73];
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const i = y * N + x, u = x / N, v = y / N, n1 = nz(x * .06, y * .06, 4), coast = .73 + (n1 - .5) * .025;
+      const top = 5.2 + (n1 - .5) * 1.6 + (nz2(x * .1, y * .1, 3) - .5) * .8 * sm(.52, .4, v);
+      let dr = 0; for (const d of draws) dr = Math.max(dr, Math.exp(-Math.pow((u - d) / .035, 2)));
+      let e;
+      if (v > coast) e = Math.max(-3.4, -.5 - (v - coast) * 30);
+      else if (v > .62) e = (coast - v) * 9;
+      else { const steep = .99 + (top - .99) * sm(.6, .53, v), gentle = .99 + (top - .99) * sm(.64, .4, v); e = steep * (1 - dr) + gentle * dr; }
+      h[i] = e; bio[i] = v > .6 ? BIO.DESERT : BIO.GRASS;
+      if (v > .53 && v < .6 && dr < .35 && e > 0) block[i] = 1; // the bluff face: climb it through the draws
+      // bocage: hedgerows with gaps on the plateau
+      if (v < .47 && v > .08 && e > 0) {
+        const hr = (Math.abs(v - .42) < .006 || Math.abs(v - .3) < .006 || Math.abs(v - .14) < .006) && nz2(x * .3, 7) > .35;
+        const hc = (Math.abs(u - .2) < .005 || Math.abs(u - .4) < .005 || Math.abs(u - .8) < .005) && nz2(3, y * .3) > .4;
+        if (hr || hc) tree[i] = 1 + (rnd() * 3 | 0); else if (rnd() < .015) tree[i] = 1;
+      }
+    }
+    spawns = [{x: Math.round(N * .5), y: Math.round(N * .69)}, {x: Math.round(N * .55), y: Math.round(N * .2)}];
+    const rd = (u0, v0, u1, v1) => { const n = Math.ceil(Math.hypot(u1 - u0, v1 - v0) * N * 1.5); for (let k = 0; k <= n; k++) { const f = k / n, x = Math.round((u0 + (u1 - u0) * f) * N + Math.sin(f * 9) * 1.2), y = Math.round((v0 + (v1 - v0) * f) * N); const i = y * N + x; road[i] = 1; tree[i] = 0; block[i] = 0; } };
+    rd(.5, .62, .5, .45); rd(.5, .45, .55, .23); rd(.3, .44, .72, .44);
+  } else {
+    const cx = N * .5, cy = N * .48, mx = N * .66, my = N * .28, mr = N * .14;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const i = y * N + x, u = x / N, v = y / N, n1 = nz(x * .05, y * .05, 4), n2 = nz2(x * .09, y * .09, 3);
+      const r = Math.hypot((x - cx) / (N * .41), (y - cy) / (N * .37)) / (.86 + n1 * .26);
+      let e;
+      if (r > 1) e = Math.max(-3.4, -.5 - (r - 1) * 20);
+      else if (r > .86) e = (1 - r) * 7;
+      else e = 1 + n2 * 2.6 * sm(.86, .6, r);
+      const md = Math.hypot(x - mx, y - my) / mr; if (md < 1) e += 9 * Math.pow(1 - md, 1.4);
+      const strip = u > .36 && u < .62 && v > .47 && v < .53;
+      if (strip) e = 1.5;
+      h[i] = e; bio[i] = r > .84 ? BIO.DESERT : n2 > .62 ? BIO.SWAMP : BIO.GRASS;
+      if (e > .5 && r < .84 && !strip && md > .25) { const fq = nz2(x * .2 + 40, y * .2, 3); if (fq > .4 || rnd() < .06) tree[i] = 1 + (rnd() * 3 | 0); }
+    }
+    spawns = [{x: Math.round(N * .47), y: Math.round(N * .86)}, {x: Math.round(N * .5), y: Math.round(N * .22)}];
+    const rd = (u0, v0, u1, v1) => { const n = Math.ceil(Math.hypot(u1 - u0, v1 - v0) * N * 1.5); for (let k = 0; k <= n; k++) { const f = k / n, x = Math.round((u0 + (u1 - u0) * f) * N + Math.sin(f * 7) * 1.5), y = Math.round((v0 + (v1 - v0) * f) * N); for (let j = -1; j <= 1; j++) for (let q = -1; q <= 1; q++) tree[(y + j) * N + x + q] = 0; road[y * N + x] = 1; } };
+    rd(.47, .82, .49, .53); rd(.49, .47, .34, .38); rd(.34, .38, .6, .32); rd(.6, .32, .66, .28);
+  }
+  const t2 = new Float32Array(h);
+  for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) { const i = y * N + x; h[i] = (t2[i] * 2 + t2[i - 1] + t2[i + 1] + t2[i - N] + t2[i + N]) / 6; }
+  for (let i = 0; i < A; i++) { if (h[i] < 0) { water[i] = 1; tree[i] = 0; block[i] = 0; road[i] = 0; } if (block[i]) tree[i] = 0; }
+  return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes: []};
+}
 function genMap(N, seed, nPlayers) {
+  const BT = Math.floor(seed / 1e7);
+  if (BT === 4 || BT === 5) return genBattleMap(N, seed, BT);
   const rnd = mulberry(seed * 7919 + 13), nz = makeNoise(rnd), nz2 = makeNoise(rnd), nz3 = makeNoise(rnd), MT = mapType(seed);
   const A = N * N, hr = new Float32Array(A), te = new Float32Array(A), mo = new Float32Array(A);
   const sc = 1 / 26, cx = N / 2, cy = N / 2;
@@ -1274,7 +1364,7 @@ function Sim(opts) {
       steel: 650, fuel: 150, pop: 0, popCap: 15, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0,
       buffs: {}, reveal: 0, spawn: this.M.spawns[i], rel: {}, relT: {}, offers: [], mood: {}, str: 0};
   });
-  if (opts.battle) this.setupBattle(opts.battle); else for (const p of this.players) this.setupPlayer(p);
+  if (opts.battle) this.setupBattle(opts.battle); else if (opts.scen) this.setupScen(opts.scen); else for (const p of this.players) this.setupPlayer(p);
 }
 
 // Campaign battle: no bases. Find the stretch of land between the two spawns with the most ground, mark the two deploy zones and place the enemy army.
@@ -1312,6 +1402,118 @@ Sim.prototype.setupBattle = function (lv) {
       if (this.inZone(1, x, y) && this.landOk(x, y)) { const e = this.addUnit(k, 1, x, y); e.h = Math.atan2(Z.ay, Z.ax); break; }
     }
   });
+};
+// ---------- FPS battles ----------
+Sim.prototype.setupScen = function (B) {
+  const N = this.N, P = (u, v) => ({x: u * N, y: v * N});
+  for (const p of this.players) { p.steel = 0; p.fuel = 0; p.popCap = 99999; }
+  this.players[0].reveal = 1e9;
+  this.scen = {B, oi: 0, prog: 0, tickets: B.tickets, nextWave: 1, waves: 0, queue: [], obj: B.obj.map(o => Object.assign({}, o, P(o.u, o.v))), land: B.land.map(l => P(l[0], l[1])), fwd: null, reinT: B.rein, att: 0, def: 0};
+  const face = Math.atan2(B.sea[1], B.sea[0]);
+  const unit = (k, x, y, hold) => {
+    for (let t = 0; t < 24; t++) {
+      const px = x + (t ? (this.rnd() - .5) * t * .7 : 0), py = y + (t ? (this.rnd() - .5) * t * .7 : 0);
+      if (this.landOk(px, py)) { const e = this.addUnit(k, 1, px, py); e.h = face; if (hold) e.stance = 'hold'; return e; }
+    }
+  };
+  const bld = (k, x, y) => {
+    const d = BUILDINGS[k];
+    for (let t = 0; t < 16; t++) {
+      const px = Math.round(x + (t ? (this.rnd() - .5) * t : 0)), py = Math.round(y + (t ? (this.rnd() - .5) * t : 0));
+      let ok = true; this.footprint(d, px, py, (i, j) => { const q = j * N + i; if (i < 1 || j < 1 || i >= N - 1 || j >= N - 1 || this.M.water[q] || this.M.occ[q] || this.M.block[q]) ok = false; });
+      if (ok) return this.addBuilding(k, 1, px, py, true);
+    }
+  };
+  for (const D of B.def) {
+    const o = P(D[1], D[2]), n = D[3] || 1, r = D[4] || 0;
+    for (let i = 0; i < n; i++) { const a = i / n * 6.283 + .4, x = o.x + Math.cos(a) * r, y = o.y + Math.sin(a) * r * .6; if (BUILDINGS[D[0]]) bld(D[0], x, y); else unit(D[0], x, y, D[5]); }
+  }
+  for (const f of B.fleet || []) { const o = P(f[1], f[2]), e = this.addUnit(f[0], 0, o.x, o.y); e.h = face + Math.PI; e.stance = 'hold'; }
+};
+// Put an attacker ashore: walk the point inland from the sea until it is dry.
+Sim.prototype.scenUnit = function (k, x, y) {
+  const S = this.scen, sx = S.B.sea[0], sy = S.B.sea[1], ud = UNITS[k];
+  if (ud.cat !== 'air' && ud.cat !== 'heli') for (let t = 0; t < 40 && !this.landOk(x, y); t++) { x -= sx * .7; y -= sy * .7; }
+  const e = this.addUnit(k, 0, x, y); e.h = Math.atan2(-sy, -sx);
+  const O = S.obj[Math.min(S.oi, S.obj.length - 1)];
+  this.cmdMove([e], O.x + (this.rnd() - .5) * 8, O.y + (this.rnd() - .5) * 6, true, false); e.scenOi = S.oi;
+  return e;
+};
+Sim.prototype.scenLanding = function (pt, list, you) {
+  const S = this.scen, sx = S.B.sea[0], sy = S.B.sea[1], d = 6;
+  this.ev({k: 'lcvp', x0: pt.x + sx * 24, y0: pt.y + sy * 24, x1: pt.x + sx * 1.5, y1: pt.y + sy * 1.5, d, o: 0});
+  list.forEach((k, i) => S.queue.push({t: this.t + d + i * .25, k, x: pt.x + ((i % 3) - 1) * .9, y: pt.y + sy * (i / 3 | 0) * .6, you: i === 0 ? you : undefined}));
+};
+Sim.prototype.scenOver = function (win) {
+  const S = this.scen, w = win ? 0 : 1;
+  this.players[1 - w].alive = false; S.done = 1;
+  this.over = {winner: w, team: this.players[w].team, wins: [w], t: this.t};
+  this.ev({k: 'over', winner: w, team: this.over.team, wins: [w]});
+};
+Sim.prototype.scenStep = function () {
+  const S = this.scen, B = S.B, t = this.t;
+  if (this.over) return;
+  // landing waves
+  if (t >= S.nextWave && S.tickets > 0) {
+    S.nextWave = t + B.wave; S.waves++;
+    const n = Math.min(B.waveN, S.tickets); S.tickets -= n;
+    const list = []; for (let i = 0; i < n; i++) list.push(B.comp[(i + S.waves * 3) % B.comp.length]);
+    for (let b = 0; b * 5 < list.length; b++) this.scenLanding(S.land[(b + S.waves) % S.land.length], list.slice(b * 5, b * 5 + 5));
+    if (B.air && S.waves % 3 === 0) for (let i = 0; i < 2; i++) { const L = S.land[i % S.land.length]; S.queue.push({t: t + 3, k: B.air, x: L.x + i * 4, y: L.y + B.sea[1] * 30, air: 1}); }
+    this.ev({k: 'msg', p: 0, text: 'Wave ' + S.waves + ' is landing!', kind: 'info'});
+  }
+  S.queue = S.queue.filter(q => {
+    if (q.t > t) return true;
+    const e = q.air ? this.addUnit(q.k, 0, q.x, q.y) : this.scenUnit(q.k, q.x, q.y);
+    if (q.air && e) { const O = S.obj[Math.min(S.oi, S.obj.length - 1)]; this.cmdMove([e], O.x, O.y, true, false); }
+    if (e && q.you !== undefined) this.ev({k: 'scenYou', p: q.you, id: e.id});
+    return false;
+  });
+  // capture the current objective: attackers inside, no defenders
+  const O = S.obj[S.oi]; let att = 0, def = 0;
+  for (const e of this.ents.values()) {
+    if (e.b || e.hp <= 0 || e.air || e.d.cat === 'sea') continue;
+    if (Math.hypot(e.x - O.x, e.y - O.y) < 7) { if (e.o === 0) att++; else def++; }
+  }
+  S.att = att; S.def = def;
+  if (att && !def) S.prog = Math.min(100, S.prog + (4 + 3 * Math.min(4, att)) * .5);
+  else if (def && !att) S.prog = Math.max(0, S.prog - 3);
+  if (S.prog >= 100) {
+    this.ev({k: 'msg', p: 0, text: 'Objective captured: ' + O.n + '!', kind: 'gold'}); this.ev({k: 'scenCap', i: S.oi});
+    S.fwd = {x: O.x, y: O.y}; S.oi++; S.prog = 0; S.tickets += 15;
+    if (S.oi >= S.obj.length) { this.scenOver(true); return; }
+    this.ev({k: 'msg', p: 0, text: 'Next objective: ' + S.obj[S.oi].n + '. Reinforcements now come ashore at your forward position.', kind: 'info'});
+  }
+  // orders: attackers push the objective; defenders near it close in, the rest hold their posts
+  if (this.tick % 20 === 0) {
+    const O2 = S.obj[S.oi];
+    for (const e of this.ents.values()) {
+      if (e.b || e.pilot || e.hp <= 0 || e.d.cat === 'sea') continue;
+      if (e.o === 0) {
+        if ((e.tid && this.ents.get(e.tid)) || (e.goal && e.amove && e.scenOi === S.oi)) continue;
+        e.scenOi = S.oi; this.cmdMove([e], O2.x + (this.rnd() - .5) * 8, O2.y + (this.rnd() - .5) * 6, true, false);
+      } else if (!e.tid && !e.goal && e.stance !== 'hold' && Math.hypot(e.x - O2.x, e.y - O2.y) < 24 && this.rnd() < .25) this.cmdMove([e], O2.x + (this.rnd() - .5) * 6, O2.y + (this.rnd() - .5) * 6, true, false);
+    }
+  }
+  // defender reinforcements march from their rear
+  if (t >= S.reinT && S.oi >= 1) {
+    S.reinT = t + B.rein;
+    const H = this.M.spawns[1], O2 = S.obj[S.oi];
+    for (let i = 0; i < 3; i++) for (let k = 0; k < 10; k++) { const x = H.x + (this.rnd() - .5) * 10, y = H.y + (this.rnd() - .5) * 6; if (this.landOk(x, y)) { const e = this.addUnit(i ? 'rifle' : 'mg', 1, x, y); this.cmdMove([e], O2.x, O2.y, true, false); break; } }
+  }
+  // out of men
+  if (S.tickets <= 0 && !S.queue.length) {
+    let alive = 0; for (const e of this.ents.values()) if (e.o === 0 && !e.b && e.d.cat === 'inf') alive++;
+    if (!alive) this.scenOver(false);
+  }
+};
+Sim.prototype.scenSpawn = function (pi, k) {
+  const S = this.scen; if (!S || this.over || !BAT_CLASSES.includes(k)) return;
+  if (S.queue.some(q => q.you === pi) || (S.spawnT || 0) > this.t) return;
+  if (S.tickets <= 0) { this.notify(pi, 'No reinforcements left', 'bad'); return; }
+  S.tickets--; S.spawnT = this.t + 1;
+  if (S.fwd) S.queue.push({t: this.t + .5, k, x: S.fwd.x + (this.rnd() - .5) * 3, y: S.fwd.y + S.B.sea[1] * 3, you: pi});
+  else { let best = S.land[0]; for (const L of S.land) if (Math.abs(L.x - this.N / 2) < Math.abs(best.x - this.N / 2)) best = L; this.scenLanding(best, [k], pi); }
 };
 Sim.prototype.inZone = function (i, x, y) {
   const Z = this.battle.zones[i], rx = x - Z.cx, ry = y - Z.cy, u = rx * Z.ax + ry * Z.ay, v = -rx * Z.ay + ry * Z.ax;
@@ -1501,6 +1703,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'research': { const b = this.ents.get(c.b); if (b && b.o === pi && b.d.research) this.cmdResearch(b, p, c.u); break; }
     case 'power': break; // commander powers were removed
     case 'diplo': this.cmdDiplo(c, pi); break;
+    case 'scenSpawn': this.scenSpawn(pi, c.u); break;
     case 'nuke': { const e = this.ents.get(c.id); if (e && e.o === pi && e.nukeReady) this.launchNuke(e, c.x, c.y); break; }
     case 'garrison': { const b = this.ents.get(c.t); if (b && b.o === pi && b.d.garrison) for (const e of mine) if (e.d.cat === 'inf') { this.clearOrders(e); e.task = {type: 'garrison', id: b.id}; } break; }
     case 'unload': { const b = this.ents.get(c.b); if (b && b.o === pi) this.unload(b); break; }
@@ -1563,7 +1766,7 @@ Sim.prototype.cmdMove = function (es, x, y, atk, queue) {
     const row = Math.floor(i / cols), col = i % cols, sp = Math.max(1.1, e.d.r * 2.6);
     const ox = (col - (cols - 1) / 2) * sp, oy = -row * sp;
     const gx = clamp(x + Math.cos(a) * oy - Math.sin(a) * ox, 1, this.N - 2), gy = clamp(y + Math.sin(a) * oy + Math.cos(a) * ox, 1, this.N - 2);
-    if (!this.players[e.o].bot && !this.battle && e.k !== 'worker' && PATROL_CATS[e.d.cat]) { e.zone = {x: gx, y: gy, r: PATROL_R}; e.zoneT = this.t + 3; }
+    if (!this.players[e.o].bot && !this.battle && !this.scen && e.k !== 'worker' && PATROL_CATS[e.d.cat]) { e.zone = {x: gx, y: gy, r: PATROL_R}; e.zoneT = this.t + 3; }
     if (queue && (e.goal || e.queue)) { (e.queue = e.queue || []).push({x: gx, y: gy, fx: x, fy: y, a: atk}); return; }
     this.clearOrders(e);
     this.go(e, gx, gy, x, y);
@@ -2157,6 +2360,7 @@ Sim.prototype.step = function () {
   if (this.over) { this.t += DT; this.tick++; return; }
   if (this.battle && !this.battle.live) { this.rebuildGrid(); return; } // deploying: the world is frozen
   if (this.battle && this.tick % 10 === 0) this.battleCheck();
+  if (this.scen && this.tick % 5 === 0) this.scenStep();
   this.t += DT; this.tick++;
   this.F.budget = 5;
   this.rebuildGrid();
@@ -2330,7 +2534,7 @@ Sim.prototype.spawnFrom = function (b, k, p) {
     for (let t = 0; t < 12; t++) { const px = tx + (this.rnd() - .5) * 5, py = ty + (this.rnd() - .5) * 5, q = Math.round(py) * this.N + Math.round(px); if (q >= 0 && q < this.N * this.N && passable(this.M, 0, q)) { x = px; y = py; break; } }
   }
   const u = this.addUnit(k, p.i, x, y);
-  if (!p.bot && k !== 'worker' && PATROL_CATS[ud.cat]) { const zx = b.rally ? b.rally.x : x + Math.cos(a) * 6, zy = b.rally ? b.rally.y : y + Math.sin(a) * 6; u.zone = {x: clamp(zx, 2, this.N - 3), y: clamp(zy, 2, this.N - 3), r: PATROL_R}; }
+  if (!p.bot && !this.scen && k !== 'worker' && PATROL_CATS[ud.cat]) { const zx = b.rally ? b.rally.x : x + Math.cos(a) * 6, zy = b.rally ? b.rally.y : y + Math.sin(a) * 6; u.zone = {x: clamp(zx, 2, this.N - 3), y: clamp(zy, 2, this.N - 3), r: PATROL_R}; }
   if (ud.para) { u.chute = 16; u.z += u.chute; this.ev({k: 'para', id: u.id}); p.built++; this.ev({k: 'trained', p: p.i, u: k, id: u.id}); return; }
   if (ud.cat === 'sea') { // point the bow at the longest stretch of open water
     let bestR = -1;
@@ -3319,6 +3523,14 @@ Mirror.prototype.applyEvent = function (e) {
 
 <script>// Procedural low-poly models. Every model faces +X. Parts are merged into one geometry per kind and nation.
 function Batch() { this.parts = []; }
+// Landing craft for the FPS battles (part 0 = hull, 1 = bow ramp, pivoting at its base). Faces +X.
+const LCVP_GEO = (() => { const cache = {}; return part => {
+  if (cache[part]) return cache[part];
+  const b = new Batch(), c = 0x5d6b55, d = 0x46523f;
+  if (part) b.box(.08, .7, 1.2, 0, .35, 0, d);
+  else { b.box(2.6, .3, 1.3, 0, .15, 0, d); b.box(2.6, .55, .1, 0, .5, .62, c); b.box(2.6, .55, .1, 0, .5, -.62, c); b.box(.1, .6, 1.3, -1.28, .5, 0, c); b.box(.35, .45, .5, -1.0, .9, 0, 0x3a4436); b.cyl(.04, .3, -1.05, 1.25, .15, 0x222222); }
+  return (cache[part] = b.geo());
+}; })();
 // Split a turret Batch into turret body and barrel (parts centred well forward of the turret), with the barrel re-centred on its pivot.
 function splitBarrel(parts) {
   if (parts.split !== undefined) return parts.split;
@@ -5722,6 +5934,7 @@ Renderer.prototype.handle = function (ev, view) {
     case 'abm': { const n = (this.icbms || []).find(i => i.id === ev.id); if (n) this.tracerMissile(ev.x, ev.y, n, 1.8); break; }
     case 'shell': this.delayFx(ev.de, () => this.fxShot('arty', ev.x + (ev.x - view.N / 2) * .1, 30, ev.y, ev.x, hAt(M, ev.x, ev.y), ev.y, ev.d)); break;
     case 'jets': { for (let i = -1; i <= 1; i++) this.flyby(ev.x, ev.y, ev.a, i * 3, ev.o); Sfx.jet(); break; }
+    case 'lcvp': (this.boats = this.boats || []).push({x0: ev.x0, y0: ev.y0, x1: ev.x1, y1: ev.y1, d: ev.d, t: 0}); break;
     case 'cruise': this.fxShot('cruise', view.N * .02, 14, ev.y, ev.x, hAt(M, ev.x, ev.y), ev.y, ev.d); break;
     case 'smoke': this.smokeFx = this.smokeFx || []; this.smokeFx.push({x: ev.x, y: ev.y, r: ev.r, t: 0, d: ev.d}); break;
     case 'heal': { const t = E.get(ev.t); if (t) this.addP(t.x, t.z + .7, t.y, 0, 1, 0, .25, .6, .3, 1, .4, true); break; }
@@ -5924,6 +6137,16 @@ Renderer.prototype.stepMisc = function (dt, v) {
       this.addP(x, y + .4, z, (r() - .5) * .5, .25 + r() * .3, (r() - .5) * .5, 2, 3, c, c, c, false, .45, 5);
     }
     return s.t < s.d;
+  });
+  if (this.boats) this.boats = this.boats.filter(b => { // landing craft: run in, drop the ramp, back off
+    b.t += dt;
+    const q = Math.min(1, b.t / b.d), e = 1 - (1 - q) * (1 - q), back = Math.max(0, b.t - b.d - 2.5) / 5;
+    const x = b.x0 + (b.x1 - b.x0) * (e - back * .6), z = b.y0 + (b.y1 - b.y0) * (e - back * .6), a = Math.atan2(b.y1 - b.y0, b.x1 - b.x0);
+    const ramp = b.t > b.d ? Math.min(1, (b.t - b.d) * 2) : 0, bob = Math.sin(b.t * 3 + b.x0) * .05;
+    this.put('lcvp', () => LCVP_GEO(0), 40, null, x, .05 + bob, z, -a, Math.sin(b.t * 2.2) * .04, 0, 1);
+    this.put('lcvpR', () => LCVP_GEO(1), 40, null, x + Math.cos(a) * 1.25, .2 + bob, z + Math.sin(a) * 1.25, -a, -ramp * 1.2, 0, 1);
+    if (q < 1 || back > 0) this.addP(x - Math.cos(a) * 1.4, .1, z - Math.sin(a) * 1.4, (this.rnd() - .5) * .4, .3, (this.rnd() - .5) * .4, .5, .7, .9, .95, 1, false, .5, 1);
+    return b.t < b.d + 9;
   });
   if (this.jets) this.jets = this.jets.filter(j => {
     j.t += dt; j.x += j.vx * dt; j.z += j.vz * dt;
@@ -6234,7 +6457,7 @@ function Game(cfg) {
     this.view = new Mirror(cfg);
     this.bots = [];
   } else {
-    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle});
+    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle, scen: cfg.scen});
     this.bots = cfg.players.map((p, i) => p.bot ? new Bot(this.sim, i, p.bot) : null).filter(Boolean);
   }
   this.view.me = this.me;
@@ -7040,6 +7263,7 @@ const Direct = {
     c.save();
     const fp = this.firstPerson();
     if (fp && (this.mode === 'plane' || this.mode === 'heli')) this.drawCockpit(c, w, h); // the cockpit goes under every other readout
+    if (this.ui.scen && g.sim && g.sim.scen) this.drawScenHud(c, w, h, g.sim.scen);
     if (this.mode === 'ship') {
       const K = Settings.keyName(Settings.binds.walk), A = this.aboard;
       c.textAlign = 'center'; c.fillStyle = '#fff'; c.shadowColor = '#000'; c.shadowBlur = 4;
@@ -7200,6 +7424,28 @@ const Direct = {
     c.restore();
   },
   // canopy frame and instrument panel for first-person flying
+  // FPS battle: objective banner, capture bar, reinforcements and a waypoint to the objective
+  drawScenHud(c, w, h, S) {
+    const O = S.obj[S.oi]; if (!O) return;
+    const L = String.fromCharCode(65 + S.oi), cx = w / 2;
+    c.save(); c.textAlign = 'center';
+    c.fillStyle = 'rgba(6,10,14,.7)'; c.fillRect(cx - 170, 70, 340, 46);
+    c.font = '800 14px system-ui'; c.fillStyle = '#ffe48a'; c.fillText('OBJECTIVE ' + L + ': ' + O.n.toUpperCase(), cx, 88);
+    c.fillStyle = 'rgba(255,255,255,.15)'; c.fillRect(cx - 150, 96, 300, 7); c.fillStyle = S.def && !S.att ? '#ff5a4a' : '#6dff9a'; c.fillRect(cx - 150, 96, 3 * S.prog, 7);
+    c.font = '600 11px system-ui'; c.fillStyle = '#fff';
+    c.fillText(S.att && S.def ? 'CONTESTED: clear out the defenders' : S.att ? 'CAPTURING ' + (S.prog | 0) + '%' : 'Get troops inside the marker to capture it', cx, 113);
+    c.textAlign = 'left'; c.font = '700 12px system-ui'; c.fillStyle = '#fff';
+    c.fillText('Reinforcements ' + S.tickets + ' · Next wave ' + Math.max(0, Math.ceil(S.nextWave - this.ui.g.sim.t)) + 's · Objectives ' + S.oi + '/' + S.obj.length, 24, 100);
+    // waypoint
+    const gz = Math.max(0, hAt(this.ui.g.view.M, O.x, O.y)) + 3, sp = this.toScreen(O.x, O.y, gz), d = Math.hypot(O.x - this.pose.x, O.y - this.pose.y) * 10;
+    if (sp) {
+      const x = clamp(sp.x, 30, w - 30), y = clamp(sp.y, 130, h - 120);
+      c.fillStyle = 'rgba(255,214,10,.9)'; c.beginPath(); c.moveTo(x, y - 12); c.lineTo(x + 10, y); c.lineTo(x, y + 12); c.lineTo(x - 10, y); c.closePath(); c.fill();
+      c.fillStyle = '#000'; c.font = '900 11px system-ui'; c.textAlign = 'center'; c.fillText(L, x, y + 4);
+      c.fillStyle = '#ffe48a'; c.font = '700 11px system-ui'; c.fillText((d | 0) + ' m', x, y + 26);
+    }
+    c.restore();
+  },
   drawCockpit(c, w, h) {
     const heli = this.mode === 'heli', p = this.pose, now = performance.now() / 1000;
     const v = this.ui.g.view, me = this.ui.g.me, R = this.ui.g.R, M = v.M;
@@ -7686,6 +7932,8 @@ const UI = {
     $('timeCtl').querySelectorAll('button').forEach(b => b.onclick = () => this.setSpeed(+b.dataset.s));
     $('bAgain').onclick = () => { const c = this.camp; this.quit(); if (c) this.openCamp(); };
     $('bCamp').onclick = () => { Sfx.init(); Sfx.ui(); this.openCamp(); };
+    $('bBat').onclick = () => { Sfx.init(); Sfx.ui(); this.openBat(); };
+    $('batBack').onclick = () => { $('batScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
     $('campBack').onclick = () => { $('campScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
     $('chClear').onclick = () => this.campClear();
     $('chStart').onclick = () => this.campStart();
@@ -7947,6 +8195,39 @@ const UI = {
     $('campHud').classList.remove('hidden', 'live'); $('chName').textContent = (i + 1) + '. ' + L.n; $('chTip').textContent = L.tip;
     this.sel.clear(); this.refreshHud(true); this.campRefresh();
   },
+  openBat() {
+    $('menu').classList.add('hidden'); $('batScr').classList.remove('hidden');
+    const sel = $('batNat'); if (!sel.options.length) sel.innerHTML = NATIONS.map((n, i) => `<option value="${i}">${n.name}</option>`).join('');
+    $('batList').innerHTML = BATTLES.map((B, i) => `<button class="camplv" data-i="${i}"><b>${B.n}</b><span>${B.blurb}</span><span class="small">${B.obj.length} objectives · ${B.tickets} reinforcements · enemy: ${NATIONS.find(n => n.key === B.foe).name}</span></button>`).join('');
+    $('batList').querySelectorAll('button').forEach(b => b.onclick = () => this.batLaunch(+b.dataset.i));
+  },
+  batLaunch(i) {
+    Sfx.init();
+    const B = BATTLES[i]; let me = +$('batNat').value, foe = NATIONS.findIndex(n => n.key === B.foe);
+    if (foe === me) foe = (me + 1) % NATIONS.length;
+    $('batScr').classList.add('hidden');
+    this.launch({mode: 'host', size: B.size, seed: B.map * 1e7 + B.seed, players: [{nation: me, name: 'You'}, {nation: foe, name: NATIONS[foe].name}], me: 0, link: null, tut: false, quick: false, scen: B});
+    this.scen = {i, B, cls: 'rifle'}; document.body.classList.add('scen');
+    const L = this.g.sim.scen.land[2] || this.g.sim.scen.land[0];
+    this.jump(L.x, L.y + 8);
+    this.g.issue({c: 'scenSpawn', u: 'rifle'});
+    this.addAlert('Landing craft inbound. Get ready!', 'gold');
+  },
+  showScenSpawn(show) {
+    const el = $('scenSpawn');
+    if (!show || !this.scen || !this.g || this.g.sim.over) { el.classList.add('hidden'); return; }
+    const S = this.g.sim.scen, O = S.obj[S.oi];
+    if (O && el.classList.contains('hidden')) this.jump(O.x, O.y + 6);
+    $('ssInfo').textContent = `Reinforcements left: ${S.tickets} · Objective ${String.fromCharCode(65 + S.oi)}: ${O ? O.n : ''} · Landing at: ${S.fwd ? 'forward position' : 'the beach, by boat'}`;
+    $('ssBtns').innerHTML = BAT_CLASSES.map((k, i) => `<button data-k="${k}" class="${k === this.scen.cls ? 'primary' : ''}"><kbd>${i + 1}</kbd>${UNITS[k].n}</button>`).join('');
+    $('ssBtns').querySelectorAll('button').forEach(b => b.onclick = () => this.scenPick(b.dataset.k));
+    el.classList.remove('hidden');
+  },
+  scenPick(k) {
+    if (!this.scen) return;
+    this.scen.cls = k; this.g.issue({c: 'scenSpawn', u: k}); Sfx.ui();
+    $('ssInfo').textContent = 'Coming ashore as ' + UNITS[k].n + '...';
+  },
   campRefresh() {
     const c = this.camp; if (!c) return;
     const left = c.L.budget - c.spent;
@@ -8010,6 +8291,7 @@ const UI = {
   quit() {
     if (Direct.on) Direct.exit();
     this.camp = null; $('campHud').classList.add('hidden'); document.body.classList.remove('camp');
+    this.scen = null; document.body.classList.remove('scen'); $('scenSpawn').classList.add('hidden');
     if (this.link) { this.link.close(); this.link = null; }
     this.net = 'off';
     $('hud').classList.add('hidden'); $('over').classList.add('hidden'); $('pause').classList.add('hidden'); $('menu').classList.remove('hidden');
@@ -8085,12 +8367,14 @@ const UI = {
     if (Direct.on) Direct.onEvent(ev, g);
     switch (ev.k) {
       case 'msg': if (ev.p === me) { this.addAlert(ev.text, ev.kind, ev.x, ev.y); if (ev.kind === 'bad') Sfx.bad(); else if (ev.kind === 'good') Sfx.good(); } break;
-      case 'attacked': if (ev.p === me) { if (!this.isOnScreen(ev.x, ev.y)) { this.addAlert(ev.b ? 'Base under attack!' : 'Units under attack!', 'bad', ev.x, ev.y); Sfx.alarm(); (this.blips = this.blips || []).push({x: ev.x, y: ev.y, t: 0}); } this.lastAlert = {x: ev.x, y: ev.y}; } break;
+      case 'attacked': if (ev.p === me && !this.scen) { if (!this.isOnScreen(ev.x, ev.y)) { this.addAlert(ev.b ? 'Base under attack!' : 'Units under attack!', 'bad', ev.x, ev.y); Sfx.alarm(); (this.blips = this.blips || []).push({x: ev.x, y: ev.y, t: 0}); } this.lastAlert = {x: ev.x, y: ev.y}; } break;
       case 'trained': if (ev.p === me) this.refreshSoon = true; break;
       case 'hero': if (ev.o === me) { this.addAlert(ev.name ? `${ev.n} "${ev.name}" is now a hero!` : `${ev.n} is now a veteran`, 'gold'); Sfx.good(); } break;
       case 'out': { this.addAlert(`${v.players[ev.p].name} has fallen!`, ev.p === me ? 'bad' : 'gold'); if (ev.p === me) this.showOver(false); break; }
       case 'over': this.showOver(ev.wins ? ev.wins.includes(me) : v.players[me].team === ev.team); break;
       case 'diplo': if (this.diploOpen) this.renderDiplo(); break;
+      case 'scenYou': if (ev.p === me && this.scen) { const u = v.ents.get(ev.id); if (u) { if (Direct.on) Direct.exit(); this.showScenSpawn(false); Direct.enter(this, u); } } break;
+      case 'scenCap': if (this.scen) { Sfx.good(); if (Direct.on) Direct.msg('OBJECTIVE ' + String.fromCharCode(65 + ev.i) + ' CAPTURED', 2.5); } break;
       case 'nuke': { const mine = v.friendly(ev.o, me); this.nukes.push({id: ev.id, until: performance.now() + ev.d * 1000, mine, x: ev.x, y: ev.y}); this.addAlert(mine ? 'ICBM launched!' : 'WARNING: enemy ICBM launched!', 'bad', ev.x, ev.y); break; }
       case 'deployed': if (ev.p === me) { const u = v.ents.get(ev.id); if (u && this.deployMode === 'army') { this.addAlert(u.d.n + ' deployed', 'good'); if (!$('deploy').classList.contains('hidden')) this.openDeploy(); } else if (u) { this.deployed = true; this.flown = true; this.closeDeploy(); Direct.enter(this, u); } } break;
       case 'nukekill': this.nukes = this.nukes.filter(n => n.id !== ev.id); break;
@@ -8111,6 +8395,7 @@ const UI = {
     $('oTitle').style.color = won ? '#6dff9a' : '#ff5a4a';
     $('oSub').textContent = won ? 'The island is yours.' : 'Your capital has fallen.';
     $('bAgain').textContent = this.camp ? 'Back to campaign' : 'Back to menu';
+    if (this.scen) { $('oSub').textContent = won ? 'Every objective taken. The landing succeeded!' : 'The assault failed: you ran out of reinforcements.'; $('scenSpawn').classList.add('hidden'); }
     if (this.camp) {
       const c = this.camp, next = CAMPAIGN[c.i + 1];
       if (won) { try { if (this.campDone() < c.i + 1) localStorage.setItem('warsim-camp', c.i + 1); } catch (e) {} }
@@ -8302,6 +8587,7 @@ const UI = {
     const c = e.code;
     if (c === 'Escape') { if (this.bigMap) this.toggleBigMap(); else if (this.mode) this.cancelMode(); else if (this.sel.size) { this.sel.clear(); this.refreshHud(true); } else $('pause').classList.toggle('hidden'); return; }
     if (c === 'Tab') e.preventDefault();
+    if (this.scen && c.startsWith('Digit') && !$('scenSpawn').classList.contains('hidden')) { const k = BAT_CLASSES[+c.slice(5) - 1]; if (k) this.scenPick(k); return; }
     if (c.startsWith('Digit') && c !== 'Digit0') {
       const n = c.slice(5);
       if (e.ctrlKey) { this.groups[n] = [...this.sel]; this.addAlert('Group ' + n + ' set'); e.preventDefault(); return; }
@@ -8545,7 +8831,8 @@ const UI = {
     const G = this.g;
     if (!G || this.demo) return;
     const v = G.view, p = v.players[G.me];
-    if (!this.sbT || performance.now() - this.sbT > 500) { this.sbT = performance.now(); this.updateSelBar(); if (this.diploOpen) this.renderDiplo(); }
+    if (!this.sbT || performance.now() - this.sbT > 500) { this.sbT = performance.now(); this.updateSelBar();
+      if (this.scen && !$('scenSpawn').classList.contains('hidden') && !/Coming ashore/.test($('ssInfo').textContent)) { const S = G.sim.scen, O = S.obj[S.oi]; $('ssInfo').textContent = `Reinforcements left: ${S.tickets} · Objective ${String.fromCharCode(65 + S.oi)}: ${O ? O.n : ''} · Landing at: ${S.fwd ? 'forward position' : 'the beach, by boat'}`; } if (this.diploOpen) this.renderDiplo(); }
     $('rSteel').textContent = p.steel | 0; $('rFuel').textContent = p.fuel | 0; $('rPop').textContent = p.pop + ' / ' + p.popCap; $('rPop').style.color = p.pop >= p.popCap ? '#ff5a4a' : ''; $('rTime').textContent = fmtT(v.t);
     if (force || !this.scoreT || performance.now() - this.scoreT > 1000) {
       this.scoreT = performance.now();
@@ -8795,6 +9082,7 @@ const UI = {
     $('dmsg').textContent = '';
   },
   exitDirect(msg) {
+    if (this.scen && this.g && !this.g.sim.over) setTimeout(() => { if (!Direct.on && this.scen) this.showScenSpawn(true); }, 1200);
     document.body.classList.remove('direct-mode');
     $('direct').classList.add('hidden');
     this.R.cam.fov = 46; this.R.cam.updateProjectionMatrix();
