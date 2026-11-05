@@ -1137,7 +1137,24 @@ BATTLES.push(
   {n: 'Arena: Desert Mesas', tdm: 50, team: 10, map: 6, seed: 17, size: 96, foe: 'dhruvs', tickets: 1e9, sea: [0, 1], obj: [], land: [], def: [],
     blurb: 'Team deathmatch in the open desert between rock mesas. Long sightlines: snipers and machine guns rule. First to 50 kills.',
     comp: ['rifle', 'sniper', 'mg', 'rifle', 'rocket', 'assault', 'rifle', 'scout', 'grenadier', 'rifle']});
+// Arcade battles (in the spirit of arcade air and ground realistic-lite): two teams, endless respawns, tickets.
+// Air: shoot down planes and destroy the enemy's ground targets. Ground: hold the capture points, kill tanks.
+const AIR_CLASSES = ['fighter', 'f16', 'interceptor', 'typhoon', 'fa18', 'a10', 'bomber'], TANK_CLASSES = ['tank', 'ifv', 'sam', 'mlrs'];
+BATTLES.push(
+  {n: 'Air Battle: Island Skies', arc: 'air', team: 7, map: 2, seed: 41, size: 128, foe: 'toms', tickets: 1e9, tix: 2400, sea: [0, 1], obj: [], land: [], def: [], classes: AIR_CLASSES,
+    comp: ['fighter', 'f16', 'interceptor', 'typhoon', 'fa18', 'a10', 'fighter', 'bomber'],
+    blurb: 'Arcade air battle over an archipelago: 8 planes a side, respawn as any jet. Shooting down planes and destroying enemy tanks, trucks and AA on the ground drains their tickets. First to zero loses.'},
+  {n: 'Air Battle: Desert Strike', arc: 'air', team: 7, map: 6, seed: 23, size: 128, foe: 'jethroes', tickets: 1e9, tix: 2400, sea: [0, 1], obj: [], land: [], def: [], classes: AIR_CLASSES,
+    comp: ['f16', 'fighter', 'a10', 'interceptor', 'typhoon', 'bomber', 'fa18', 'fighter'],
+    blurb: 'Arcade air battle above the desert. Strafe the enemy armour columns, dogfight their fighters, and keep your own convoys alive.'},
+  {n: 'Tank Battle: Domination', arc: 'ground', team: 7, map: 6, seed: 29, size: 96, foe: 'dhruvs', tickets: 1e9, tix: 1500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
+    comp: ['tank', 'tank', 'ifv', 'tank', 'sam', 'ifv', 'tank', 'mlrs'],
+    blurb: 'Arcade tank battle: 8 tanks a side fight over three capture points, A, B and C. Hold more points than the enemy and their tickets bleed away; every tank kill costs them too. 3 kills in one life earns you a strike plane.'},
+  {n: 'Tank Battle: Highland Pass', arc: 'ground', team: 7, map: 3, seed: 37, size: 96, foe: 'valentinos', tickets: 1e9, tix: 1500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
+    comp: ['tank', 'ifv', 'tank', 'tank', 'sam', 'ifv', 'mlrs', 'tank'],
+    blurb: 'Domination in the hills: hull-down on the ridges, flank through the valleys. Three points, tickets, endless respawns.'});
 const BAT_CLASSES = ['rifle', 'mg', 'rocket', 'assault', 'sniper', 'medic', 'grenadier'];
+const batClasses = B => B && B.classes || BAT_CLASSES;
 // the Toms' special swaps the pilot's guns for this blade for a few seconds (sent as weapon slot 9)
 const KNIFE = {n: 'Big Knife', t: 'mel', dmg: 75, vs: 'bite', rpm: 95, rng: 2.8, crit: 1.5, sp: 0, snd: 'bite', kick: 1.2, knife: 1};
 const KNIFE_T = 8;
@@ -1853,6 +1870,7 @@ Sim.prototype.setupScen = function (B) {
   const N = this.N, P = (u, v) => ({x: u * N, y: v * N});
   for (const p of this.players) { p.steel = 0; p.fuel = 0; p.popCap = 99999; }
   this.players[0].reveal = 1e9;
+  if (B.arc) return this.arcSetup(B);
   if (B.tdm) {
     const H = this.M.spawns;
     this.scen = {B, tdm: 1, oi: 0, prog: 0, tickets: B.tickets, nextWave: 1e9, waves: 0, queue: [], obj: [], land: [], fwd: {x: H[0].x, y: H[0].y}, reinT: 1e9, att: 0, def: 0, spawnI: 0};
@@ -1910,6 +1928,83 @@ Sim.prototype.scenOver = function (win) {
   this.over = {winner: w, team: this.players[w].team, wins: [w], t: this.t};
   this.ev({k: 'over', winner: w, team: this.over.team, wins: [w]});
 };
+Sim.prototype.arcSetup = function (B) {
+  const H = this.M.spawns, N = this.N, air = B.arc === 'air';
+  for (const p of this.players) p.reveal = 1e9; // arcade: every enemy is marked
+  const S = this.scen = {B, arc: B.arc, tdm: 0, oi: 0, prog: 0, tickets: 1e9, nextWave: 1e9, waves: 0, queue: [], obj: [], land: [], fwd: {x: H[0].x, y: H[0].y}, reinT: 1e9, att: 0, def: 0, spawnI: 0, tix: [B.tix, B.tix], caps: [], gt: [[], []], strike: {}, streak: {}};
+  const mx = (H[0].x + H[1].x) / 2, my = (H[0].y + H[1].y) / 2, ax = H[1].x - H[0].x, ay = H[1].y - H[0].y, L = Math.hypot(ax, ay) || 1, px = -ay / L, py = ax / L;
+  const land = (x, y) => { for (let t = 0; t < 60; t++) { const a = t * 2.4, r = t * .6, qx = clamp(x + Math.cos(a) * r, 5, N - 6), qy = clamp(y + Math.sin(a) * r, 5, N - 6); if (this.landOk(qx, qy)) return {x: qx, y: qy}; } return {x, y}; };
+  if (!air) ['A', 'B', 'C'].forEach((n, i) => { const o = (i - 1) * N * .26, q = land(mx + px * o, my + py * o); S.caps.push({n, x: q.x, y: q.y, r: 6, own: -1, prog: 0}); });
+  else for (const o of [0, 1]) { // ground targets: an armour column, trucks and AA on each side
+    const bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45;
+    ['tank', 'tank', 'tank', 'truck', 'truck', 'truck', 'sam', 'ifv', 'tank', 'truck'].forEach((k, i) => { const q = land(bx + px * (i - 4.5) * 3.2, by + py * (i - 4.5) * 3.2); const e = this.addUnit(k, o, q.x, q.y); e.gt = 1; e.stance = 'hold'; e.h = Math.atan2(-ay * (o ? -1 : 1), -ax * (o ? -1 : 1)); e.sq = 0; S.gt[o].push(k); });
+  }
+};
+Sim.prototype.arcLoss = function (t, by) {
+  const S = this.scen, o = t.o; if (o !== 0 && o !== 1) return;
+  const air = S.arc === 'air', cost = air ? (t.gt ? 12 : t.air ? 30 : 8) : (t.air ? 12 : 16);
+  S.tix[o] = Math.max(0, S.tix[o] - cost);
+  if (t.pilot) { S.streak[o + ':' + (t.pilot - 1)] = 0; }
+  const killer = by === 0 || by === 1 ? by : null;
+  if (killer !== null) for (const e of this.ents.values()) if (e.pilot && e.o === killer && Math.hypot(e.x - t.x, e.y - t.y) < 60) { // credit the player nearby with a streak
+    const key = killer + ':' + (e.pilot - 1); S.streak[key] = (S.streak[key] || 0) + 1;
+    if (!air && S.streak[key] === 3) { S.strike[e.pilot - 1] = (S.strike[e.pilot - 1] || 0) + 1; this.notify(e.pilot - 1, '3 kills! Strike plane earned: pick the A-10 next time you spawn', 'gold'); }
+    break;
+  }
+};
+Sim.prototype.arcStep = function () {
+  const S = this.scen, B = S.B, H = this.M.spawns, N = this.N, air = S.arc === 'air';
+  if (S.tix[0] <= 0 || S.tix[1] <= 0) { this.scenOver(S.tix[1] <= 0); return; }
+  // capture points: only ground vehicles count; more of yours inside moves the bar your way
+  if (!air && this.tick % 5 === 0) {
+    for (const C of S.caps) {
+      const n = [0, 0]; for (const e of this.ents.values()) if (!e.b && !e.air && (e.o === 0 || e.o === 1) && Math.hypot(e.x - C.x, e.y - C.y) < C.r) n[e.o]++;
+      C.cnt = n; const d = n[0] - n[1];
+      if (d && !(n[0] && n[1])) { C.prog = clamp(C.prog + Math.sign(d) * Math.min(3, Math.abs(d)) * .035, -1, 1); if (Math.abs(C.prog) >= 1 && C.own !== (d > 0 ? 0 : 1)) { C.own = d > 0 ? 0 : 1; this.ev({k: 'msg', p: 0, text: (C.own === 0 ? 'We captured ' : 'The enemy captured ') + 'point ' + C.n, kind: C.own === 0 ? 'good' : 'bad', x: C.x, y: C.y}); } else if (C.own !== -1 && Math.sign(C.prog) !== (C.own === 0 ? 1 : -1)) C.own = -1; }
+    }
+    if (this.tick % 10 === 0) { const a = S.caps.filter(C => C.own === 0).length, b = S.caps.filter(C => C.own === 1).length; if (a > b) S.tix[1] = Math.max(0, S.tix[1] - (a - b) * 1.1); if (b > a) S.tix[0] = Math.max(0, S.tix[0] - (b - a) * 1.1); }
+  }
+  // keep each side's team topped up (you are one of team 0)
+  const isFighter = e => !e.b && !e.gt && (air ? e.air : !e.air && e.d.cat === 'veh') && !e.inside;
+  const n = [0, 0]; for (const e of this.ents.values()) if (isFighter(e) && !e.pilot && e.o < 2) n[e.o]++;
+  for (const o of [0, 1]) {
+    const want = B.team + o;
+    S.spT = S.spT || [0, 0];
+    if (n[o] < want && this.t >= S.spT[o]) { S.spT[o] = this.t + 1.2;
+      const kk = B.comp[(S.spawnI++) % B.comp.length], e = this.arcSpawn(o, kk); if (e) n[o]++;
+    }
+  }
+  // air: ground targets come back in waves
+  if (air && this.tick % 600 === 300) for (const o of [0, 1]) {
+    const have = [...this.ents.values()].filter(e => e.gt && e.o === o).length;
+    if (have < 5) { const mx = (H[0].x + H[1].x) / 2, my = (H[0].y + H[1].y) / 2, bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45; for (let i = 0; i < 4; i++) { const x = bx + (this.rnd() - .5) * 14, y = by + (this.rnd() - .5) * 14; if (this.landOk(x, y)) { const e = this.addUnit(['tank', 'truck', 'sam', 'truck'][i], o, x, y); e.gt = 1; e.stance = 'hold'; e.sq = 0; } } }
+  }
+  S.queue = S.queue.filter(q => {
+    if (q.t > this.t) return true;
+    const e = this.arcSpawn(0, q.k);
+    if (e) { this.ev({k: 'scenYou', p: q.you, id: e.id}); if (q.k === 'a10' && !air) S.strike[q.you] = Math.max(0, (S.strike[q.you] || 0) - 1); }
+    return false;
+  });
+  // bots: planes hunt across the map, tanks drive for the nearest point they do not hold
+  if (this.tick % 20 === 0) for (const e of this.ents.values()) {
+    if (e.b || e.pilot || e.o > 1 || e.o < 0 || e.gt || e.inside) continue;
+    if ((e.tid && this.ents.get(e.tid)) || e.goal) continue;
+    if (air || e.air) { const en = H[1 - e.o], f = .3 + this.rnd() * .6; this.cmdMove([e], clamp(H[e.o].x + (en.x - H[e.o].x) * f + (this.rnd() - .5) * N * .5, 4, N - 5), clamp(H[e.o].y + (en.y - H[e.o].y) * f + (this.rnd() - .5) * N * .5, 4, N - 5), true, false); continue; }
+    let best = null, bd = 1e9; for (const C of S.caps) { if (C.own === e.o && Math.abs(C.prog) >= 1 && this.rnd() < .8) continue; const d = Math.hypot(C.x - e.x, C.y - e.y) + this.rnd() * 20; if (d < bd) { bd = d; best = C; } }
+    if (!best) best = S.caps[Math.floor(this.rnd() * S.caps.length)];
+    if (best) this.cmdMove([e], best.x + (this.rnd() - .5) * 6, best.y + (this.rnd() - .5) * 6, true, false);
+  }
+};
+Sim.prototype.arcSpawn = function (o, k) {
+  const H = this.M.spawns, sp = H[o], en = H[1 - o], d = UNITS[k], N = this.N, h = Math.atan2(en.y - sp.y, en.x - sp.x);
+  if (d.cat === 'air' || d.cat === 'heli') { // planes spawn in the air, already flying toward the fight
+    const x = clamp(sp.x - Math.cos(h) * 6 + (this.rnd() - .5) * 16, 3, N - 4), y = clamp(sp.y - Math.sin(h) * 6 + (this.rnd() - .5) * 16, 3, N - 4);
+    const e = this.addUnit(k, o, x, y); e.h = h; e.z = Math.max(hAt(this.M, x, y), 0) + 18 + this.rnd() * 6; e.sp = d.spd; e.sq = 0;
+    return e;
+  }
+  for (let tr = 0; tr < 20; tr++) { const x = sp.x + (this.rnd() - .5) * 12, y = sp.y + (this.rnd() - .5) * 12; if (this.landOk(x, y)) { const e = this.addUnit(k, o, x, y); e.h = h; e.sq = 0; return e; } }
+  return null;
+};
 Sim.prototype.tdmStep = function () {
   const S = this.scen, B = S.B, H = this.M.spawns;
   const k = [this.players[0].kills, this.players[1].kills];
@@ -1942,6 +2037,7 @@ Sim.prototype.tdmStep = function () {
 Sim.prototype.scenStep = function () {
   const S = this.scen, B = S.B, t = this.t;
   if (this.over) return;
+  if (S.arc) return this.arcStep();
   if (S.tdm) return this.tdmStep();
   // landing waves
   if (t >= S.nextWave && S.tickets > 0) {
@@ -1998,11 +2094,12 @@ Sim.prototype.scenStep = function () {
   }
 };
 Sim.prototype.scenSpawn = function (pi, k) {
-  const S = this.scen; if (!S || this.over || !BAT_CLASSES.includes(k)) return;
+  const S = this.scen; if (!S || this.over || !batClasses(S.B).includes(k)) return;
+  if (S.arc && k === 'a10' && S.arc === 'ground' && !(S.strike && S.strike[pi] > 0)) { this.notify(pi, 'Get 3 kills in one life to earn a strike plane', 'bad'); return; }
   if (S.queue.some(q => q.you === pi) || (S.spawnT || 0) > this.t) return;
   if (S.tickets <= 0) { this.notify(pi, 'No reinforcements left', 'bad'); return; }
   S.tickets--; S.spawnT = this.t + 1;
-  if (S.tdm) { S.queue.push({t: this.t + 1.5, k, x: 0, y: 0, you: pi}); return; }
+  if (S.tdm || S.arc) { S.queue.push({t: this.t + 1.5, k, x: 0, y: 0, you: pi}); return; }
   if (S.fwd) S.queue.push({t: this.t + .5, k, x: S.fwd.x + (this.rnd() - .5) * 3, y: S.fwd.y + S.B.sea[1] * 3, you: pi});
   else { let best = S.land[0]; for (const L of S.land) if (Math.abs(L.x - this.N / 2) < Math.abs(best.x - this.N / 2)) best = L; this.scenLanding(best, [k], pi); }
 };
@@ -2374,7 +2471,7 @@ Sim.prototype.issue = function (c, pi) {
       this.ev({k: 'deployed', p: pi, id: u.id});
       break;
     }
-    case 'pilot': { const e = mine[0]; if (e && c.on && this.players[pi].nat.key === 'charlies' && (e.d.cat === 'air' || e.d.cat === 'heli')) break; if (e && !e.b) { if (c.on) { if (!e.pilot) { e.hpm *= PILOT_HP; e.hp *= PILOT_HP; } e.chute = 0; e.pilot = pi + 1; this.clearOrders(e); this.ev({k: 'cry', p: pi, id: e.id}); } else { if (e.pilot) { e.hpm /= PILOT_HP; e.hp = Math.min(e.hp / PILOT_HP, e.hpm); } e.pilot = 0; if (e.air) e.hold = {x: e.x, y: e.y}; } } break; }
+    case 'pilot': { const e = mine[0]; if (e && c.on && this.players[pi].nat.key === 'charlies' && (e.d.cat === 'air' || e.d.cat === 'heli') && !(this.scen && this.scen.arc)) break; if (e && !e.b) { if (c.on) { if (!e.pilot) { e.hpm *= PILOT_HP; e.hp *= PILOT_HP; } e.chute = 0; e.pilot = pi + 1; this.clearOrders(e); this.ev({k: 'cry', p: pi, id: e.id}); } else { if (e.pilot) { e.hpm /= PILOT_HP; e.hp = Math.min(e.hp / PILOT_HP, e.hpm); } e.pilot = 0; if (e.air) e.hold = {x: e.x, y: e.y}; } } break; }
     case 'pose': { const e = this.ents.get(c.id); if (e && e.o === pi && e.pilot === pi + 1) { e.x = clamp(c.x, 0, this.N - 1); e.y = clamp(c.y, 0, this.N - 1); e.z = c.z; e.h = c.h; e.p = c.p || 0; e.r = c.r || 0; if (c.tu !== undefined) e.tu = c.tu; if (c.m !== undefined) e.moving = c.m; e.ch = c.ch; } break; }
     case 'pfire': this.pilotFire(c, pi); break;
     case 'streak': { // killstreak reward: an artillery barrage walks across the marked ground after a short warning
@@ -2767,6 +2864,7 @@ Sim.prototype.hurt = function (t, dmg, by) {
 };
 
 Sim.prototype.kill = function (t, by) {
+  if (this.scen && this.scen.arc && !t.b && t.hp > -1e8) this.arcLoss(t, by);
   t.hp = 0;
   const p = this.players[t.o];
   this.ents.delete(t.id);
@@ -9148,6 +9246,27 @@ const Direct = {
   // canopy frame and instrument panel for first-person flying
   // FPS battle: objective banner, capture bar, reinforcements and a waypoint to the objective
   drawScenHud(c, w, h, S) {
+    if (S.arc) {
+      const cx = w / 2, T = S.tix, mx = S.B.tix;
+      c.save(); if (S.arc === 'air') c.translate(0, 44); c.textAlign = 'center'; c.fillStyle = 'rgba(6,10,14,.7)'; c.fillRect(cx - 170, 60, 340, S.arc === 'ground' ? 70 : 50);
+      c.font = '700 11px system-ui'; c.fillStyle = '#fff'; c.fillText(S.arc === 'air' ? 'AIR BATTLE · tickets' : 'DOMINATION · tickets', cx, 74);
+      c.font = '900 20px system-ui'; c.fillStyle = '#6dc8ff'; c.fillText(Math.ceil(T[0]), cx - 120, 96); c.fillStyle = '#ff6a5a'; c.fillText(Math.ceil(T[1]), cx + 120, 96);
+      c.fillStyle = 'rgba(255,255,255,.15)'; c.fillRect(cx - 90, 84, 180, 8); c.fillStyle = '#6dc8ff'; c.fillRect(cx - 90, 84, 88 * T[0] / mx, 8); c.fillStyle = '#ff6a5a'; c.fillRect(cx + 90 - 88 * T[1] / mx, 84, 88 * T[1] / mx, 8);
+      if (S.arc === 'ground') {
+        S.caps.forEach((C, i) => {
+          const x = cx - 50 + i * 50, y = 114, col = C.own === 0 ? '#6dc8ff' : C.own === 1 ? '#ff6a5a' : '#c9d4da';
+          c.fillStyle = 'rgba(255,255,255,.12)'; c.beginPath(); c.arc(x, y, 12, 0, 6.3); c.fill();
+          c.strokeStyle = C.prog > 0 ? '#6dc8ff' : '#ff6a5a'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, 12, -Math.PI / 2, -Math.PI / 2 + Math.abs(C.prog) * 6.283, C.prog < 0); c.stroke();
+          c.fillStyle = col; c.font = '900 12px system-ui'; c.fillText(C.n, x, y + 4);
+          // waypoint for each point
+          const gz = Math.max(0, hAt(this.ui.g.view.M, C.x, C.y)) + 2, sp = this.toScreen(C.x, C.y, gz), d = Math.hypot(C.x - this.pose.x, C.y - this.pose.y) * 10;
+          if (sp) { const px = clamp(sp.x, 30, w - 30), py = clamp(sp.y, 140, h - 120); c.fillStyle = col; c.globalAlpha = .9; c.beginPath(); c.moveTo(px, py - 11); c.lineTo(px + 9, py); c.lineTo(px, py + 11); c.lineTo(px - 9, py); c.closePath(); c.fill(); c.globalAlpha = 1; c.fillStyle = '#000'; c.font = '900 11px system-ui'; c.fillText(C.n, px, py + 4); c.fillStyle = col; c.font = '700 10px system-ui'; c.fillText((d | 0) + ' m', px, py + 24); }
+        });
+      }
+      const st = S.streak[this.ui.g.me + ':' + this.ui.g.me] || 0;
+      c.textAlign = 'left'; c.font = '700 12px system-ui'; c.fillStyle = '#fff'; c.fillText(S.arc === 'ground' ? 'Kills this life: ' + st + (st < 3 ? ' · 3 earns a strike plane' : ' · STRIKE PLANE EARNED') : 'Planes −30 tickets · ground targets −12', 24, 100);
+      c.restore(); return;
+    }
     if (S.tdm) {
       const v = this.ui.g.view, a = v.players[0].kills, b = v.players[1].kills, cx = w / 2;
       c.save(); c.textAlign = 'center'; c.fillStyle = 'rgba(6,10,14,.7)'; c.fillRect(cx - 150, 64, 300, 50);
@@ -10189,7 +10308,7 @@ const UI = {
   openBat() {
     $('menu').classList.add('hidden'); $('batScr').classList.remove('hidden');
     const sel = $('batNat'); if (!sel.options.length) sel.innerHTML = NATIONS.map((n, i) => `<option value="${i}">${n.name}</option>`).join('');
-    $('batList').innerHTML = BATTLES.map((B, i) => `<button class="camplv" data-i="${i}"><b>${B.n}</b><span>${B.blurb}</span><span class="small">${B.tdm ? (B.team + 1) + ' vs ' + (B.team + 1) + ' · first to ' + B.tdm + ' kills' : B.obj.length + ' objectives · ' + B.tickets + ' reinforcements'} · enemy: ${NATIONS.find(n => n.key === B.foe).name}</span></button>`).join('');
+    $('batList').innerHTML = BATTLES.map((B, i) => `<button class="camplv" data-i="${i}"><b>${B.n}</b><span>${B.blurb}</span><span class="small">${B.arc ? (B.team + 1) + ' vs ' + (B.team + 1) + (B.arc === 'air' ? ' planes' : ' tanks') + ' · ' + B.tix + ' tickets' : B.tdm ? (B.team + 1) + ' vs ' + (B.team + 1) + ' · first to ' + B.tdm + ' kills' : B.obj.length + ' objectives · ' + B.tickets + ' reinforcements'} · enemy: ${NATIONS.find(n => n.key === B.foe).name}</span></button>`).join('');
     $('batList').querySelectorAll('button').forEach(b => b.onclick = () => this.batLaunch(+b.dataset.i));
   },
   batLaunch(i) {
@@ -10201,24 +10320,26 @@ const UI = {
     this.scen = {i, B, cls: 'rifle'}; document.body.classList.add('scen');
     const L = this.g.sim.scen.land[2] || this.g.sim.scen.land[0] || this.g.sim.scen.fwd;
     this.jump(L.x, L.y + 8);
-    this.g.issue({c: 'scenSpawn', u: 'rifle'});
-    this.addAlert(B.tdm ? 'Team deathmatch: first to ' + B.tdm + ' kills!' : 'Landing craft inbound. Get ready!', 'gold');
+    this.scen.cls = batClasses(B)[0]; this.g.issue({c: 'scenSpawn', u: this.scen.cls});
+    this.addAlert(B.arc === 'air' ? 'Air battle! Shoot down planes and hit their ground targets.' : B.arc ? 'Tank battle! Capture A, B and C.' : B.tdm ? 'Team deathmatch: first to ' + B.tdm + ' kills!' : 'Landing craft inbound. Get ready!', 'gold');
   },
   showScenSpawn(show) {
     const el = $('scenSpawn');
     if (!show || !this.scen || !this.g || this.g.sim.over) { el.classList.add('hidden'); return; }
     const S = this.g.sim.scen, O = S.obj[S.oi];
     if (O && el.classList.contains('hidden')) this.jump(O.x, O.y + 6);
-    if (S.tdm) { $('ssInfo').textContent = `Score ${this.g.view.players[0].kills} : ${this.g.view.players[1].kills} · first to ${S.B.tdm} · respawn at your base`; }
+    if (S.arc) { $('ssInfo').textContent = `Tickets ${Math.ceil(S.tix[0])} : ${Math.ceil(S.tix[1])} · pick your ${S.arc === 'air' ? 'plane' : 'vehicle'}` + (S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ' · STRIKE PLANE READY (A-10)' : ''); }
+    else if (S.tdm) { $('ssInfo').textContent = `Score ${this.g.view.players[0].kills} : ${this.g.view.players[1].kills} · first to ${S.B.tdm} · respawn at your base`; }
     else $('ssInfo').textContent = `Reinforcements left: ${S.tickets} · Objective ${String.fromCharCode(65 + S.oi)}: ${O ? O.n : ''} · Landing at: ${S.fwd ? 'forward position' : 'the beach, by boat'}`;
-    $('ssBtns').innerHTML = BAT_CLASSES.map((k, i) => `<button data-k="${k}" class="${k === this.scen.cls ? 'primary' : ''}"><kbd>${i + 1}</kbd>${UNITS[k].n}</button>`).join('');
+    const CL = batClasses(S.B).concat(S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ['a10'] : []);
+    $('ssBtns').innerHTML = CL.map((k, i) => `<button data-k="${k}" class="${k === this.scen.cls ? 'primary' : ''}"><kbd>${i + 1}</kbd>${UNITS[k].n}</button>`).join('');
     $('ssBtns').querySelectorAll('button').forEach(b => b.onclick = () => this.scenPick(b.dataset.k));
     el.classList.remove('hidden');
   },
   scenPick(k) {
     if (!this.scen) return;
     this.scen.cls = k; this.g.issue({c: 'scenSpawn', u: k}); Sfx.ui();
-    $('ssInfo').textContent = 'Coming ashore as ' + UNITS[k].n + '...';
+    $('ssInfo').textContent = (this.g.sim.scen && this.g.sim.scen.arc ? 'Spawning as ' : 'Coming ashore as ') + UNITS[k].n + '...';
   },
   campRefresh() {
     const c = this.camp; if (!c) return;
@@ -10546,7 +10667,7 @@ const UI = {
     $('oSub').textContent = won ? 'The island is yours.' : 'Your capital has fallen.';
     $('bAgain').textContent = this.camp ? 'Back to campaign' : 'Back to menu';
     { const nx = this.camp && won && CAMPAIGN[this.camp.i + 1]; $('bNext').classList.toggle('hidden', !nx); if (nx) $('bNext').textContent = 'Next level: ' + (this.camp.i + 2) + '. ' + nx.n; $('bAgain').classList.toggle('primary', !nx); }
-    if (this.scen) { $('oSub').textContent = this.scen.B.tdm ? (won ? 'Your team hit the kill limit first!' : 'The enemy team reached the kill limit.') : won ? 'Every objective taken. The landing succeeded!' : 'The assault failed: you ran out of reinforcements.'; $('scenSpawn').classList.add('hidden'); }
+    if (this.scen) { $('oSub').textContent = this.scen.B.arc ? (won ? 'The enemy ran out of tickets. Victory!' : 'Your team ran out of tickets.') : this.scen.B.tdm ? (won ? 'Your team hit the kill limit first!' : 'The enemy team reached the kill limit.') : won ? 'Every objective taken. The landing succeeded!' : 'The assault failed: you ran out of reinforcements.'; $('scenSpawn').classList.add('hidden'); }
     if (this.camp) {
       const c = this.camp, next = CAMPAIGN[c.i + 1];
       if (won) { try { if (this.campDone() < c.i + 1) localStorage.setItem('warsim-camp', c.i + 1); } catch (e) {} }
@@ -10740,7 +10861,7 @@ const UI = {
     const c = e.code;
     if (c === 'Escape') { if (this.bigMap) this.toggleBigMap(); else if (this.mode) this.cancelMode(); else if (this.sel.size) { this.sel.clear(); this.refreshHud(true); } else $('pause').classList.toggle('hidden'); return; }
     if (c === 'Tab') e.preventDefault();
-    if (this.scen && c.startsWith('Digit') && !$('scenSpawn').classList.contains('hidden')) { const k = BAT_CLASSES[+c.slice(5) - 1]; if (k) this.scenPick(k); return; }
+    if (this.scen && c.startsWith('Digit') && !$('scenSpawn').classList.contains('hidden')) { const S = this.g.sim.scen, k = batClasses(S && S.B).concat(S && S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ['a10'] : [])[+c.slice(5) - 1]; if (k) this.scenPick(k); return; }
     if (c.startsWith('Digit') && c !== 'Digit0') {
       const n = c.slice(5);
       if (e.ctrlKey) { this.groups[n] = [...this.sel]; this.addAlert('Group ' + n + ' set'); e.preventDefault(); return; }
