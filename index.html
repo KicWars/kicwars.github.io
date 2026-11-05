@@ -6879,7 +6879,7 @@ const Sfx = {
     this.noiseB = b;
   },
   noise(dur, freq, gain, type, q, sweep) {
-    if (!this.ctx) return;
+    if (!this.ctx || this.mute) return;
     const c = this.ctx, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), t = c.currentTime;
     s.buffer = this.noiseB; s.loop = true;
     f.type = type || 'lowpass'; f.frequency.setValueAtTime(freq, t); f.Q.value = q || 1;
@@ -6889,7 +6889,7 @@ const Sfx = {
     s.start(t, Math.random()); s.stop(t + dur + .02);
   },
   tone(f0, f1, dur, gain, type) {
-    if (!this.ctx) return;
+    if (!this.ctx || this.mute) return;
     const c = this.ctx, o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
     o.type = type || 'sine'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
     g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(.0008, t + dur);
@@ -6943,7 +6943,7 @@ const Sfx = {
   die(x, y, R) { const g = this.gainAt(x, y, R); if (g > .1 && this.limit('d', 200)) this.tone(240 + Math.random() * 120, 110, .18, .1 * g, 'triangle'); },
   nuke() { this.noise(6, 900, 1.3, 'lowpass', 1, 25); this.tone(55, 18, 6, 1.2); },
   siren() {
-    if (!this.ctx) return;
+    if (!this.ctx || this.mute) return;
     const c = this.ctx, o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
     o.type = 'sawtooth'; g.gain.setValueAtTime(.001, t); g.gain.linearRampToValueAtTime(.16, t + 1); g.gain.setValueAtTime(.16, t + 8); g.gain.linearRampToValueAtTime(.001, t + 10);
     for (let i = 0; i < 4; i++) { o.frequency.setValueAtTime(320, t + i * 2.5); o.frequency.linearRampToValueAtTime(760, t + i * 2.5 + 1.25); o.frequency.linearRampToValueAtTime(320, t + i * 2.5 + 2.5); }
@@ -10379,7 +10379,7 @@ const UI = {
     const seed = 3 + (Math.random() * 1000 | 0);
     const players = [0, 4, 3, 1].map(n => ({nation: n, bot: 'hard'}));
     this.g = new Game({mode: 'demo', size: 96, seed, players, me: 0, R: this.R});
-    this.g.speed = 2; this.demo = true;
+    this.g.speed = 2; this.demo = true; Sfx.mute = true; // the battle behind the menus is silent
     this.R.spectate = true;
     this.cam.tx = this.cam.x = 48; this.cam.tz = this.cam.z = 48; this.cam.tdist = this.cam.dist = 66; this.cam.pitch = .55;
     // skip the slow opening so the menu shows a battle
@@ -10799,7 +10799,7 @@ const UI = {
   },
   launch(o) {
     if (this.g) this.g.stop();
-    this.demo = false;
+    this.demo = false; Sfx.mute = false;
     o.R = this.R;
     this.g = new Game(o);
     $('timeCtl').classList.toggle('hidden', o.mode === 'client'); if (o.mode !== 'client') this.setSpeed(1);
