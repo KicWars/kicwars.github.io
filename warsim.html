@@ -2768,7 +2768,7 @@ Sim.prototype.step = function () {
   }
   if (this.tick % 10 === 3) this.stepMorale();
   if (this.tick % 50 === 21) for (const p of this.players) if (p.alive && p.autoEco && !this.battle && !this.scen) this.stepAutoEco(p);
-  if (this.coverDirty) this.rebuildCover();
+  if (this.coverDirty && this.tick % 5 === 0) this.rebuildCover(); // batched: a dig or build marks it dirty, the rebuild runs at most 12 times a second
   if (this.tick % 300 === 7) this.sampleStats();
   if (this.tick % 10 === 0) this.stepDiplo();
   if (this.tick % 900 === 450) for (const p of this.players) if (p.alive && p.autoRecon && ![...this.ents.values()].some(e => e.o === p.i && e.recon)) this.sendRecon(p, 1, true);
@@ -6264,10 +6264,20 @@ Renderer.prototype.paintRoad = function (x, y) {
   this.texDirty = true;
   const mg = this.mmBase.getContext('2d'); mg.fillStyle = '#b8ae98'; mg.fillRect(x / N * 256 - 1, y / N * 256 - 1, 2, 2);
 };
+// Re-light only the vertices around a change (central differences on the height grid) instead of recomputing the whole terrain's normals.
+Renderer.prototype.fixNormals = function (x0, y0, x1, y1) {
+  const M = this.view.M, N = this.view.N, nrm = this.terrain.geometry.attributes.normal, h = M.h;
+  x0 = Math.max(0, x0 - 1); y0 = Math.max(0, y0 - 1); x1 = Math.min(N - 1, x1 + 1); y1 = Math.min(N - 1, y1 + 1);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const hl = h[y * N + Math.max(0, x - 1)], hr = h[y * N + Math.min(N - 1, x + 1)], hu = h[Math.max(0, y - 1) * N + x], hd = h[Math.min(N - 1, y + 1) * N + x];
+    let nx = hl - hr, ny = 2, nz = hu - hd; const l = Math.hypot(nx, ny, nz); nrm.setXYZ(y * N + x, nx / l, ny / l, nz / l);
+  }
+  nrm.needsUpdate = true;
+};
 Renderer.prototype.digTerrain = function (x, y) { // re-shape the terrain mesh around a dig and paint it as bare earth
   const M = this.view.M, N = this.view.N, pos = this.terrain.geometry.attributes.position, E = Math.ceil(DIG_R + 2);
   for (let j = -E; j <= E; j++) for (let i = -E; i <= E; i++) { const cx = x + i, cy = y + j; if (cx >= 0 && cy >= 0 && cx < N && cy < N) pos.setY(cy * N + cx, M.h[cy * N + cx]); }
-  pos.needsUpdate = true; this.terrain.geometry.computeVertexNormals();
+  pos.needsUpdate = true; this.fixNormals(x - E, y - E, x + E, y + E);
   const q = this.tc.width / N, g = this.tg, gr = g.createRadialGradient(x * q, y * q, 0, x * q, y * q, (DIG_R + 1.2) * q);
   gr.addColorStop(0, 'rgba(122,98,70,.95)'); gr.addColorStop(.75, 'rgba(122,98,70,.8)'); gr.addColorStop(1, 'rgba(122,98,70,0)');
   g.fillStyle = gr; g.beginPath(); g.arc(x * q, y * q, (DIG_R + 1.2) * q, 0, 6.3); g.fill();
@@ -6277,20 +6287,23 @@ Renderer.prototype.digTerrain = function (x, y) { // re-shape the terrain mesh a
 Renderer.prototype.flushDig = function () {
   const Q = this.digQ; if (!Q || !Q.length) return; this.digQ = [];
   const M = this.view.M, N = this.view.N, pos = this.terrain.geometry.attributes.position, q = this.tc.width / N, g = this.tg;
-  const seen = new Set();
+  const seen = new Set(); let bx0 = N, by0 = N, bx1 = 0, by1 = 0; const tun = this.tunnels = this.tunnels || new Set();
   for (const [i] of Q) { if (seen.has(i)) continue; seen.add(i); pos.setY(i, M.h[i]);
     const x = i % N, y = (i / N) | 0, d = M.dug ? M.dug[i] : 0, k = Math.min(1, d / DIG_MAX);
-    g.fillStyle = `rgba(${86 - k * 40 | 0},${66 - k * 34 | 0},${46 - k * 26 | 0},.9)`; g.beginPath(); g.arc(x * q, y * q, q * .85, 0, 6.3); g.fill(); }
-  pos.needsUpdate = true; this.terrain.geometry.computeVertexNormals(); this.texDirty = true; this.texT = Math.min(this.texT, .6);
+    g.fillStyle = `rgba(${86 - k * 40 | 0},${66 - k * 34 | 0},${46 - k * 26 | 0},.9)`; g.beginPath(); g.arc(x * q, y * q, q * .85, 0, 6.3); g.fill();
+    if (d >= TUNNEL_D) tun.add(i); else tun.delete(i);
+    if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; }
+  pos.needsUpdate = true; this.fixNormals(bx0, by0, bx1, by1); this.texDirty = true; this.texT = Math.min(this.texT, .6);
   // timber roofs over every tunnel cell
-  const cells = []; if (M.dug) for (let i = 0; i < N * N; i++) if (M.dug[i] >= TUNNEL_D) cells.push(i);
+  if (!this.tunnelsInit) { this.tunnelsInit = 1; if (M.dug) for (let i = 0; i < N * N; i++) if (M.dug[i] >= TUNNEL_D) tun.add(i); }
+  const cells = [...tun];
   if (!this.roofM || cells.length * 2 > this.roofCap) {
     if (this.roofM) { this.world.remove(this.roofM); this.roofM.dispose(); }
     const cap = this.roofCap = Math.max(256, cells.length * 4), b = new Batch(); b.box(1.04, .07, .34, 0, 0, 0, 0x5a4026); b.box(1.04, .03, .05, 0, .04, .1, 0x3a2a18);
     this.roofM = new THREE.InstancedMesh(b.geo(), this.matV, cap); this.roofM.castShadow = this.roofM.receiveShadow = true; this.world.add(this.roofM);
   }
-  const m = new THREE.Matrix4(), qq = new THREE.Quaternion(), sc = new THREE.Vector3(1, 1, 1), p = new THREE.Vector3(); let n = 0;
-  for (const i of cells) { const x = i % N, y = (i / N) | 0, top = M.h0[i] - .12, rot = (x + y) % 2 ? 0 : Math.PI / 2; qq.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+  const m = new THREE.Matrix4(), qq = new THREE.Quaternion(), sc = new THREE.Vector3(1, 1, 1), p = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0); let n = 0;
+  for (const i of cells) { const x = i % N, y = (i / N) | 0, top = M.h0[i] - .12, rot = (x + y) % 2 ? 0 : Math.PI / 2; qq.setFromAxisAngle(up, rot);
     for (const o of [-.27, .27]) { p.set(x + (rot ? o : 0), top, y + (rot ? 0 : o)); m.compose(p, qq, sc); this.roofM.setMatrixAt(n++, m); } }
   this.roofM.count = n; this.roofM.instanceMatrix.needsUpdate = true;
 };
@@ -6939,7 +6952,7 @@ Renderer.prototype.draw = function (dt, view) {
   if (this.treeTick <= 0) { this.updateTrees(); this.treeTick = 2; } this.treeTick -= dt;
   if (this.digQ && this.digQ.length && (this.digT = (this.digT || 0) - dt) <= 0) { this.digT = .3; this.flushDig(); }
   this.texT -= dt;
-  if (this.texDirty && this.texT <= 0) { this.terrainTex.needsUpdate = true; this.texDirty = false; this.texT = 1.5; }
+  if (this.texDirty && this.texT <= 0) { this.terrainTex.needsUpdate = true; this.texDirty = false; this.texT = 2.5; } // a full-map texture upload is the costly part of digging, so keep them rare
   this.sky.position.copy(this.cam.position);
   // shadow frustum follows the camera target
   const c = this.camTarget || new THREE.Vector3(v.N / 2, 0, v.N / 2);
@@ -7444,7 +7457,9 @@ Game.prototype.hostTick = function () {
   const now = performance.now();
   this.acc = Math.min(5, this.acc + (now - this.last) / 1000 * this.speed); this.last = now;
   let steps = 0;
+  const t0 = now;
   while (this.acc >= DT && steps < 40) {
+    if (steps && performance.now() - t0 > 14) { this.acc = Math.min(this.acc, DT * 2); break; } // over budget: drop the backlog, never spiral
     this.acc -= DT; steps++;
     for (const b of this.bots) b.update();
     this.sim.step();
