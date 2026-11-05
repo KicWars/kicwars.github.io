@@ -100,11 +100,38 @@ body.warroom #hud,body.warroom #direct{display:none!important}
 #scenSpawn h3{margin:0 0 4px}#ssBtns{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0}#ssBtns button{padding:7px 10px}#ssBtns kbd{opacity:.6;margin-right:4px}
 body.scen #tutor,body.camp #tutor,body.warroom #tutor{display:none!important}
 body.scen #top .res:nth-of-type(2),body.scen #top .res:nth-of-type(3),body.scen #top .res:nth-of-type(4),body.scen #bottom,body.scen #selBar,body.scen #bDeploy,body.scen #timeCtl,body.scen #objectives,body.scen #diplo{display:none!important}
+/* --- UI polish: glassy panels, clearer cards, chips --- */
+#selpanel,#cards,#mmwrap,.selbar button,#diplo,#objectives,#tutor,#statsScr,#techScr{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#selpanel,#cards{background:linear-gradient(180deg,rgba(22,30,38,.9),rgba(9,13,17,.92));border:1px solid rgba(255,255,255,.1);box-shadow:0 6px 24px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);border-radius:12px}
+#cards{border-top:2px solid var(--acc)}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.1);border-radius:8px;transition:transform .1s,box-shadow .12s,border-color .12s}
+.card:hover{transform:translateY(-2px);border-color:var(--acc);box-shadow:0 4px 14px rgba(0,0,0,.5),0 0 0 1px var(--acc) inset}
+.card.lock::after{content:'🔒';position:absolute;right:3px;top:2px;font-size:11px;filter:none;opacity:.95}
+.card.lock{opacity:.55;filter:grayscale(.85)}
+.res{background:linear-gradient(180deg,rgba(30,38,46,.85),rgba(10,14,18,.85));border:1px solid rgba(255,255,255,.09);border-radius:8px;padding:4px 12px;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+#natBadge{border-radius:8px;background:linear-gradient(180deg,rgba(30,38,46,.9),rgba(10,14,18,.9));box-shadow:0 2px 8px rgba(0,0,0,.35);letter-spacing:.03em}
+.selbar button{background:linear-gradient(90deg,rgba(22,30,38,.9),rgba(10,14,18,.85));border:1px solid rgba(255,255,255,.1);border-left:3px solid rgba(255,255,255,.18);border-radius:8px}
+.selbar button:hover{border-left-color:var(--acc)}
+.al{background:linear-gradient(90deg,rgba(14,20,26,.9),rgba(14,20,26,.55));border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#mmwrap{border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+#tip{border-radius:10px;background:linear-gradient(180deg,rgba(22,30,38,.97),rgba(8,11,15,.97));box-shadow:0 8px 28px rgba(0,0,0,.55)}
+.big{border-radius:10px;box-shadow:0 3px 12px rgba(0,0,0,.35)}.big:hover{transform:translateX(3px)}
 #tutor{position:absolute;left:50%;top:56px;transform:translateX(-50%);width:min(560px,calc(100vw - 32px));background:rgba(8,12,16,.92);border:1px solid var(--acc);border-radius:10px;padding:12px 16px;z-index:30;box-shadow:0 6px 30px rgba(0,0,0,.5)}
 #tutor h3{margin:2px 0 6px;font-size:17px;color:var(--acc)}#tutor p{margin:0 0 8px;font-size:14px;line-height:1.45}#tutor .tstep{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 #tutor .tbtns{display:flex;gap:8px;justify-content:flex-end}#tutor .tbtns button{padding:5px 12px}#tutor.wait #tutNext{display:none}#tutor .ok{color:#6dff9a;font-weight:700}
 .tutHl{outline:3px solid #ffd23a!important;outline-offset:2px;animation:tutPulse 1s infinite alternate}@keyframes tutPulse{from{outline-color:#ffd23a}to{outline-color:rgba(255,210,58,.25)}}
 .tutbtn{border-color:#ffd23a!important}
+#techScr{position:absolute;inset:56px 4vw 60px;background:linear-gradient(180deg,rgba(14,20,26,.97),rgba(8,11,15,.97));border:1px solid var(--bd);border-radius:12px;padding:14px 18px;overflow:auto;z-index:40;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+#techScr .shead{display:flex;gap:14px;align-items:center}#techScr h2{margin:0;flex:1}#techLab{font-size:13px;color:var(--dim)}
+.ttrees{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:14px;margin-top:10px}
+.ttree h3{margin:0 0 8px;font-size:15px;letter-spacing:.04em;display:flex;gap:8px;align-items:center}.ttree h3 i{font-style:normal;font-size:20px}
+.tnode{position:relative;border:1px solid rgba(255,255,255,.12);border-left:4px solid var(--tc);border-radius:8px;padding:9px 11px 9px 12px;margin-bottom:22px;background:rgba(255,255,255,.035);cursor:pointer;transition:transform .12s,background .12s}
+.tnode:not(:last-child)::after{content:'';position:absolute;left:24px;bottom:-22px;width:3px;height:22px;background:rgba(255,255,255,.14)}
+.tnode:hover{background:rgba(255,255,255,.08);transform:translateX(2px)}.tnode b{font-size:14px}.tnode .tt{float:right;font-size:11px;color:var(--dim)}
+.tnode p{margin:4px 0 5px;font-size:12px;line-height:1.35;color:#c9d2da}.tnode .un{display:flex;flex-wrap:wrap;gap:4px}.tnode .un span{font-size:11px;padding:1px 6px;border-radius:9px;background:rgba(255,255,255,.08)}
+.tnode .tc{font-size:12px;color:#ffd97a}.tnode.done{border-color:rgba(109,255,154,.45);background:rgba(109,255,154,.07)}.tnode.done .tc{color:#6dff9a}
+.tnode.lock{opacity:.5;cursor:not-allowed}.tnode.busy{border-color:#ffd97a}.tnode .bar{height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:5px;overflow:hidden}.tnode .bar i{display:block;height:100%;background:#ffd97a}
+@media (max-width:760px){.ttrees{grid-template-columns:1fr}}
 #statsScr{position:absolute;inset:60px 5vw 70px;background:rgba(8,12,16,.95);border:1px solid var(--bd);border-radius:10px;padding:14px 18px;overflow:auto;z-index:40}
 #statsScr .shead{display:flex;justify-content:space-between;align-items:center}#statsScr h2{margin:0}
 .stab{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}.stab th,.stab td{padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:center}.stab th:first-child,.stab td:first-child{text-align:left}
@@ -134,7 +161,7 @@ body.bigmap #selpanel{visibility:hidden}
 #selpanel{flex:1;min-height:112px;max-height:190px;overflow:hidden;padding:9px 12px;background:var(--bg);border:1px solid var(--bd);border-radius:8px;display:flex;gap:12px}
 #selpanel .big-pic{width:92px;height:92px;flex:none;background:rgba(255,255,255,.05);border-radius:8px;object-fit:contain}
 #selpanel h3{margin:0;font-size:16px}
-#selpanel p{margin:3px 0;color:#bdc9d0;font-size:12px;max-width:520px}
+#selpanel p{margin:3px 0;color:#bdc9d0;font-size:12px;max-width:520px}#selpanel p.adv{color:#ffe7a0;background:rgba(255,214,10,.08);border-left:3px solid #ffd60a;padding:4px 8px;border-radius:4px}
 .stats{display:flex;gap:12px;font-size:12px;color:#dfe7ec;flex-wrap:wrap}
 .hpbar{height:7px;width:220px;background:#000;border-radius:3px;overflow:hidden;margin:4px 0}.hpbar i{display:block;height:100%;background:linear-gradient(90deg,#39d06f,#7dff9e)}
 .multi{display:flex;flex-wrap:wrap;gap:3px;overflow:auto;align-content:flex-start;flex:1}
@@ -145,7 +172,7 @@ body.bigmap #selpanel{visibility:hidden}
 .qit{position:relative;width:38px;height:38px;padding:0;background:rgba(255,255,255,.06)}
 .qit img{width:100%;height:100%;object-fit:contain}
 .qbar{height:5px;flex:0 0 130px;background:#000;border-radius:3px;overflow:hidden}.qbar i{display:block;height:100%;background:#ffc46b}
-#cards{flex:none;display:grid;grid-template-columns:repeat(4,70px);grid-auto-rows:62px;gap:4px;padding:6px;background:var(--bg);border:1px solid var(--bd);border-radius:8px}
+#cards{flex:none;display:grid;grid-template-columns:repeat(5,66px);grid-auto-rows:62px;gap:4px;padding:6px;background:var(--bg);border:1px solid var(--bd);border-radius:8px}
 .card{position:relative;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:rgba(255,255,255,.06)}
 .card img{width:44px;height:44px;object-fit:contain}
 .card .gl{font-size:22px;line-height:44px;height:44px}
@@ -180,7 +207,7 @@ body.direct-mode #hud{display:none}
 .atrow{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}.atrow button{padding:6px 10px}.atrow button.on{outline:2px solid var(--acc);background:rgba(255,255,255,.12)}
 #dhelp b{display:inline-block;min-width:14px;padding:0 4px;margin:0 1px;border:1px solid rgba(255,255,255,.45);border-radius:4px;font-size:11px;line-height:16px;text-align:center}
 #bDeploy{pointer-events:auto;background:rgba(47,181,101,.3);border-color:#47d680}
-@media (max-width:1000px){#cards{grid-template-columns:repeat(4,52px);grid-auto-rows:48px}.card img{width:30px;height:30px}.card .gl{font-size:17px;line-height:30px;height:30px}#mm{width:130px;height:130px}#selpanel p{display:none}#powers{bottom:225px}.lbody{flex-direction:column}.lcol.side{flex:none}}
+@media (max-width:1000px){#cards{grid-template-columns:repeat(5,52px);grid-auto-rows:48px}.card img{width:30px;height:30px}.card .gl{font-size:17px;line-height:30px;height:30px}#mm{width:130px;height:130px}#selpanel p{display:none}#powers{bottom:225px}.lbody{flex-direction:column}.lcol.side{flex:none}}
 
 textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;background:rgba(10,15,20,.85);color:#e8eef2;border:1px solid #3a4652;border-radius:6px;padding:6px 8px;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;user-select:text;-webkit-user-select:text;resize:vertical;word-break:break-all}
 .steps{margin:4px 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:13px}
@@ -296,6 +323,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
         <label>Map size <select id="optSize"><option value="96">Small</option><option value="128">Medium</option><option value="160" selected>Large</option><option value="192">Huge</option><option value="240">Massive</option></select></label>
         <label>Graphics <select id="optQ"><option value="auto" selected>Auto (adapts to your computer)</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
         <label title="Every unit from every nation, free, from the Deploy screen. Applies to human players only.">All units unlocked and free <input type="checkbox" id="optAll"></label>
+        <label title="Easy: +60% steel and fuel, a bigger start and auto economy on. Hard: 20% less. Only affects human players.">Difficulty (your economy) <select id="optEco"><option value="easy">Easy: lots of resources, auto economy</option><option value="normal" selected>Normal</option><option value="hard">Hard: scarce resources</option></select></label>
         <label title="A short checklist of goals in the corner. For the full guided tutorial use Tutorial on the main menu.">Objectives checklist <input type="checkbox" id="optTut"></label>
         <div id="lStatus" class="msg"></div>
         <button class="big primary" id="bStart">Start War</button>
@@ -321,6 +349,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
   <div id="nukeBanner" class="hidden"></div>
   <div id="objectives" class="hidden"></div>
   <div id="tutor" class="hidden"><div class="tstep"></div><h3></h3><p></p><div class="tbtns"><button id="tutNext">Next ▸</button><button id="tutSkip">End tutorial</button></div></div>
+  <div id="techScr" class="hidden"><div class="shead"><h2>Research</h2><span id="techLab"></span><button id="techClose">Close [F8]</button></div><div id="techBody"></div></div>
   <div id="statsScr" class="hidden"><div class="shead"><h2>War statistics</h2><button id="statsClose">Close [F7]</button></div><div id="statsBody"></div></div>
   <div id="powers"></div>
   <div id="diplo" class="hidden"></div>
@@ -330,6 +359,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
     <button data-g="air" title="Select all aircraft and drones [F3]">✈ Air <b>0</b><kbd>F3</kbd></button>
     <button data-g="sea" title="Select all ships and submarines [F4]">⚓ Naval <b>0</b><kbd>F4</kbd></button>
     <button id="bDiplo" title="Negotiate ceasefires, alliances and trades [F6]">🤝 Diplomacy<kbd>F6</kbd></button>
+    <button id="bTech" title="Research tree: unlock units and upgrade your army [F8]">🔬 Research<kbd>F8</kbd></button>
     <button id="bStats" title="Kills, losses, economy and army size over time [F7]">📊 Stats<kbd>F7</kbd></button>
   </div>
   <div id="bottom">
@@ -361,7 +391,6 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
     <label><input type="checkbox" id="sFly"> Flight assist (jets pull up near the ground; only a steep dive crashes)</label>
     <h3>Look</h3>
     <label><input type="checkbox" id="sGrit"> Gritty war film look (muted colour grade, film grain, vignette, dust)</label>
-    <label><input type="checkbox" id="sBlob"> Classic cartoon blob soldiers instead of realistic troops</label>
     <p class="small">No clicking needed: as soon as you spawn into a unit the mouse steers the view. <b>Alt</b> frees the cursor and gives it back. If your browser will not lock the mouse, moving the cursor away from the centre of the screen steers instead.</p>
   </div><div class="lcol">
     <h3>Keys (click one, then press the new key)</h3>
@@ -759,7 +788,7 @@ const UNITS = {
   supply:   {n: 'Supply Truck', cat: 'veh', arm: 'light', hp: 240, dmg: 0, rng: 0, cd: 1, spd: 5.6, vis: 11, cost: [130, 40], pop: 1, t: 10, from: 'factory', r: .7, repair: 5, hk: 'O', desc: 'Repairs vehicles and patches up troops around it.'},
   hover:    {n: 'Hovercraft', cat: 'veh', arm: 'light', hp: 280, dmg: 10, rng: 9, cd: .35, spd: 6.8, vis: 13, cost: [180, 60], pop: 2, t: 14, from: 'yard', shot: 'bullet', aa: 1, amph: 1, r: 1, carry: 6, hk: 'O', desc: 'Amphibious: glides over land and sea alike. Machine gun, carries 6 infantry.'},
   lcboat:   {n: 'Landing Craft', cat: 'sea', arm: 'sea', hp: 320, dmg: 0, rng: 0, cd: 1, spd: 5.2, vis: 11, cost: [110, 30], pop: 1, t: 10, from: 'yard', r: 1, carry: 12, hk: 'U', desc: 'Carries 12 infantry across the water. Drive it to a beach and Unload (B).'},
-  patrolboat: {n: 'Patrol Boat', cat: 'sea', arm: 'sea', hp: 260, dmg: 14, rng: 10, cd: .3, spd: 7.5, vis: 15, cost: [130, 40], pop: 2, t: 10, from: 'yard', shot: 'bullet', aa: 1, r: .8, turret: 1, hk: 'I', desc: 'Fast gunboat with twin machine guns. Hunts landing craft and drones.'},
+  patrolboat: {n: 'Patrol Boat', cat: 'sea', arm: 'sea', hp: 260, dmg: 14, rng: 10, cd: .3, spd: 7.5, vis: 15, cost: [130, 40], pop: 2, t: 10, from: 'yard', shot: 'cannon', aa: 1, r: .8, turret: 1, hk: 'I', desc: 'Fast gunboat with twin machine guns. Hunts landing craft and drones.'},
   transport: {n: 'C-130 Transport', cat: 'air', arm: 'air', hp: 420, dmg: 0, rng: 0, cd: 1, spd: 11, vis: 16, cost: [260, 90], pop: 3, t: 18, from: 'airfield', alt: 12, turn: 1, r: 1.2, carry: 10, fill: 'para', hk: 'K', desc: 'Arrives with 10 paratroopers aboard. Fly it over the target and Unload (B): they jump.'},
   chinook:  {n: 'Chinook', cat: 'heli', arm: 'air', hp: 400, dmg: 0, rng: 0, cd: 1, spd: 7.5, vis: 14, cost: [220, 80], pop: 3, t: 16, from: 'airfield', alt: 6, r: 1.2, carry: 10, hk: 'L', desc: 'Twin-rotor transport helicopter. Carries 10 infantry and drops them anywhere.'},
   awacs:    {n: 'AWACS', cat: 'air', arm: 'air', hp: 360, dmg: 0, rng: 0, cd: 1, spd: 9, vis: 40, cost: [280, 120], pop: 3, t: 20, from: 'airfield', alt: 14, turn: .9, r: 1.2, radar: 60, hk: 'H', desc: 'Flying radar: huge vision, spots every aircraft within 60 m for your whole army.'},
@@ -805,14 +834,22 @@ const BUILDINGS = {
   silo:     {n: 'Missile Silo', hp: 1300, s: 5, vis: 8, nukeT: 150, req: 'lab', cost: [700, 500], t: 45, hk: 'G', page: 2, desc: 'Charges one ICBM every 2.5 minutes. Everyone hears the launch.'},
 };
 
+// Research: three trees, three tiers each. Every tier makes its branch of the army stronger and unlocks new units.
+// tree: inf | arm | air. buff: multipliers for that branch's damage and health. Units with tech: need it to train.
+const TECH_TREES = {inf: {n: 'Infantry Doctrine', ic: '🪖', col: '#7fc46a'}, arm: {n: 'Armour & Industry', ic: '⚙', col: '#e0a04a'}, air: {n: 'Air & Naval Power', ic: '✈', col: '#6ab0ff'}};
 const UPGRADES = {
-  weapons1: {n: 'Weapons I', cost: [150, 60], t: 25, desc: '+15% damage for all units.', hk: 'R'},
-  armour1:  {n: 'Armour I', cost: [150, 60], t: 25, desc: '+15% health for all new units.', hk: 'T'},
-  logistics: {n: 'Logistics', cost: [120, 40], t: 20, desc: 'Roads even faster and workers carry 50% more.', hk: 'Y'},
-  weapons2: {n: 'Weapons II', cost: [320, 160], t: 40, req: 'weapons1', desc: '+15% more damage.', hk: 'G'},
-  armour2:  {n: 'Armour II', cost: [320, 160], t: 40, req: 'armour1', desc: '+15% more health.', hk: 'H'},
-  optics:   {n: 'Thermal Optics', cost: [200, 100], t: 30, desc: '+20% vision and spot stealth from further away.', hk: 'J'},
+  inf1: {n: 'Field Drill', tree: 'inf', tier: 1, cost: [130, 30], t: 20, hk: 'R', buff: 1.1, unlock: ['mg', 'grenadier'], desc: 'Infantry +10% damage and health. Unlocks Machine Gunners and Grenadiers.'},
+  inf2: {n: 'Special Forces', tree: 'inf', tier: 2, req: 'inf1', cost: [230, 90], t: 30, hk: 'T', buff: 1.1, unlock: ['sniper', 'para'], desc: 'Infantry +10% more. Unlocks Snipers and Paratroopers.'},
+  inf3: {n: 'Elite Infantry', tree: 'inf', tier: 3, req: 'inf2', cost: [380, 170], t: 40, hk: 'Y', buff: 1.15, unlock: [], desc: 'Infantry +15% more, and thermal optics: +20% vision for everyone and stealth units are spotted from further away.'},
+  arm1: {n: 'Tank Doctrine', tree: 'arm', tier: 1, cost: [170, 60], t: 25, hk: 'G', buff: 1.1, unlock: ['tank', 'sam'], desc: 'Vehicles +10% damage and health. Unlocks Battle Tanks and SAM Trucks.'},
+  arm2: {n: 'Heavy Artillery', tree: 'arm', tier: 2, req: 'arm1', cost: [290, 120], t: 35, hk: 'H', buff: 1.1, bld: 1.15, unlock: ['arty', 'mlrs'], desc: 'Vehicles +10% more, buildings +15% health. Unlocks Artillery and MLRS.'},
+  arm3: {n: 'War Economy', tree: 'arm', tier: 3, req: 'arm2', cost: [420, 200], t: 45, hk: 'J', buff: 1.15, bld: 1.1, unlock: [], desc: 'Vehicles +15% more, buildings +10% more. Workers carry 50% more, roads are faster and the capital pays 50% more tax.'},
+  air1: {n: 'Air Superiority', tree: 'air', tier: 1, cost: [200, 100], t: 25, hk: 'U', buff: 1.1, unlock: ['interceptor', 'f15', 'typhoon', 'gunship', 'transport', 'awacs', 'hunter'], desc: 'Aircraft, drones and ships +10% damage and health. Unlocks Interceptors, F-15, Typhoon, Gunships, C-130, AWACS and Hunter drones.'},
+  air2: {n: 'Strike Wing', tree: 'air', tier: 2, req: 'air1', cost: [340, 170], t: 35, hk: 'I', buff: 1.1, unlock: ['bomber', 'a10', 'f35'], desc: 'Air and sea +10% more. Unlocks Bombers, the A-10 and the F-35.'},
+  air3: {n: 'Strategic Weapons', tree: 'air', tier: 3, req: 'air2', cost: [600, 350], t: 50, hk: 'O', buff: 1.15, unlock: ['nukesub', 'patriot', 'silo'], desc: 'Air and sea +15% more. Unlocks the Nuclear Sub, Patriot batteries and Missile Silos.'},
 };
+const TECH_OF = {}; for (const k in UPGRADES) for (const u of UPGRADES[k].unlock) TECH_OF[u] = k; // unit or building -> tech that unlocks it
+const techBranch = d => !d || !d.cat ? 'bld' : d.cat === 'inf' ? 'inf' : d.cat === 'veh' ? 'arm' : 'air';
 
 // Commander powers: charged on cooldown, cost fuel. tgt = needs a map click.
 const POWERS = {
@@ -919,7 +956,7 @@ const PWPN = {
   fpv:     [{n: 'Warhead', t: 'det'}],
   truck: [], supply: [], lcboat: [], transport: [], awacs: [],
   hover: [{n: 'M2 Browning', t: 'hit', dmg: 9, vs: 'bullet', rpm: 550, mag: 200, rl: 3, sp: 1.2, ads: .8, kick: .3, rng: 40, crit: 1.4, auto: 1, aa: 1, snd: 'mg'}],
-  patrolboat: [{n: 'Twin .50 cal', t: 'hit', dmg: 9, vs: 'bullet', rpm: 750, mag: 300, rl: 3, sp: 1.1, ads: .8, kick: .25, rng: 45, crit: 1.4, auto: 1, aa: 1, snd: 'mg'}],
+  patrolboat: [{n: 'Twin 20mm Cannon', t: 'hit', dmg: 11, vs: 'cannon', rpm: 600, mag: 300, rl: 3, sp: 1.1, ads: .8, kick: .25, rng: 45, crit: 1.4, auto: 1, aa: 1, snd: 'mg'}],
   chinook: [{n: 'Door Minigun', t: 'hit', dmg: 7, vs: 'bullet', rpm: 1800, mag: 600, rl: 4, sp: 1.6, ads: 1, kick: .1, rng: 40, crit: 1.3, auto: 1, aa: 1, snd: 'mg'}],
   hunter:  [{n: 'Warhead', t: 'det'}],
 };
@@ -1451,6 +1488,25 @@ const angDiff = (a, b) => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d 
 
 // Excavation: flatten a patch of ground to its average height (filling shallow water), clearing rock and trees so it becomes buildable.
 const DIG_R = 2.5, DIG_COST = 25, DIG_T = 3;
+// Digging: shovels lower the ground a bit at a time. Shallow cuts are trenches (cover); deep ones are tunnels:
+// timber-roofed, and troops inside cannot be seen or shot from more than a few metres away.
+const DIG_MAX = 1.5, TUNNEL_D = 1.0, TRENCH_D = .45, TUNNEL_SEE = 3.5;
+function inTunnel(M, N, e) { if (!M.dug) return false; const i = Math.round(e.y) * N + Math.round(e.x); return M.dug[i] >= TUNNEL_D; }
+function digCells(M, N, x, y, amt, o) { // returns [[i, h], ...] of changed cells
+  if (!M.h0) { M.h0 = Float32Array.from(M.h); M.dug = new Float32Array(N * N); M.digO = new Uint8Array(N * N); }
+  const out = [], R = 1.15;
+  for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
+    const cx = Math.round(x) + i, cy = Math.round(y) + j; if (cx < 2 || cy < 2 || cx >= N - 2 || cy >= N - 2) continue;
+    const d = Math.hypot(cx - x, cy - y); if (d > R) continue;
+    const q = cy * N + cx; if (M.occ[q] || M.water[q] || M.h0[q] < .35) continue;
+    const lo = Math.max(.15, M.h0[q] - DIG_MAX), nh = Math.max(lo, M.h[q] - amt * (1 - d / R * .6));
+    if (nh >= M.h[q] - .001) continue;
+    M.h[q] = nh; M.dug[q] = M.h0[q] - nh; M.digO[q] = o + 1; M.tree[q] = 0; if (M.dug[q] > .5) M.block[q] = 0;
+    out.push([q, Math.round(nh * 1000) / 1000]);
+  }
+  return out;
+}
+function applyDig2(M, N, c, o) { if (!M.h0) { M.h0 = Float32Array.from(M.h); M.dug = new Float32Array(N * N); M.digO = new Uint8Array(N * N); } for (const [q, h] of c) { M.h[q] = h; M.dug[q] = M.h0[q] - h; M.digO[q] = o + 1; M.tree[q] = 0; if (M.dug[q] > .5) M.block[q] = 0; } }
 function applyDig(M, N, x, y) {
   const R = DIG_R, E = R + 1.2, cells = [];
   let sum = 0, n = 0;
@@ -1488,8 +1544,10 @@ function Sim(opts) {
     const nat = NATIONS[p.nation];
     return {i, name: p.name || nat.name, nation: p.nation, nat, team: p.team === undefined ? i : p.team, bot: p.bot || null, open: !!p.open,
       steel: 650, fuel: 150, pop: 0, popCap: 15, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0,
-      buffs: {}, reveal: 0, spawn: this.M.spawns[i], rel: {}, relT: {}, offers: [], mood: {}, str: 0, intel: [], autoRecon: false};
+      buffs: {}, reveal: 0, spawn: this.M.spawns[i], rel: {}, relT: {}, offers: [], mood: {}, str: 0, intel: [], autoRecon: false,
+      ecoK: p.bot ? 1 : ({easy: 1.6, normal: 1, hard: .8}[p.eco] || 1), autoEco: !p.bot && (p.eco === 'easy' || !!p.autoEco)};
   });
+  for (const p of this.players) if (p.ecoK > 1) { p.steel += 700; p.fuel += 250; } else if (p.ecoK < 1) { p.steel -= 150; }
   if (opts.battle) this.setupBattle(opts.battle); else if (opts.scen) this.setupScen(opts.scen); else for (const p of this.players) this.setupPlayer(p);
 }
 
@@ -1790,6 +1848,7 @@ Sim.prototype.setupPlayer = function (p) {
   for (let i = 0; i < 4; i++) this.addUnit('rifle', p.i, s.x + Math.cos(a + (i - 1.5) * .22) * 11, s.y + Math.sin(a + (i - 1.5) * .22) * 11);
   this.addUnit('scout', p.i, s.x + Math.cos(a) * 12, s.y + Math.sin(a) * 12);
   if (this.quick) { // Quick Battle: everyone starts with a working base so every unit can be deployed early
+    p.techAll = 1;
     p.steel = 1400; p.fuel = 700; p.popCap += 20;
     for (const k of ['barracks', 'factory', 'dronebay', 'airfield', 'housing', 'yard']) {
       const d = BUILDINGS[k]; let done = false;
@@ -1807,8 +1866,14 @@ Sim.prototype.setupPlayer = function (p) {
 };
 
 Sim.prototype.morale = function (p) { return Math.min(3, p.trat || 0); };
-Sim.prototype.hpMult = function (p) { let m = (p.nat.tr.hp || 1) * (1 + .05 * this.morale(p)); if (p.ups.armour1) m *= 1.15; if (p.ups.armour2) m *= 1.15; return m; };
-Sim.prototype.dmgMult = function (p) { let m = (p.nat.tr.dmg || 1); if (p.ups.weapons1) m *= 1.15; if (p.ups.weapons2) m *= 1.15; if (p.buffs.forza > this.t) m *= 1.25; return m; };
+// tech multiplier for one branch: inf, arm, air (or bld for buildings' health)
+Sim.prototype.techMult = function (p, br, hp) {
+  let m = 1;
+  for (const k in UPGRADES) { const q = UPGRADES[k]; if (!p.ups[k]) continue; if (br === 'bld') { if (hp && q.bld) m *= q.bld; } else if (q.tree === br) m *= q.buff; }
+  return m;
+};
+Sim.prototype.hpMult = function (p, d) { return (p.nat.tr.hp || 1) * (1 + .05 * this.morale(p)) * this.techMult(p, techBranch(d), true); };
+Sim.prototype.dmgMult = function (p, d) { let m = (p.nat.tr.dmg || 1) * (d ? this.techMult(p, techBranch(d)) : 1); if (p.buffs.forza > this.t) m *= 1.25; return m; };
 Sim.prototype.costOf = function (p, def, key) {
   if (p.open && key) return [0, 0]; // "all units unlocked": units are free, buildings are not
   let k = p.nat.tr.cost || 1;
@@ -1817,7 +1882,7 @@ Sim.prototype.costOf = function (p, def, key) {
 };
 
 Sim.prototype.addUnit = function (k, o, x, y) {
-  const d = UNITS[k], p = this.players[o], hp = d.hp * this.hpMult(p);
+  const d = UNITS[k], p = this.players[o], hp = d.hp * this.hpMult(p, d);
   const e = {id: this.nextId++, k, o, d, x, y, z: 0, h: this.rnd() * 6.28, p: 0, r: 0, hp, hpm: hp, vx: 0, vy: 0, cd: 0, tid: 0, st: 0, kills: 0, hero: null,
     goal: null, fkey: null, stance: 'aggr', amove: false, task: null, carry: 0, q: [], tu: 0, seen: 0};
   if (d.nukeT) e.nukeCD = d.nukeT;
@@ -1866,7 +1931,7 @@ Sim.prototype.canPlace = function (k, x, y, pi) {
 Sim.prototype.addBuilding = function (k, o, x, y, done) {
   const d = BUILDINGS[k], p = this.players[o];
   x = Math.round(x); y = Math.round(y);
-  const hpm = d.hp * (k === 'hq' ? 1 : this.hpMult(p));
+  const hpm = d.hp * (k === 'hq' ? 1 : this.hpMult(p, d));
   const e = {id: this.nextId++, k, o, d, b: true, x, y, z: hAt(this.M, x, y), h: 0, hp: done ? hpm : hpm * .1, hpm, bp: done ? 1 : 0, cd: 0, tid: 0, st: 0, q: [], prog: 0, rally: null, garrison: [], kills: 0};
   if (k === 'derrick') {
     const n = this.M.nodes.find(n => n.kind === 'oil' && Math.hypot(n.x - x, n.y - y) < 2.5 && !n.taken);
@@ -1920,6 +1985,16 @@ Sim.prototype.issue = function (c, pi) {
     case 'gather': { const n = this.M.nodes[c.n]; if (n) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'gather', node: n.id}; } break; }
     case 'build': this.cmdBuild(mine, p, c.b, c.x, c.y, !!c.q); break;
     case 'harden': this.cmdHarden(p, c.id); break;
+    case 'pdig': { const a = this.ents.get(c.id); if (!a || a.o !== pi || a.pilot !== pi + 1 || a.d.cat !== 'inf' || (a.digT || 0) > this.t) break; if (Math.hypot(c.x - a.x, c.y - a.y) > 4.2) break; a.digT = this.t + .22; this.digAt(+c.x, +c.y, pi, .2); break; }
+    case 'digline': { // workers dig a trench or tunnel along a line, a few strikes per cell, in order
+      const n = Math.ceil(Math.hypot(c.x2 - c.x1, c.y2 - c.y1)), cells = [];
+      for (let i = 0; i <= n; i++) cells.push([c.x1 + (c.x2 - c.x1) * i / Math.max(1, n), c.y1 + (c.y2 - c.y1) * i / Math.max(1, n)]);
+      let wk = mine.filter(e => e.k === 'worker'); if (!wk.length) wk = this.autoWorkers(pi, c.x1, c.y1, 3);
+      if (!wk.length) { this.notify(pi, 'No workers to dig: train some at your capital', 'bad'); break; }
+      const depth = c.deep ? DIG_MAX : TRENCH_D + .2;
+      wk.forEach((w, k) => { this.clearOrders(w); w.task = {type: 'dig2', cells, i: Math.floor(k * cells.length / wk.length), depth}; });
+      break; }
+    case 'autoeco': p.autoEco = !!c.on; this.notify(p.i, 'Auto economy ' + (p.autoEco ? 'ON: workers, mining and housing are handled for you' : 'OFF'), 'info'); break;
     case 'assist': { const t = this.ents.get(c.t); if (t && t.b && t.o === pi) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'build', id: t.id}; } break; }
     case 'road': this.cmdRoad(mine, p, c.x1, c.y1, c.x2, c.y2); break;
     case 'chaff': { const a = this.pilotOk(c, pi); if (a && a.air) this.popChaff(a); break; }
@@ -2009,6 +2084,7 @@ Sim.prototype.cmdBuild = function (ws, p, k, x, y, q) {
   const d = BUILDINGS[k];
   if (!d || k === 'hq' || (d.only && !d.only.includes(p.nat.key))) return;
   if (d.req && !this.has(p.i, d.req)) { this.notify(p.i, 'Requires ' + BUILDINGS[d.req].n, 'bad'); return; }
+  if (this.techLock(p, k)) { this.notify(p.i, 'Research ' + UPGRADES[this.techLock(p, k)].n + ' first', 'bad'); return; }
   if (!this.canPlace(k, x, y, p.i)) { this.notify(p.i, 'Cannot build there', 'bad'); return; }
   const c = this.costOf(p, d);
   if (p.steel < c[0] || p.fuel < c[1]) { this.notify(p.i, 'Not enough resources', 'bad'); return; }
@@ -2054,8 +2130,10 @@ Sim.prototype.trainable = function (p, u) {
   if (!d || d.hidden) return false;
   if (d.only && !d.only.includes(p.nat.key)) return false;
   if (d.notNation && d.notNation.includes(p.nat.key)) return false;
+  if (TECH_OF[u] && !p.ups[TECH_OF[u]] && !p.techAll) return false;
   return true;
 };
+Sim.prototype.techLock = function (p, u) { const t = TECH_OF[u]; return t && !p.ups[t] && !p.open && !p.techAll ? t : null; };
 
 Sim.prototype.cmdTrain = function (b, p, u) {
   if (b.bp < 1 || !b.d.trains || !b.d.trains.includes(u) || !this.trainable(p, u) || b.q.length >= 8) return;
@@ -2185,13 +2263,13 @@ Sim.prototype.usePower = function (p, k, x, y) {
 
 Sim.prototype.toWolf = function (e, dur) {
   e.wolf = {k: e.k, d: e.d, until: this.t + dur, frac: e.hp / e.hpm};
-  const m = this.hpMult(this.players[e.o]);
+  const m = this.hpMult(this.players[e.o], e.d);
   e.k = 'wolf'; e.d = UNITS.wolf; e.hpm = UNITS.wolf.hp * m; e.hp = e.hpm;
   this.ev({k: 'wolf', id: e.id, on: 1, x: e.x, y: e.y});
 };
 Sim.prototype.fromWolf = function (e) {
   const w = e.wolf; e.wolf = null;
-  e.k = w.k; e.d = w.d; e.hpm = w.d.hp * this.hpMult(this.players[e.o]) * (e.pilot ? PILOT_HP : 1); e.hp = Math.max(1, e.hpm * w.frac);
+  e.k = w.k; e.d = w.d; e.hpm = w.d.hp * this.hpMult(this.players[e.o], w.d) * (e.pilot ? PILOT_HP : 1); e.hp = Math.max(1, e.hpm * w.frac);
   this.ev({k: 'wolf', id: e.id, on: 0, x: e.x, y: e.y});
 };
 
@@ -2257,10 +2335,11 @@ Sim.prototype.inSmoke = function (e) {
 // Can player a target e? Stealth units must be very close unless a detector is around.
 Sim.prototype.targetable = function (a, e, from) {
   if (e.b) { if (e.d.mine) return false; return e.bp > 0 || true; }
+  if (!e.air && inTunnel(this.M, this.N, e) && Math.hypot(e.x - from.x, e.y - from.y) > TUNNEL_SEE && !((e.revealed || 0) > this.t)) return false;
   const st = e.d.stealth;
   if (!st) return true;
   let r = st;
-  if (this.players[a].ups.optics) r *= 1.5;
+  if (this.players[a].ups.inf3) r *= 1.5;
   if (e.moving === false && e.d.cat === 'inf') r *= .8;
   if (from.d && from.d.detect && e.d.sub) r = 16;
   return Math.hypot(e.x - from.x, e.y - from.y) < r || (e.revealed || 0) > this.t;
@@ -2534,7 +2613,7 @@ Sim.prototype.fire = function (a, t) {
   const d = a.d, ty = d.shot, p = this.players[a.o];
   let miss = false;
   if (t.pilot && !t.b && !a.pilot) { const r = this.aimAtPilot(a, t); if (r === 'wait') { a.cd = .15; return; } miss = r === 'miss'; }
-  let dm = d.dmg * this.dmgMult(p);
+  let dm = d.dmg * this.dmgMult(p, d);
   if (a.vet) dm *= 1 + a.vet * .15;
   if ((a.rallyT || 0) > this.t) dm *= 1.3;
   const tgh = t.z || 0, hd = (a.z || 0) - tgh;
@@ -2544,7 +2623,7 @@ Sim.prototype.fire = function (a, t) {
   dm *= this.coverMul(t, ty);
   // Valentinos infantry fix bayonets: anything on foot within arm's reach gets stabbed instead of shot
   if (p.nat.tr.melee && d.cat === 'inf' && !t.b && t.d.cat === 'inf' && !a.pilot && a.k !== 'medic' && a.k !== 'wolf' && Math.hypot(t.x - a.x, t.y - a.y) < 2.3) {
-    const md = (22 + d.hp * .12) * this.dmgMult(p) * this.coverMul(t, 'bite');
+    const md = (22 + d.hp * .12) * this.dmgMult(p, d) * this.coverMul(t, 'bite');
     this.ev({k: 's', a: a.id, t: t.id, at: t.id, ty: 'bite', d: .05, x: t.x, y: t.y, z: t.z});
     this.hurt(t, md, a.o); if (t.hp <= 0) this.creditKill(a, t);
     a.st = 2; a.cd = Math.min(a.cd, 0) + .75; return;
@@ -2619,7 +2698,7 @@ Sim.prototype.pilotFire = function (c, pi) {
 
 Sim.prototype.explodeDrone = function (a) {
   if (a.hp <= 0) return;
-  const d = a.d, dm = d.dmg * this.dmgMult(this.players[a.o]);
+  const d = a.d, dm = d.dmg * this.dmgMult(this.players[a.o], d);
   this.ev({k: 'boom', x: a.x, y: a.y, z: a.z, s: 1.1});
   a.hp = 0;
   this.ents.delete(a.id);
@@ -2653,6 +2732,7 @@ Sim.prototype.step = function () {
     if (this.tick % 10 === 0) this.income(p);
   }
   if (this.tick % 10 === 3) this.stepMorale();
+  if (this.tick % 50 === 21) for (const p of this.players) if (p.alive && p.autoEco && !this.battle && !this.scen) this.stepAutoEco(p);
   if (this.coverDirty) this.rebuildCover();
   if (this.tick % 300 === 7) this.sampleStats();
   if (this.tick % 10 === 0) this.stepDiplo();
@@ -2673,6 +2753,30 @@ Sim.prototype.step = function () {
   this.stepProjs();
   this.smokes = this.smokes.filter(s => s.until > this.t);
   this.stepNukes();
+};
+
+// Auto economy (for relaxed players): keep workers coming, idle workers mining, and housing ahead of the population cap.
+Sim.prototype.stepAutoEco = function (p) {
+  const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
+  let wk = 0, idle = [], housingUp = false;
+  for (const e of this.ents.values()) if (e.o === p.i) {
+    if (e.k === 'worker') { wk++; if (!e.task && !e.goal && !e.pilot && !e.inside) idle.push(e); }
+    if (e.k === 'housing' && e.bp < 1) housingUp = true;
+  }
+  for (const w of idle) { const n = this.nearestNode(w, 'steel'); if (n) w.task = {type: 'gather', node: n.id}; }
+  const queued = hq.q.filter(q => q.u === 'worker').length;
+  if (wk + queued < 12 && queued < 2 && p.steel >= 120 && p.pop + 1 <= p.popCap) this.cmdTrain(hq, p, 'worker');
+  if (!housingUp && p.pop + 5 >= p.popCap && p.steel >= 140) {
+    for (let t = 0; t < 30; t++) { const a = this.rnd() * 6.283, r = 11 + this.rnd() * 10, x = Math.round(hq.x + Math.cos(a) * r), y = Math.round(hq.y + Math.sin(a) * r); if (this.canPlace('housing', x, y, p.i)) { this.cmdBuild([], p, 'housing', x, y); break; } }
+  }
+};
+
+Sim.prototype.digAt = function (x, y, o, amt) {
+  const c = digCells(this.M, this.N, x, y, amt || .22, o);
+  if (!c.length) return false;
+  this.ev({k: 'dig2', c, o, x: Math.round(x), y: Math.round(y)});
+  this.coverDirty = true; if (this.tick % 20 === 0) this.F.flush();
+  return true;
 };
 
 // Morale: every finished Trattoria (max 3) is +5% health and +5% fire rate across the whole army.
@@ -2701,9 +2805,11 @@ Sim.prototype.rebuildCover = function () {
     for (let j = Math.floor(b.y - r); j <= Math.ceil(b.y + r); j++) for (let i = Math.floor(b.x - r); i <= Math.ceil(b.x + r); i++)
       if (i >= 0 && j >= 0 && i < N && j < N && Math.abs(i - b.x) <= r && Math.abs(j - b.y) <= r) C[j * N + i] = b.o + 1;
   }
+  const M = this.M; if (M.dug) for (let i = 0; i < N * N; i++) if (M.dug[i] >= TRENCH_D) C[i] = M.digO[i];
 };
 Sim.prototype.coverMul = function (t, ty) {
   if (t.b || t.air || t.d.cat !== 'inf' || !this.M.cover) return 1;
+  if (inTunnel(this.M, this.N, t)) return ty === 'flame' ? .7 : .25; // underground
   if (this.M.cover[Math.round(t.y) * this.N + Math.round(t.x)] !== t.o + 1) return 1;
   return ty === 'flame' || ty === 'bite' ? .8 : .45;
 };
@@ -2733,7 +2839,7 @@ Sim.prototype.sampleStats = function () {
 };
 
 Sim.prototype.income = function (p) {
-  p.steel += 3 * (p.nat.tr.income || 1);   // tax from the capital
+  p.steel += 3 * (p.nat.tr.income || 1) * (p.ups.arm3 ? 1.5 : 1) * (p.ecoK || 1);   // tax from the capital
 };
 
 Sim.prototype.stepShots = function () {
@@ -2793,7 +2899,9 @@ Sim.prototype.stepBuilding = function (b) {
       if (b.prog >= UPGRADES[it.up].t) {
         b.q.shift(); b.prog = 0; delete p.ups['_' + it.up]; p.ups[it.up] = 1;
         this.notify(p.i, UPGRADES[it.up].n + ' researched', 'good');
-        if (it.up === 'armour1' || it.up === 'armour2') for (const e of this.ents.values()) if (e.o === p.i && !e.b) { e.hp *= 1.15; e.hpm *= 1.15; }
+        const q = UPGRADES[it.up]; for (const e of this.ents.values()) if (e.o === p.i) { const br = e.b ? 'bld' : techBranch(e.d), r = e.b ? (e.k === 'hq' ? 1 : q.bld || 1) : br === q.tree ? q.buff : 1; if (r !== 1) { e.hp *= r; e.hpm *= r; } }
+        if (q.unlock.length) this.notify(p.i, 'Unlocked: ' + q.unlock.map(u => (UNITS[u] || BUILDINGS[u]).n).join(', '), 'gold');
+        this.ev({k: 'tech', p: p.i, u: it.up});
       }
     } else {
       const ud = UNITS[it.u];
@@ -2810,7 +2918,7 @@ Sim.prototype.stepBuilding = function (b) {
     if (b.nukeCD <= 0) { b.nukeReady = true; this.notify(p.i, 'ICBM ready to launch', 'good', b.x, b.y); }
   }
   // Oil derricks
-  if (d.oil && this.tick % 10 === 0) p.fuel += 2.2;
+  if (d.oil && this.tick % 10 === 0) p.fuel += 2.2 * (p.ecoK || 1);
   // Hospital
   if (d.aura && this.tick % 10 === 0) this.near(b.x, b.y, d.aura, t => { if (t.o === b.o && t.d.cat === 'inf' && t.hp < t.hpm && dist(t, b) < d.aura) t.hp = Math.min(t.hpm, t.hp + 6); });
   // EW jammer knocks drones down
@@ -2954,7 +3062,7 @@ Sim.prototype.moveSpeed = function (e, p) {
   const c = Math.round(e.y) * this.N + Math.round(e.x), M = this.M;
   if (c >= 0 && c < M.road.length) {
     if (M.water[c]) s *= .45;
-    else if (M.road[c]) s *= p.ups.logistics ? 1.8 : 1.5;
+    else if (M.road[c]) s *= p.ups.arm3 ? 1.8 : 1.5;
     else {
       if (M.bio[c] === BIO.SWAMP) s *= .78;
       if (M.bio[c] === BIO.SNOW) s *= .9;
@@ -3111,7 +3219,7 @@ Sim.prototype.stepTask = function (e, p) {
       if (!drop) { e.task = null; return; }
       const q = dist(e, drop) - drop.d.s / 2;
       if (q < 1.2) {
-        p.steel += e.carry * (p.nat.tr.income || 1); this.stat(p, 'mined', e.carry * (p.nat.tr.income || 1)); e.carry = 0; T.back = false;
+        const got = e.carry * (p.nat.tr.income || 1) * (p.ecoK || 1); p.steel += got; this.stat(p, 'mined', got); e.carry = 0; T.back = false;
         if (!n || n.amt <= 0) { const m = this.nearestNode(e, 'steel'); if (m) T.node = m.id; else e.task = null; }
       } else this.moveAlong(e, drop.x, drop.y, 0, p, drop.x, drop.y);
       return;
@@ -3120,7 +3228,7 @@ Sim.prototype.stepTask = function (e, p) {
     const q = Math.hypot(n.x - e.x, n.y - e.y);
     if (q < 1.8) {
       T.tt = (T.tt || 0) + DT; e.st = 3;
-      const cap = p.ups.logistics ? 22 : 15;
+      const cap = p.ups.arm3 ? 22 : 15;
       if (T.tt >= 2) { T.tt = 0; const g = Math.min(n.amt, cap); n.amt -= g; e.carry = g; T.back = true; }
       e.h += angDiff(e.h, Math.atan2(n.y - e.y, n.x - e.x)) * .3;
     } else this.moveAlong(e, n.x, n.y, 0, p, n.x, n.y);
@@ -3143,6 +3251,15 @@ Sim.prototype.stepTask = function (e, p) {
         }
       } else { b.hp = Math.min(b.hpm, b.hp + b.hpm * .02 * DT * 5); }
     } else this.moveAlong(e, b.x, b.y, 0, p, b.x, b.y);
+  } else if (T.type === 'dig2') {
+    if (T.i >= T.cells.length) T.i = 0;
+    let tries = 0; // skip cells that are already deep enough
+    while (tries < T.cells.length) { const c = T.cells[T.i], q = Math.round(c[1]) * this.N + Math.round(c[0]); if (!M.dug || M.h0 && M.h0[q] - M.h[q] < Math.min(T.depth, M.h0[q] - .15) - .02) break; T.i = (T.i + 1) % T.cells.length; tries++; }
+    if (tries >= T.cells.length) { this.notify(p.i, 'Dig finished: ' + (T.depth >= TUNNEL_D ? 'tunnel' : 'trench') + ' ready', 'good', e.x, e.y); this.afterBuild(e, null, p); return; }
+    const c = T.cells[T.i], q = Math.hypot(c[0] - e.x, c[1] - e.y);
+    if (q < 1.6) { e.st = 3; T.tt = (T.tt || 0) + DT; e.h += angDiff(e.h, Math.atan2(c[1] - e.y, c[0] - e.x)) * .3;
+      if (T.tt >= .35) { T.tt = 0; if (p.steel < 1) { this.notify(p.i, 'Not enough steel to keep digging', 'bad'); e.task = null; return; } p.steel -= 1; if (!this.digAt(c[0], c[1], e.o, .25)) T.i++; } }
+    else this.moveAlong(e, c[0], c[1], 0, p, c[0], c[1]);
   } else if (T.type === 'road') {
     if (T.i >= T.cells.length) { e.task = null; return; }
     const c = T.cells[T.i], q = Math.hypot(c[0] - e.x, c[1] - e.y), i = c[1] * this.N + c[0];
@@ -3359,7 +3476,7 @@ Sim.prototype.pilotHit = function (c, pi) {
   const reach = S.sph ? S.r + .6 : Math.hypot(S.hx, S.hy, S.hz) + .6, seen = c.px !== undefined && Math.hypot(c.px - S.x, c.py - S.y, c.pz - S.z) < reach ? {x: c.px, y: c.py, z: c.pz} : {x: S.x, y: S.y, z: S.z};
   if (!t.b && W.t !== 'cone' && W.t !== 'mel' && !clearLine(this.M, ex, seen)) return;
   if (t.air && !W.aa && !W.air && t.z - hAt(this.M, t.x, t.y) > 3) return;
-  let dm = W.dmg * n * this.dmgMult(this.players[pi]) * (VS[W.vs][t.b ? 'bld' : t.d.arm] || 0) * (c.crit ? W.crit || 1 : 1);
+  let dm = W.dmg * n * this.dmgMult(this.players[pi], a && a.d) * (VS[W.vs][t.b ? 'bld' : t.d.arm] || 0) * (c.crit ? W.crit || 1 : 1);
   if (W.t === 'pel' || W.t === 'hit') dm *= dd > W.rng * .6 ? 1 - (dd - W.rng * .6) / (W.rng * .4) * .5 : 1; // falloff
   if (this.inSmoke(t)) dm *= .7;
   t.srcX = a.x; t.srcY = a.y; t.suppT = this.t + 1.5;
@@ -3435,7 +3552,7 @@ Sim.prototype.stepProjs = function () {
       if (p.life <= 0) boom = true;
     }
     if (!boom) { keep.push(p); continue; }
-    const W = p.W, src = this.ents.get(p.src), dm = W.dmg * this.dmgMult(this.players[p.o]);
+    const W = p.W, src = this.ents.get(p.src), dm = W.dmg * this.dmgMult(this.players[p.o], src ? src.d : null);
     if (W.smoke) { this.smokes.push({x: p.x, y: p.y, r: W.smoke, until: this.t + 18}); this.ev({k: 'smoke', x: p.x, y: p.y, r: W.smoke, d: 18}); }
     else {
       if (hit && !hit.b && !W.fuse) { const v = VS[W.vs][hit.d.arm] || 0; hit.srcX = p.x - p.vx * .1; hit.srcY = p.y - p.vy * .1; this.hurt(hit, dm * v * .6, p.o); if (src) this.creditKill(src, hit); }
@@ -3512,8 +3629,8 @@ Bot.prototype.update = function () {
   this.mine = mine; this.cnt = cnt; this.p = p;
   this.economy();
   this.buildOrder();
-  this.train();
   this.research();
+  this.train();
   if (s.peace) return; // tutorial: the enemy builds up but does not attack until you are ready
   this.military();
   this.drones();
@@ -3586,6 +3703,7 @@ Bot.prototype.buildOrder = function () {
   for (const k of order) {
     const want = order.filter(o => o === k).length;
     if (n(k) >= want) continue;
+    if (s.techLock(p, k)) continue;
     if (k === 'silo' && (!this.cfg.nuke || s.t < 900 || p.nat.key === 'toms')) continue;
     if (k === 'yard' && !(p.nat.key === 'toms' && this.cfg.nuke)) continue;
     const d = BUILDINGS[k];
@@ -3635,19 +3753,22 @@ Bot.prototype.train = function () {
         u = opts[(r / (this.cfg.air * 2) * opts.length) | 0];
       }
     } else if (b.k === 'yard') u = !c.nukesub && p.nat.key === 'toms' ? 'nukesub' : (r < .5 ? 'destroyer' : 'attacksub');
+    if (u && !s.trainable(p, u)) u = {barracks: r < .7 ? 'rifle' : 'rocket', factory: 'ifv', airfield: p.nat.key === 'toms' ? 'f16' : 'fighter', dronebay: 'fpv', yard: 'destroyer'}[b.k]; // not researched yet: a basic unit instead
     if (!u || !s.trainable(p, u)) continue;
     const cc = s.costOf(p, UNITS[u], u);
+    if (this.save && p.steel - cc[0] < this.save && this.rnd() < .65 && this.mine.army.length > 6) continue; // saving for research
     if (p.steel >= cc[0] && p.fuel >= cc[1]) this.cmd({c: 'train', b: b.id, u});
   }
 };
 
 Bot.prototype.research = function () {
-  const lab = (this.mine.b.lab || [])[0], p = this.p;
+  const lab = (this.mine.b.lab || [])[0], p = this.p; this.save = 0;
   if (!lab || lab.bp < 1 || lab.q.length) return;
-  for (const u of ['weapons1', 'armour1', 'logistics', 'weapons2', 'armour2', 'optics']) {
+  for (const u of ['arm1', 'inf1', 'air1', 'inf2', 'arm2', 'inf3', 'air2', 'arm3', 'air3']) {
     if (p.ups[u] || p.ups['_' + u] || (UPGRADES[u].req && !p.ups[UPGRADES[u].req])) continue;
-    const c = UPGRADES[u].cost;
-    if (p.steel > c[0] * 1.6 && p.fuel > c[1] * 1.2) this.cmd({c: 'research', b: lab.id, u});
+    const k = p.nat.tr.research || 1, c = [UPGRADES[u].cost[0] * k, UPGRADES[u].cost[1] * k];
+    if (p.steel >= c[0] && p.fuel >= c[1]) this.cmd({c: 'research', b: lab.id, u});
+    else this.save = c[0]; // put money aside for it
     return;
   }
 };
@@ -3834,7 +3955,7 @@ function encodeSnap(sim, sendSlow) {
   }
   const msg = {snap: 1, t: sim.t, buf: out.buffer, meta};
   if (sendSlow) {
-    msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, autoRecon: p.autoRecon}));
+    msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, techAll: p.techAll || 0, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, autoRecon: p.autoRecon, autoEco: p.autoEco, ecoK: p.ecoK}));
     msg.bs = [];
     for (const e of sim.ents.values()) if (e.b) msg.bs.push({id: e.id, bp: e.bp, q: e.q, prog: e.prog, rally: e.rally, cdn: e.nukeCD, g: e.garrison ? e.garrison.length : 0, hd: e.hard || 0});
     msg.nodes = sim.M.nodes.map(n => [n.amt | 0, n.taken || 0]);
@@ -3861,6 +3982,7 @@ Mirror.prototype.has = Sim.prototype.has;
 Mirror.prototype.trainable = Sim.prototype.trainable;
 Mirror.prototype.costOf = Sim.prototype.costOf;
 Mirror.prototype.hardCost = Sim.prototype.hardCost;
+Mirror.prototype.techLock = Sim.prototype.techLock;
 Mirror.prototype.apply = function (m) {
   this.t = m.t;
   if (m.ev) for (const e of m.ev) this.applyEvent(e);
@@ -3902,6 +4024,7 @@ Mirror.prototype.applyEvent = function (e) {
     if (!d.mine && !d.walk) this.footprint(d, e.x, e.y, (i, j) => { if (i >= 0 && j >= 0 && i < N && j < N && M.occ[j * N + i] === e.id) M.occ[j * N + i] = 0; });
   } else if (e.k === 'road') { M.road[e.y * N + e.x] = 1; M.tree[e.y * N + e.x] = 0; }
   else if (e.k === 'dig') applyDig(M, N, e.x, e.y);
+  else if (e.k === 'dig2') applyDig2(M, N, e.c, e.o);
 };
 </script>
 
@@ -3952,7 +4075,7 @@ Batch.prototype.add = function (geo, col, x, y, z, sx, sy, sz, rx, ry, rz) {
 const GEO = {
   box: new THREE.BoxGeometry(1, 1, 1), cyl: new THREE.CylinderGeometry(1, 1, 1, 10), cyl6: new THREE.CylinderGeometry(1, 1, 1, 6), sph: new THREE.SphereGeometry(1, 10, 8), sph6: new THREE.SphereGeometry(1, 7, 5),
   cone: new THREE.ConeGeometry(1, 1, 8), cone4: new THREE.ConeGeometry(1, 1, 4), ico: new THREE.IcosahedronGeometry(1, 0), wedge: null, torus: new THREE.TorusGeometry(1, .18, 5, 12),
-  ring: new THREE.CylinderGeometry(1, 1, .1, 14),
+  ring: new THREE.CylinderGeometry(1, 1, .1, 14), ico1: new THREE.IcosahedronGeometry(1, 1),
 };
 (function () { // wedge: a triangular prism for wings, pointing +X
   const g = new THREE.BufferGeometry(), a = [-.5, 0, -.5], b = [-.5, 0, .5], c = [.5, 0, 0], d = [-.5, 1, -.5], e = [-.5, 1, .5], f = [.5, 1, 0];
@@ -3998,7 +4121,7 @@ function palette(nat) {
   else if (c.look === 'toms') { p.uni = 0x24353a; p.trim = 0x19c8b9; p.alt = 0x0f1a1c; }
   else if (c.look === 'veil') { p.uni = 0x3a2c10; p.trim = 0xffd60a; p.alt = 0xc69a18; }
   else if (c.look === 'glasses') { p.uni = 0x274a86; p.trim = 0x4a90ff; p.alt = 0xcfe0ff; }
-  else { p.uni = 0xb9471f; p.trim = 0xff6b3d; p.alt = 0xffd9c9; }
+  else { p.uni = 0x4a5530; p.trim = 0x6b7a42; p.alt = 0x8a7a55; } // Licases: woodland camo
   return p;
 }
 
@@ -4017,7 +4140,7 @@ function blobColor(kind, P) {
   if (P.look === 'usa') return 0xd8283a;
   if (P.look === 'veil') return 0xe7b928;
   if (P.look === 'glasses') return 0x4a86e8;
-  return 0xff7440;
+  return 0x5b6a3a; // Licases: camo green
 }
 function soldierBody(kind, nat, lo) {
   const P = palette(nat), b = new Batch(), D = blobDims(nat), T = D.T, R = BLOB.r, bike = isBiker(kind, nat);
@@ -4031,6 +4154,10 @@ function soldierBody(kind, nat, lo) {
   if (P.look === 'usa') { b.add(GEO.torus, WHITE, 0, cy - ry * .05, 0, rx * 1.0, rz * 1.0, ry * .45, Math.PI / 2, 0, 0); b.add(GEO.torus, 0x1b2f6b, 0, cy - ry * .4, 0, rx * .93, rz * .93, ry * .45, Math.PI / 2, 0, 0); }
   if (P.look === 'veil') b.add(GEO.torus, 0x7a5c00, 0, cy - ry * .25, 0, rx * .98, rz * .98, ry * .45, Math.PI / 2, 0, 0);
   if (P.look === 'toms') { sph(rx * .5, ry * .42, rz * .36, rx * .55, cy + ry * .1, rz * .33, 0x2fb3a7); sph(rx * .5, ry * .42, rz * .36, rx * .55, cy + ry * .1, -rz * .33, 0x2fb3a7); } // pecs
+  if (P.look === 'bike' && kind !== 'medic') { // woodland camo blotches all over the blob
+    const cm = [0x3c4526, 0x6e5a3a, 0x2c3020, 0x7a8450];
+    for (let i = 0; i < (lo ? 6 : 14); i++) { const a = i * 2.39996, yy = Math.sin(i * 1.7) * .8, cr = Math.sqrt(1 - yy * yy); sph(rx * .32, ry * .26, rz * .3, Math.cos(a) * rx * cr * .78, cy + yy * ry * .78, Math.sin(a) * rz * cr * .78, cm[i % 4]); }
+  }
   if (kind === 'worker') b.add(GEO.torus, 0xffa726, 0, cy - ry * .05, 0, rx * 1.0, rz * 1.0, ry * .5, Math.PI / 2, 0, 0); // hi-vis band
   if (kind === 'medic') { b.box(.02, .14, .05, rx * .99, cy, 0, 0xd8202f); b.box(.02, .05, .14, rx * .99, cy, 0, 0xd8202f); }
   // face: big round eyes, pupils looking ahead, a little mouth
@@ -4042,6 +4169,7 @@ function soldierBody(kind, nat, lo) {
     [-1, 1].forEach(s => { b.add(S, WHITE, ex, ey, s * rz * .32, .085, .095, .08); b.add(GEO.sph, 0x111316, ex + .07, ey + .005, s * rz * .32, .035, .045, .04); b.add(GEO.sph, WHITE, ex + .095, ey + .02, s * rz * .32 - .01, .012, .012, .012); });
     b.add(GEO.sph, 0x3a1515, rx * .95, cy + ry * .02, 0, .02, .02, .055);
   }
+  if (P.look === 'bike') { b.box(.07, .075, rz * 1.5, ex + .03, ey, 0, 0x0a0b0c); b.box(.02, .012, rz * 1.55, ex + .06, ey + .035, 0, 0x2a2d30); b.box(.012, .03, rz * .6, ex + .065, ey + .005, rz * .35, 0x3a4a5a); } // wraparound sunnies
   if (P.look === 'glasses') { [-1, 1].forEach(s => b.add(GEO.torus, 0x0d0f12, ex + .09, ey, s * rz * .32, .1, .1, .12, 0, Math.PI / 2, 0)); b.box(.015, .015, .07, ex + .1, ey + .01, 0, 0x0d0f12); }
   if (P.look === 'italian') { [-1, 1].forEach(s => b.add(GEO.sph, 0x1a120c, rx * .97, cy + ry * .1, s * .06, .03, .028, .075, s * .5, 0, 0)); [-1, 1].forEach(s => b.box(.03, .022, .11, ex + .04, ey + .11, s * rz * .32, 0x1a120c, 0, 0, s * .15)); }
   if (P.look === 'veil') b.add(S, 0xffd60a, rx * .86, cy + ry * .02, 0, .09, ry * .28, rz * .7); // veil over the lower face
@@ -4051,7 +4179,11 @@ function soldierBody(kind, nat, lo) {
   if (kind === 'para') { sph(rx * .76, ry * .3, rz * .76, 0, top - ry * .12, 0, 0x8a1f2a); }
   else if (kind === 'worker') { sph(rx * .78, ry * .3, rz * .78, 0, top - ry * .12, 0, 0xffa726); b.box(rx * .3, .03, rz * 1.2, rx * .62, top - ry * .3, 0, 0xffa726); }
   else if (kind === 'medic') { sph(rx * .72, ry * .28, rz * .72, 0, top - ry * .1, 0, WHITE); b.box(.1, .02, .03, 0, top + ry * .17, 0, 0xd8202f); b.box(.03, .02, .1, 0, top + ry * .17, 0, 0xd8202f); }
-  else if (P.look === 'bike') { sph(rx * .75, ry * .3, rz * .72, -.02, top - ry * .1, 0, WHITE); [-1, 0, 1].forEach(s => b.box(rx * 1.1, .03, .03, -.02, top + ry * .14, s * .07, P.trim)); }
+  else if (P.look === 'bike') { // big ACH combat helmet in a camo cover: NVG mount, side rails, goggle band, chin strap
+    sph(rx * .98, ry * .5, rz * .98, -.01, top - ry * .2, 0, 0x5a6438); sph(rx * .5, ry * .2, rz * .4, .02, top + ry * .14, rz * .25, 0x3c4526); sph(rx * .45, ry * .18, rz * .4, -.08, top + ry * .1, -rz * .3, 0x6e5a3a);
+    b.box(.05, .06, .09, rx * .8, top - ry * .05, 0, 0x1a1b1c); b.box(.04, .03, .04, rx * .86, top - ry * .2, 0, 0x2a2b2c);
+    [-1, 1].forEach(sd => { b.box(.12, .025, .02, -.02, top - ry * .3, sd * rz * .95, 0x2a2b28); b.cyl(.008, ry * .9, rx * .25, top - ry * .7, sd * rz * .85, 0x2a2b28, 0, 0, .4); });
+    b.add(GEO.torus, 0x2c3020, -.01, top - ry * .33, 0, rx * .95, rz * .95, ry * .35, Math.PI / 2, 0, 0); }
   else if (P.look === 'usa') { sph(rx * .78, ry * .3, rz * .78, 0, top - ry * .12, 0, 0x1b2f6b); b.box(rx * .55, .03, rz * .9, rx * .55, top - ry * .28, 0, 0x1b2f6b); b.add(GEO.cone4, WHITE, -.02, top + ry * .2, 0, .04, .04, .015); }
   else if (P.look === 'italian') { sph(rx * .74, ry * .26, rz * .74, 0, top - ry * .1, 0, 0x2e3a24); b.add(GEO.cone, 0x123d12, -.05, top + ry * .15, 0, .03, .18, .03, 0, 0, .6); } // bersaglieri-style plume
   else if (P.look === 'veil') b.add(GEO.cone, P.trim, 0, top + ry * .2, 0, rx * .55, ry * 1, rz * .55);
@@ -4066,7 +4198,11 @@ function soldierBody(kind, nat, lo) {
   b.add(S, hand, rx * .95, hy + .02, -rz * .2, .065 * hs, .06 * hs, .065 * hs);
   // weapons
   const gx = rx * .7, gy = hy + .03, gz = rz * .2;
-  if (kind === 'rifle' || kind === 'worker') { b.box(.5, .055, .05, gx + .15, gy, gz, GUN).box(.08, .12, .04, gx, gy - .06, gz, GUN).box(.16, .06, .05, gx - .14, gy - .01, gz, 0x5a3d22); b.cylX(.018, .12, gx + .45, gy + .005, gz, 0x111); }
+  if ((kind === 'rifle' || kind === 'para') && P.look === 'bike') { // M16: long barrel, carry handle, triangular front sight, straight mag, fixed stock
+    b.box(.34, .06, .05, gx + .1, gy, gz, 0x1c1d1f); b.box(.18, .055, .06, gx + .35, gy, gz, 0x26282a); b.cylX(.014, .22, gx + .55, gy + .005, gz, 0x111);
+    b.box(.14, .04, .02, gx + .06, gy + .05, gz, 0x1c1d1f); b.box(.02, .06, .02, gx + .42, gy + .04, gz, 0x1c1d1f);
+    b.box(.045, .14, .04, gx + .06, gy - .09, gz, 0x1c1d1f); b.box(.05, .09, .04, gx - .04, gy - .06, gz, 0x1c1d1f); b.box(.2, .07, .045, gx - .2, gy - .02, gz, 0x1c1d1f); }
+  else if (kind === 'rifle' || kind === 'worker') { b.box(.5, .055, .05, gx + .15, gy, gz, GUN).box(.08, .12, .04, gx, gy - .06, gz, GUN).box(.16, .06, .05, gx - .14, gy - .01, gz, 0x5a3d22); b.cylX(.018, .12, gx + .45, gy + .005, gz, 0x111); }
   else if (kind === 'scout') { b.box(.38, .07, .06, gx + .1, gy, gz, 0x3a3d42); b.cylX(.03, .16, gx + .34, gy + .01, gz, 0x111); b.box(.08, .1, .05, gx, gy - .06, gz, 0x5a3d22); } // pump shotgun
   else if (kind === 'assault') { b.box(.44, .09, .09, gx + .12, gy, gz, 0x7c5a28); b.cylX(.025, .2, gx + .42, gy + .01, gz, GUN); [-1, 1].forEach(s => b.cyl(.075, .32, -rx * .95, cy, s * .09, 0xc8381f)); b.box(.04, .3, .2, -rx * .9, cy - .05, 0, 0x333); }
   else if (kind === 'rocket') { b.cylX(.065, .85, gx + .05, cy + ry * .55, -rz * .05, 0x3b4a30); b.add(GEO.cone, 0x8a8a7a, gx + .52, cy + ry * .55, -rz * .05, .06, .14, .06, 0, 0, -Math.PI / 2); b.box(.1, .1, .05, gx, cy + ry * .4, -rz * .05, GUN); }
@@ -4080,6 +4216,7 @@ function soldierBody(kind, nat, lo) {
     b.box(.62, .03, .03, 0, .3, 0, 0x1c1e22); b.cyl(.016, .3, .14, .25, 0, P.trim, 0, 0, .55); b.cyl(.016, .26, -.12, .24, 0, P.trim, 0, 0, -.5); b.box(.3, .012, .035, .02, .31, 0, P.trim);
     b.box(.1, .02, .06, -.08, cy - ry * .95, 0, 0x111214); b.box(.03, .02, .2, .3, .38, 0, 0x101216); b.cyl(.012, .14, .29, .32, 0, 0x888, 0, 0, .3);
     [-1, 1].forEach(s => b.add(S, 0x22201d, .02, .14, s * .07, .06, .04, .045)); // feet on the pedals
+    [-1, 1].forEach(s => { b.add(S, 0x5b6a3a, .04, .21, s * .075, .055, .075, .055); b.add(S, 0x5b6a3a, .0, .31, s * .08, .08, .06, .065); }); // muscly legs pumping the pedals
   }
   return b;
 }
@@ -4171,7 +4308,15 @@ function soldierFull(kind, nat, lo) { // human with legs standing, as one Batch 
   return b;
 }
 // Blob feet: two little rounded boots that step under the body.
-function blobFoot(nat) { const b = new Batch(), T = NATIONS[nat].look === 'toms'; b.add(GEO.blobLo, T ? 0x101415 : 0x26221d, .03, .035, 0, T ? .1 : .085, .045, T ? .08 : .065); return b; }
+function blobFoot(nat) {
+  if (NATIONS[nat].look === 'bike') { // Licases: big muscly camo legs on combat boots
+    const b = new Batch(), C = 0x5b6a3a, Dk = 0x3c4526;
+    b.add(GEO.blobLo, 0x2a2620, .03, .035, 0, .095, .05, .07);                 // boot
+    b.add(GEO.blob, C, .0, .13, 0, .062, .085, .062); b.add(GEO.blob, Dk, .03, .12, .01, .03, .05, .035);  // bulging calf
+    b.add(GEO.blob, C, .01, .24, 0, .075, .07, .072); b.add(GEO.blob, 0x6e5a3a, -.02, .25, -.02, .035, .035, .035); // thick thigh
+    return b;
+  }
+  const b = new Batch(), T = NATIONS[nat].look === 'toms'; b.add(GEO.blobLo, T ? 0x101415 : 0x26221d, .03, .035, 0, T ? .1 : .085, .045, T ? .08 : .065); return b; }
 function bikeWheel() { const b = new Batch(); b.add(GEO.torus, 0x101216, 0, 0, 0, .15, .15, .09); for (let i = 0; i < 3; i++) b.box(.29, .008, .008, 0, 0, 0, 0xb0b4b8, 0, 0, i * 1.047); b.cyl(.025, .03, 0, 0, 0, 0x888, Math.PI / 2, 0, 0); return b; }
 
 // Alpha wolf: a bigger, furrier Jethroes blob with ears, snout, fangs, tail and a stars-and-stripes bandana.
@@ -4479,12 +4624,14 @@ const BLD = {
   silo(P) { const b = new Batch(); b.box(5, .3, 5, 0, .15, 0, 0x585a58); b.cyl(1.7, .3, 0, .4, 0, 0x2a2c2e); b.cyl(1.25, .05, .5, .56, 0, 0xd8c74a); b.box(1.6, .12, 3, 1.6, .58, 0, 0x8a8c88); b.box(1.2, 1.1, 1.2, -1.8, .85, -1.8, 0x70757a); b.box(1.3, .1, 1.3, -1.8, 1.45, -1.8, P.main); [[-2.3, 2.3], [2.3, 2.3], [2.3, -2.3]].forEach(([x, z]) => { b.box(.16, 1.2, .16, x, .8, z, 0xd8c74a); }); return b; },
 };
 
-function nodeGeoSteel() {
-  const b = new Batch(), r = mulberry(5);
-  b.cyl(2, .06, 0, .03, 0, 0x40403c);
-  for (let i = 0; i < 9; i++) {
-    const a = r() * 6.28, q = r() * 1.3, s = .35 + r() * .5;
-    b.add(GEO.ico, i % 3 ? 0x7f8b96 : 0xa7c0d6, Math.cos(a) * q, s * .5, Math.sin(a) * q, s, s * (.8 + r() * .7), s, r(), r(), r());
+function nodeGeoSteel() { // an ore outcrop: weathered boulders with rusty iron veins and bright steel glints, gravel around
+  const b = new Batch(), r = mulberry(5), rock = [0x6f6a62, 0x7c766c, 0x5e5a54, 0x8a8478];
+  for (let i = 0; i < 26; i++) { const a = r() * 6.28, q = .8 + r() * 1.3; b.add(GEO.ico, [0x6b6458, 0x57524a, 0x7a7266][i % 3], Math.cos(a) * q, .02, Math.sin(a) * q, .1 + r() * .12, .05, .1 + r() * .12, r(), r(), r()); } // gravel
+  for (let i = 0; i < 7; i++) {
+    const a = i * .9 + r() * .4, q = i ? .45 + r() * .8 : 0, s = (i ? .32 + r() * .38 : .62);
+    b.add(GEO.ico1, rock[i % 4], Math.cos(a) * q, s * .42, Math.sin(a) * q, s * (1 + r() * .3), s * (.7 + r() * .5), s, r() * 3, r() * 3, r() * 3);
+    b.add(GEO.ico, 0x8a4a22, Math.cos(a) * q + .05, s * .7, Math.sin(a) * q, s * .4, s * .12, s * .55, r(), r(), r()); // rust vein
+    if (i % 2 === 0) b.add(GEO.ico, 0xbfd2de, Math.cos(a) * q - .05, s * .8, Math.sin(a) * q + .05, s * .16, s * .14, s * .16, r(), r(), r()); // ore glint
   }
   return b.geo();
 }
@@ -4496,12 +4643,22 @@ function nodeGeoOil() {
 
 // Trees: index by look. They share one instanced mesh per type.
 function treeGeo(type) {
-  const b = new Batch(), TR = 0x5a4028;
-  if (type === 0) { b.add(GEO.cyl6, TR, 0, .4, 0, .09, .8, .09); b.add(GEO.cone, 0x2a4a2c, 0, 1.1, 0, .6, 1.1, .6); b.add(GEO.cone, 0x30532f, 0, 1.7, 0, .45, .9, .45); b.add(GEO.cone, 0x385c34, 0, 2.2, 0, .28, .7, .28); }
-  else if (type === 1) { b.add(GEO.cyl6, TR, 0, .55, 0, .11, 1.1, .11); b.add(GEO.ico, 0x3d5e30, 0, 1.45, 0, .72, .68, .72); b.add(GEO.ico, 0x486a35, .22, 1.8, .1, .42, .4, .42); b.add(GEO.ico, 0x34522b, -.25, 1.25, -.15, .42, .4, .42); }
-  else if (type === 2) { b.add(GEO.cyl6, 0x3b2d20, 0, .6, 0, .08, 1.2, .08); b.add(GEO.ico, 0x3f4f2a, 0, 1.3, 0, .55, .3, .55); b.add(GEO.ico, 0x4d5b2e, .25, 1.05, 0, .35, .2, .35); }
-  else if (type === 3) { b.add(GEO.cyl6, 0x6f8c3a, 0, .55, 0, .13, 1.1, .13); b.cyl(.08, .4, .22, .75, 0, 0x6f8c3a, 0, 0, 0); b.cyl(.13, .05, .13, .6, 0, 0x6f8c3a, 0, 0, Math.PI / 2); b.cyl(.07, .35, -.2, .9, 0, 0x6f8c3a); b.cyl(.13, .05, -.12, .75, 0, 0x6f8c3a, 0, 0, Math.PI / 2); }
-  else { b.add(GEO.cyl6, TR, 0, .4, 0, .09, .8, .09); b.add(GEO.cone, 0x4a6b55, 0, 1.1, 0, .6, 1.1, .6); b.add(GEO.cone, 0xe6edf2, 0, 1.3, 0, .5, .8, .5); b.add(GEO.cone, 0xf4f7fa, 0, 1.9, 0, .32, .85, .32); }
+  const b = new Batch(), TR = 0x4e3a26, r = mulberry(31 + type);
+  if (type === 0) { // pine: a tall trunk and five drooping tiers, darker inside
+    b.add(GEO.cyl6, TR, 0, .55, 0, .085, 1.1, .085);
+    const G = [0x243d26, 0x2a4a2c, 0x30532f, 0x365a33, 0x3e6438];
+    for (let i = 0; i < 5; i++) { const y = .75 + i * .4, w = .72 - i * .12; b.add(GEO.cone, G[i], (r() - .5) * .05, y, (r() - .5) * .05, w, .72 - i * .04, w, (r() - .5) * .08, r() * 6, (r() - .5) * .08); }
+    b.add(GEO.cone, 0x44703c, 0, 2.75, 0, .12, .4, .12);
+  } else if (type === 1) { // broadleaf: a forked trunk and a lumpy crown of rounded clumps in several greens
+    b.add(GEO.cyl6, TR, 0, .5, 0, .1, 1, .1); b.add(GEO.cyl6, TR, .14, 1.05, .05, .055, .55, .055, .3, 0, -.5); b.add(GEO.cyl6, TR, -.12, 1.08, -.06, .05, .5, .05, -.3, 0, .5);
+    const G = [0x34522b, 0x3d5e30, 0x486a35, 0x2f4a28, 0x557a3c];
+    for (let i = 0; i < 7; i++) { const a = i * 2.4, q = i ? .32 + r() * .14 : 0, y = 1.45 + (i ? (r() - .3) * .45 : .1), s = i ? .32 + r() * .14 : .55; b.add(GEO.ico1, G[i % 5], Math.cos(a) * q, y, Math.sin(a) * q, s * 1.1, s * .9, s * 1.1); }
+  } else if (type === 2) { // scrub: low dry bush
+    b.add(GEO.cyl6, 0x3b2d20, 0, .4, 0, .06, .8, .06);
+    for (let i = 0; i < 4; i++) { const a = i * 1.7; b.add(GEO.ico1, i % 2 ? 0x4d5b2e : 0x5e6634, Math.cos(a) * .22, .75 + r() * .2, Math.sin(a) * .22, .32, .2, .32); }
+  }
+  else if (type === 3) { b.add(GEO.cyl6, 0x6f8c3a, 0, .55, 0, .13, 1.1, .13); b.cyl(.08, .4, .22, .75, 0, 0x6f8c3a, 0, 0, 0); b.cyl(.13, .05, .13, .6, 0, 0x6f8c3a, 0, 0, Math.PI / 2); b.cyl(.07, .35, -.2, .9, 0, 0x6f8c3a); }
+  else { b.add(GEO.cyl6, TR, 0, .5, 0, .085, 1, .085); const G = [0x3b5a48, 0x44614f]; for (let i = 0; i < 4; i++) { const y = .8 + i * .42, w = .64 - i * .12; b.add(GEO.cone, G[i % 2], 0, y, 0, w, .7, w); b.add(GEO.cone, 0xe6edf2, 0, y + .14, 0, w * .82, .44, w * .82); } }
   return b.geo();
 }
 </script>
@@ -5927,6 +6084,7 @@ Renderer.prototype.loadWorld = function (view) {
   this.buildWater(M, N);
   this.buildTrees(M, N);
   this.buildRuins(M);
+  this.buildRocks(M, N);
   this.buildNodes(M);
   this.buildFog(N);
   this.buildSelection();
@@ -5957,7 +6115,13 @@ Renderer.prototype.buildTerrain = function (M, N) {
     const n3 = nz(wx * 6.5, wy * 6.5, 1); if (b === 0 || b === 3) { const dq = Math.max(0, n3 - .55) * 1.6; R += (.42 - R) * dq; G += (.36 - G) * dq; B += (.27 - B) * dq; } // worn dirt patches
     const gr = (rnd() - .5) * .05; R += gr; G += gr; B += gr;
     if (M.tree[cy * N + cx] && b !== 2) { R *= .78; G *= .82; B *= .72; }
-    const rk = Math.min(1, Math.max(0, (sl - .7) * 1.6)); R += (.42 - R) * rk; G += (.4 - G) * rk; B += (.37 - B) * rk;
+    if (b === 0) { const dry = Math.max(0, nz(wx * .09 + 7, wy * .09 + 3, 2) - .55) * 2.2; R += (.46 - R) * dry * .5; G += (.43 - G) * dry * .5; B += (.27 - B) * dry * .5; } // sun-dried meadows
+    const rk = Math.min(1, Math.max(0, (sl - .7) * 1.6)), warm = n1 - .5, band = Math.sin(h * 2.7 + n2 * 2.4) * .5 + Math.sin(h * 7.3 + n1 * 3) * .25;
+    R += (.44 + warm * .08 - R) * rk; G += (.41 + warm * .04 - G) * rk; B += (.37 - warm * .04 - B) * rk;   // rock faces, warm and cool
+    if (rk > 0) { R += band * .05 * rk; G += band * .045 * rk; B += band * .04 * rk; }                    // sediment strata on cliffs
+    const lap = hAt(M, wx + 1, wy) + hAt(M, wx - 1, wy) + hAt(M, wx, wy + 1) + hAt(M, wx, wy - 1) - 4 * h;
+    const ao = lap > 0 ? -Math.min(.16, lap * .1) : Math.min(.07, -lap * .05); R += ao; G += ao; B += ao * .9;   // dark gullies, sunlit ridges
+    if (sl > .35 && sl < .9 && h > 1.2) { const sc = Math.max(0, n2 - .6) * 1.5; R += (.5 - R) * sc * .5; G += (.47 - G) * sc * .5; B += (.42 - B) * sc * .5; } // scree
     const sn = Math.min(1, Math.max(0, (h - 8.5 - (n2 - .5) * 2) * .7)); R += (.94 - R) * sn; G += (.96 - G) * sn; B += (.99 - B) * sn;
     if (h < .75) { const q = Math.min(1, (.75 - h) * 2.6); R += (.82 - R) * q; G += (.74 - G) * q; B += (.53 - B) * q; }
     if (h < -.1) { const q = Math.min(1, -h * .8); R += (.2 - R) * q; G += (.32 - G) * q; B += (.36 - B) * q; }
@@ -5989,6 +6153,27 @@ Renderer.prototype.buildTerrain = function (M, N) {
     ctx.fillStyle = 'rgba(200,190,165,.4)'; for (let i = 0; i < N * N; i++) if (M.road[i]) { ctx.beginPath(); ctx.arc((i % N) * q, ((i / N) | 0) * q, q * .28, 0, 6.3); ctx.fill(); }
     const mg = this.mmBase.getContext('2d'); mg.fillStyle = '#b8ae98'; for (let i = 0; i < N * N; i++) if (M.road[i]) mg.fillRect((i % N) / N * 256 - 1, ((i / N) | 0) / N * 256 - 1, 2, 2);
     tex.needsUpdate = true; }
+};
+
+// Boulders and rock outcrops on steep mountainsides and scattered across open ground (visual only).
+Renderer.prototype.buildRocks = function (M, N) {
+  if (this.rockMesh) { this.world.remove(this.rockMesh); this.rockMesh.dispose(); }
+  const r = mulberry(M.seed + 909), L = [];
+  for (let y = 2; y < N - 2; y++) for (let x = 2; x < N - 2; x++) {
+    const i = y * N + x; if (M.water[i] || M.occ[i] || M.road[i] || M.tree[i]) continue;
+    const sl = Math.hypot(M.h[i + 1] - M.h[i - 1], M.h[i + N] - M.h[i - N]) * .5, p = sl > 1.1 ? .16 : sl > .6 ? .05 : M.block[i] ? .3 : .006;
+    if (r() < p) L.push([x + r() - .5, y + r() - .5, (sl > 1.1 ? .35 : .18) + r() * (sl > 1.1 ? .6 : .3)]);
+  }
+  if (!L.length) return;
+  const b = new Batch(); b.add(GEO.ico, 0xffffff, 0, 0, 0, 1, .62, .85, .2, .3, .1); b.add(GEO.ico, 0xe8e4dc, .45, .12, .2, .5, .42, .45, .9, 1.4, .3); b.add(GEO.ico, 0xd8d4cc, -.4, .05, -.25, .42, .3, .4, .4, .2, 1.1);
+  const im = this.rockMesh = new THREE.InstancedMesh(b.geo(), this.matV, L.length), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), c = new THREE.Color();
+  const tints = [[.42, .4, .37], [.48, .45, .41], [.36, .35, .33], [.5, .47, .4]];
+  L.forEach(([x, y, s], k) => {
+    e.set(r() * .6, r() * 6.28, r() * .6); q.setFromEuler(e);
+    m.compose(new THREE.Vector3(x, hAt(M, x, y) - s * .18, y), q, new THREE.Vector3(s * (1 + r() * .5), s * (.7 + r() * .5), s));
+    im.setMatrixAt(k, m); const t = tints[k % 4], v = .85 + r() * .3; im.setColorAt(k, c.setRGB(t[0] * v * .5, t[1] * v * .5, t[2] * v * .5));
+  });
+  im.castShadow = this.quality === 'high'; im.receiveShadow = true; this.world.add(im);
 };
 
 // Ruined city blocks (Stalingrad): broken walls with jagged tops, dark window holes, rubble heaps. One merged mesh.
@@ -6049,6 +6234,27 @@ Renderer.prototype.digTerrain = function (x, y) { // re-shape the terrain mesh a
   gr.addColorStop(0, 'rgba(122,98,70,.95)'); gr.addColorStop(.75, 'rgba(122,98,70,.8)'); gr.addColorStop(1, 'rgba(122,98,70,0)');
   g.fillStyle = gr; g.beginPath(); g.arc(x * q, y * q, (DIG_R + 1.2) * q, 0, 6.3); g.fill();
   this.texDirty = true;
+};
+// Dug ground: reshape the mesh, paint the earth darker the deeper it goes, and roof tunnels with timber planks.
+Renderer.prototype.flushDig = function () {
+  const Q = this.digQ; if (!Q || !Q.length) return; this.digQ = [];
+  const M = this.view.M, N = this.view.N, pos = this.terrain.geometry.attributes.position, q = this.tc.width / N, g = this.tg;
+  const seen = new Set();
+  for (const [i] of Q) { if (seen.has(i)) continue; seen.add(i); pos.setY(i, M.h[i]);
+    const x = i % N, y = (i / N) | 0, d = M.dug ? M.dug[i] : 0, k = Math.min(1, d / DIG_MAX);
+    g.fillStyle = `rgba(${86 - k * 40 | 0},${66 - k * 34 | 0},${46 - k * 26 | 0},.9)`; g.beginPath(); g.arc(x * q, y * q, q * .85, 0, 6.3); g.fill(); }
+  pos.needsUpdate = true; this.terrain.geometry.computeVertexNormals(); this.texDirty = true; this.texT = Math.min(this.texT, .6);
+  // timber roofs over every tunnel cell
+  const cells = []; if (M.dug) for (let i = 0; i < N * N; i++) if (M.dug[i] >= TUNNEL_D) cells.push(i);
+  if (!this.roofM || cells.length * 2 > this.roofCap) {
+    if (this.roofM) { this.world.remove(this.roofM); this.roofM.dispose(); }
+    const cap = this.roofCap = Math.max(256, cells.length * 4), b = new Batch(); b.box(1.04, .07, .34, 0, 0, 0, 0x5a4026); b.box(1.04, .03, .05, 0, .04, .1, 0x3a2a18);
+    this.roofM = new THREE.InstancedMesh(b.geo(), this.matV, cap); this.roofM.castShadow = this.roofM.receiveShadow = true; this.world.add(this.roofM);
+  }
+  const m = new THREE.Matrix4(), qq = new THREE.Quaternion(), sc = new THREE.Vector3(1, 1, 1), p = new THREE.Vector3(); let n = 0;
+  for (const i of cells) { const x = i % N, y = (i / N) | 0, top = M.h0[i] - .12, rot = (x + y) % 2 ? 0 : Math.PI / 2; qq.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rot);
+    for (const o of [-.27, .27]) { p.set(x + (rot ? o : 0), top, y + (rot ? 0 : o)); m.compose(p, qq, sc); this.roofM.setMatrixAt(n++, m); } }
+  this.roofM.count = n; this.roofM.instanceMatrix.needsUpdate = true;
 };
 Renderer.prototype.paintScar = function (x, y, r) {
   const q = this.tc.width / this.view.N, g = this.tg, gr = g.createRadialGradient(x * q, y * q, 0, x * q, y * q, r * q);
@@ -6170,7 +6376,7 @@ Renderer.prototype.updateFog = function (dt) {
   if (this.fogTick <= 0) {
     this.fogTick = .12;
     F.fill(0);
-    const sc = R / N, tr = p && p.nat ? p.nat.tr : {}, boost = (tr.vision || 1) * (p && p.ups && p.ups.optics ? 1.2 : 1);
+    const sc = R / N, tr = p && p.nat ? p.nat.tr : {}, boost = (tr.vision || 1) * (p && p.ups && p.ups.inf3 ? 1.2 : 1);
     const all = (p && p.reveal > v.t) || !p || !p.alive || this.spectate;
     if (!all) for (const e of v.ents.values()) {
       if (v.friendly && !v.friendly(e.o, me)) continue;
@@ -6547,6 +6753,9 @@ Renderer.prototype.handle = function (ev, view) {
     case 'pjx': this.projEnd(ev, view); break;
     case 'road': this.paintRoad(ev.x, ev.y); break;
     case 'dig': this.digTerrain(ev.x, ev.y); break;
+    case 'dig2': { (this.digQ = this.digQ || []).push(...ev.c); const r = this.rnd, z = hAt(view.M, ev.x, ev.y);
+      if (this.isVisible(ev.x, ev.y)) for (let i = 0; i < 4; i++) this.addP(ev.x + (r() - .5) * .6, z + .1, ev.y + (r() - .5) * .6, (r() - .5) * 1.4, 1 + r() * 1.5, (r() - .5) * 1.4, .07 + r() * .05, .7, .36, .28, .2, false, .95, .1, 9);
+      break; }
     case 'chaff': { // a fan of burning flares and a glittering chaff cloud behind the aircraft
       const e = E.get(ev.id), x = e ? e.rx : ev.x, y = e ? e.rz : ev.z, z = e ? e.ryy : ev.y, h = e ? e.ry : ev.h, bx = -Math.cos(h), bz = -Math.sin(h);
       for (let i = 0; i < 14; i++) { const sd = (i % 2 ? 1 : -1) * (1 + (i >> 1) * .35); this.addP(x, y, z, bx * 4 - bz * sd * 1.6 + (this.rnd() - .5), -1.5 - this.rnd() * 2, bz * 4 + bx * sd * 1.6 + (this.rnd() - .5), .35, 1.6, 1, .75, .35, true, 1, .2, 3); }
@@ -6690,6 +6899,7 @@ Renderer.prototype.draw = function (dt, view) {
   this.stepTracers(dt);
   this.stepProj(dt, v);
   if (this.treeTick <= 0) { this.updateTrees(); this.treeTick = 2; } this.treeTick -= dt;
+  if (this.digQ && this.digQ.length && (this.digT = (this.digT || 0) - dt) <= 0) { this.digT = .3; this.flushDig(); }
   this.texT -= dt;
   if (this.texDirty && this.texT <= 0) { this.terrainTex.needsUpdate = true; this.texDirty = false; this.texT = 1.5; }
   this.sky.position.copy(this.cam.position);
@@ -6862,8 +7072,12 @@ Renderer.prototype.drawEntities = function (dt, v) {
       if (e.b) { if (e.d.mine) seen = false; else { if (inV) e.seenBy = true; seen = e.seenBy; } }
       else {
         seen = inV;
+        if (seen && !e.air && inTunnel(v.M, v.N, e)) { // underground: only troops right beside the tunnel can see them
+          let close = false; for (const f of v.ents.values()) { if (f.o === me && Math.hypot(f.x - e.x, f.y - e.y) < TUNNEL_SEE) { close = true; break; } }
+          seen = close;
+        }
         if (seen && e.d.stealth) {
-          const R = e.d.stealth * ((v.players[me].ups || {}).optics ? 1.5 : 1);
+          const R = e.d.stealth * ((v.players[me].ups || {}).inf3 ? 1.5 : 1);
           let close = (e.revealed || 0) > v.t;
           if (!close) for (const f of v.ents.values()) { if (f.o === me && Math.hypot(f.x - e.x, f.y - e.y) < R) { close = true; break; } }
           seen = close;
@@ -7237,7 +7451,7 @@ Game.prototype.issue = function (c) {
 
 const BIND_DEFAULTS = {fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', walk: 'KeyB', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP', chaff: 'KeyZ'};
 const Settings = {
-  view: 'fp', sens: 1, invert: false, assist: false, autofire: false, flightAssist: true, gritty: true, blobs: false,
+  view: 'fp', sens: 1, invert: false, assist: false, autofire: false, flightAssist: true, gritty: true, blobs: true,
   binds: Object.assign({}, BIND_DEFAULTS),
   load() { try { const o = JSON.parse(localStorage.getItem('warsim-settings') || '{}'); for (const k in o) if (k === 'binds') Object.assign(this.binds, o.binds); else this[k] = o[k]; } catch (e) {} const B = this.binds; if (B.exit === B.fire) B.exit = B.fire === 'Space' ? 'KeyF' : 'Space'; },
   // Give an action a new key. A key already used by another action is swapped, so nothing is left without a key or fights over one.
@@ -7249,10 +7463,11 @@ const Settings = {
     this.save(); return swapped;
   },
   resetBinds() { Object.assign(this.binds, BIND_DEFAULTS); this.save(); },
-  save() { try { const o = {}; for (const k of ['view', 'sens', 'invert', 'assist', 'autofire', 'flightAssist', 'gritty', 'blobs', 'binds']) o[k] = this[k]; localStorage.setItem('warsim-settings', JSON.stringify(o)); } catch (e) {} },
+  save() { try { const o = {}; for (const k of ['view', 'sens', 'invert', 'assist', 'autofire', 'flightAssist', 'gritty', 'binds']) o[k] = this[k]; localStorage.setItem('warsim-settings', JSON.stringify(o)); } catch (e) {} },
   keyName(code) { return !code ? '?' : code.replace(/^Key/, '').replace(/^Digit/, '').replace('Left', '').replace('Right', '').replace('Space', 'Space').replace('Arrow', ''); },
 };
 Settings.load();
+Settings.blobs = true; // the troops are always blob guys
 
 const BIND_LABELS = {fire: 'Fire', alt: 'Secondary weapon', ads: 'Aim / scope (toggle)', reload: 'Reload / aircraft: 3rd weapon', jump: 'Jump / climb', sprint: 'Sprint / descend', view: 'First / third person', exit: 'Back to command', free: 'Free cursor', cycle: 'Cycle lock target', special: 'National special ability', walk: "Ships: leave / sit in captain's chair", fwd: 'Forward / throttle up', back: 'Back / throttle down', left: 'Left / roll left', right: 'Right / roll right', chooser: 'Unit chooser', chaff: 'Aircraft: chaff (beats missiles)'};
 
@@ -7293,7 +7508,7 @@ const Direct = {
   exit(msg) {
     this.pullUp = false; this.warnT = 0;
     if (!this.on) return;
-    this.on = false; this.aboard = null; this.knifeEnd = 0; this.savedW = null; VM.knife = false;
+    this.on = false; this.aboard = null; this.knifeEnd = 0; this.savedW = null; VM.knife = false; this.shovel = false; VM.shovel = false;
     const ui = this.ui, R = ui.g.R, e = ui.g.view.ents.get(this.id);
     if (e) ui.g.issue({c: 'pilot', ids: [this.id], on: 0});
     R.fpId = 0; R.fpPose = null; R.hideId = 0; R.post = null;
@@ -7417,6 +7632,9 @@ const Direct = {
     if (c === B.cycle) { this.cycleLock(); return true; }
     if (c === B.special) { this.special(); return true; }
     if (c === 'KeyH') { document.getElementById('dhelp').classList.toggle('mini'); return true; }
+    if (c === 'KeyY' && this.mode === 'soldier' && this.e.k !== 'wolf') { // shovel: click to dig the ground in front of you, bit by bit
+      this.shovel = !this.shovel; VM.shovel = this.shovel; VM.build(this.e, this.ui.g.view.players[this.e.o].nation, this.slot);
+      this.msg(this.shovel ? 'SHOVEL: ' + Settings.keyName(Settings.binds.fire) + ' digs where you look. Dig deep for a hidden tunnel. Y: back to your gun' : 'Weapon ready', 2.2); return true; }
     if (c === 'Digit1' || c === 'Digit2') { const s = +c.slice(5) - 1; if (this.W[s] && this.W[s].w.mag) { this.slot = s; VM.build(this.e, this.ui.g.view.players[this.e.o].nation, s); } return true; }
     return true;
   },
@@ -7805,6 +8023,15 @@ const Direct = {
     const pri = k[B.fire] || this.mouseDown || (Settings.autofire && onEnemy);
     const sec = k[B.alt];
     if (this.look === 'free' || this.aboard) return;
+    if (this.shovel) { // dig at the crosshair, within arm's reach
+      this.digCd = (this.digCd || 0) - dt;
+      if (pri && this.digCd <= 0 && this.aimPt) {
+        this.digCd = .26; const a = this.aimPt, d = Math.hypot(a.x - this.pose.x, a.y - this.pose.y);
+        if (d < 4 && Math.abs(a.z - hAt(g.view.M, a.x, a.y)) < .4) { g.issue({c: 'pdig', id: this.id, x: a.x, y: a.y}); VM.fired({kick: 2.5}); Sfx.ui(); this.kick = 1; }
+        else this.msg('Look at the ground right in front of you to dig', .9);
+      }
+      return;
+    }
     if (pri) this.tryFire(this.slot, g);
     if (sec && this.W.length > 1) { const s = this.slot === 0 ? 1 : 0; const W = this.W[s].w; if (this.mode === 'soldier' && W.mag && W.mag > 1 && W.t === 'hit') { if (this.slot !== s) { this.slot = s; VM.build(e, g.view.players[e.o].nation, s); } } else this.tryFire(s, g, true); }
     if (this.salvo > 0) { this.salvoT -= dt; if (this.salvoT <= 0) { this.salvo--; this.salvoT = .09; this.fireProj(this.W[1].w, 1, g); } }
@@ -8146,7 +8373,7 @@ const Direct = {
     if (this.mode === 'plane') this.drawFlightHud(c, w, h);
     if (fp && !this.aboard && (this.mode === 'vehicle' || this.mode === 'ship') && !(W && W.arc && !this.direct)) this.drawGunsight(c, w, h);
     if (!this.helpSeen) { this.helpSeen = 1; }
-    c.textAlign = 'left'; c.font = '600 11px system-ui'; c.fillStyle = 'rgba(255,255,255,.55)'; if (!this.isTouch()) c.fillText('H: controls', 24, h - 74);
+    c.textAlign = 'left'; c.font = '600 11px system-ui'; c.fillStyle = 'rgba(255,255,255,.55)'; if (!this.isTouch()) c.fillText('H: controls' + (this.mode === 'soldier' ? '  ·  Y: shovel' + (this.shovel ? ' (ON)' : '') : ''), 24, h - 74);
     // state of the mouse
     const st = this.look === 'locked' || this.look === 'touch' ? '' : this.look === 'free' ? 'CURSOR FREE: press Alt or click the view to aim' : this.look === 'offset' ? 'Steer with the cursor offset · Alt: free cursor' : 'Locking the mouse...';
     if (st) { c.textAlign = 'center'; c.font = '700 14px system-ui'; c.fillStyle = 'rgba(0,0,0,.55)'; const tw = c.measureText(st).width; c.fillRect(cx - tw / 2 - 12, 18, tw + 24, 26); c.fillStyle = this.look === 'free' ? '#ffd23a' : '#fff'; c.fillText(st, cx, 36); }
@@ -8676,14 +8903,18 @@ const VM = {
   },
   build(e, nat, slot) {
     if (!this.scene) this.init();
-    const k = e.k, W = this.knife ? KNIFE : (PWPN[k] || [])[slot || 0], key = k + '|' + nat + '|' + (slot || 0) + (this.knife ? '|knife' : '') + (Settings.blobs ? '|b' : '');
+    const k = e.k, W = this.knife ? KNIFE : (PWPN[k] || [])[slot || 0], key = k + '|' + nat + '|' + (slot || 0) + (this.knife ? '|knife' : '') + (this.shovel ? '|shovel' : '') + (Settings.blobs ? '|b' : '');
     if (this.key === key) return; this.key = key;
     if (this.mesh) { this.scene.remove(this.mesh); this.mesh.geometry.dispose(); }
     const b = new Batch(), P = palette(nat), skin = k === 'wolf' ? 0x7a808c : blobColor(k, P), G = GUN, T = P.look === 'toms';
     const hs = T ? 1.35 : 1; // the Toms have huge hands
     // the gun sits along -Z (camera forward); hands are little blob mitts
     const gun = W ? W.n : '';
-    if (this.knife) { // a big blade held point-forward, with a guard and a wrapped handle
+    if (this.shovel) { // an entrenching tool: wooden haft, steel blade, held in both mitts
+      b.add(GEO.cyl, 0x7a5a30, .06, -.1, -.3, .018, .5, .018, -1.1, 0, 0); b.box(.16, .2, .015, .06, -.02, -.56, 0x6a6e70, 0, -.4, 0); b.box(.17, .02, .03, .06, .08, -.53, 0x50544a);
+      b.add(GEO.blob, skin, .07, -.18, -.12, .05 * hs, .045 * hs, .055 * hs); b.add(GEO.blob, skin, .05, -.08, -.38, .045 * hs, .04 * hs, .05 * hs);
+    }
+    else if (this.knife) { // a big blade held point-forward, with a guard and a wrapped handle
       b.box(.016, .085, .42, .07, -.06, -.42, 0xd5dadf); b.box(.018, .02, .42, .07, -.02, -.42, 0xf4f6f8);
       b.add(GEO.cone, 0xd5dadf, .07, -.06, -.66, .012, .1, .045, -Math.PI / 2, 0, 0);
       b.box(.03, .14, .03, .07, -.07, -.2, 0x3a3d40); b.box(.04, .05, .12, .07, -.08, -.12, 0x2a1b10);
@@ -8875,7 +9106,8 @@ const UI = {
     $('bDeploy').onclick = () => this.openDeploy();
     document.querySelectorAll('#selBar button[data-g]').forEach(b => b.onclick = () => this.selGroup(b.dataset.g));
     $('bDiplo').onclick = () => this.openDiplo();
-    $('bStats').onclick = () => this.toggleStats(); $('statsClose').onclick = () => this.toggleStats(false);
+    $('bStats').onclick = () => this.toggleStats();
+    $('bTech').onclick = () => this.toggleTech(); $('techClose').onclick = () => this.toggleTech(false); $('statsClose').onclick = () => this.toggleStats(false);
     $('tutNext').onclick = () => this.tutAdvance(true); $('tutSkip').onclick = () => this.tutEnd();
     $('dClose').onclick = () => { this.deployed = false; this.closeDeploy(); };
     $('timeCtl').querySelectorAll('button').forEach(b => b.onclick = () => this.setSpeed(+b.dataset.s));
@@ -8952,7 +9184,6 @@ const UI = {
     $('sAuto').onchange = () => { S.autofire = $('sAuto').checked; S.save(); };
     $('sFly').checked = S.flightAssist; $('sFly').onchange = () => { S.flightAssist = $('sFly').checked; S.save(); };
     $('sGrit').checked = S.gritty; $('sGrit').onchange = () => { S.gritty = $('sGrit').checked; S.save(); };
-    $('sBlob').checked = S.blobs; $('sBlob').onchange = () => { S.blobs = $('sBlob').checked; S.save(); };
     $('sTp').onchange = () => { S.view = $('sTp').checked ? 'tp' : 'fp'; S.save(); if (Direct.on) Direct.applyView(); };
     const w = $('sBinds'); w.innerHTML = '';
     if (note) { const m = document.createElement('p'); m.className = 'msg good'; m.style.gridColumn = '1 / -1'; m.textContent = note; w.append(m); }
@@ -9112,7 +9343,7 @@ const UI = {
     if (Direct.isTouch()) { try { const d = document.documentElement, r = d.requestFullscreen && d.requestFullscreen(); if (r && r.then) r.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); } catch (e) {} }
     const mv = $('optMap').value, mt = mv === 'r' ? MAP_KEYS[(Math.random() * MAP_KEYS.length) | 0] : +mv;
     const L = this.lobby, seed = ((Math.random() * 1e6) | 0) + mt * 1e7, size = Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : 0);
-    const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked}));
+    const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked, eco: s.kind === 'bot' ? null : $('optEco').value}));
     this.playersIds = L.slots.map(s => s.id || null);
     if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id)}});
     this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, tut: $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick});
@@ -9243,7 +9474,7 @@ const UI = {
   },
   quit() {
     if (Direct.on) Direct.exit();
-    this.tutEnd(true); $('statsScr').classList.add('hidden');
+    this.tutEnd(true); $('statsScr').classList.add('hidden'); $('techScr').classList.add('hidden');
     this.camp = null; $('campHud').classList.add('hidden'); document.body.classList.remove('camp');
     this.scen = null; document.body.classList.remove('scen'); $('scenSpawn').classList.add('hidden');
     if (this.link) { this.link.close(); this.link = null; }
@@ -9340,6 +9571,57 @@ const UI = {
     const v = new THREE.Vector3(x, 1, y).project(this.R.cam);
     return Math.abs(v.x) < .95 && Math.abs(v.y) < .95 && v.z < 1;
   },
+  // a single next step for players who are not sure what to do (skilled players just ignore it)
+  advice() {
+    const v = this.g.view, me = this.g.me, p = v.players[me]; if (!p || this.camp || this.scen) return '';
+    const has = k => [...v.ents.values()].some(e => e.o === me && e.k === k && e.bp >= 1), cnt = k => [...v.ents.values()].filter(e => e.o === me && e.k === k).length;
+    const lab = has('lab'), next = Object.keys(UPGRADES).find(u => !p.ups[u] && !p.ups['_' + u] && (!UPGRADES[u].req || p.ups[UPGRADES[u].req]));
+    if (cnt('worker') < 7) return 'Train more workers at your Capital: more workers, more steel.';
+    if (p.pop + 4 >= p.popCap) return 'You are near the population cap: build Housing.';
+    if (!cnt('barracks')) return 'Build a Barracks to train soldiers.';
+    if (!cnt('derrick')) return 'Build an Oil Derrick on a black oil well: tanks and aircraft need fuel.';
+    if (!cnt('lab')) return 'Build a Research Lab, then open Research (F8) to unlock tanks, snipers and jets.';
+    if (lab && next && ![...v.ents.values()].some(e => e.o === me && e.k === 'lab' && e.q.length)) return 'Your lab is idle: research ' + UPGRADES[next].n + ' (F8).';
+    if (!cnt('factory')) return 'Build a War Factory for armoured vehicles.';
+    if (!cnt('trench') && !cnt('pillbox') && v.t > 240) return 'Dig in: a Trench or Pillbox in front of your base (More… in the build menu) halves damage to troops in it.';
+    if (!(p.intel && p.intel.length) && v.t > 180) return 'Send a scout (select the Capital, L) to find the enemy before they find you.';
+    return '';
+  },
+  // ---------- research tree ----------
+  toggleTech(on) {
+    if (!this.g || this.demo || this.camp || this.scen) return;
+    const el = $('techScr'); on = on === undefined ? el.classList.contains('hidden') : on;
+    el.classList.toggle('hidden', !on); if (on) this.renderTech();
+  },
+  renderTech() {
+    const v = this.g.view, me = this.g.me, p = v.players[me], k = p.nat.tr.research || 1;
+    const labs = [...v.ents.values()].filter(e => e.o === me && e.k === 'lab' && e.bp >= 1);
+    $('techLab').textContent = labs.length ? labs.length + ' lab' + (labs.length > 1 ? 's' : '') + ' · each lab researches one at a time' : 'Build a Research Lab to start researching';
+    const busyAt = u => labs.find(l => l.q.some(q => q.up === u));
+    let h = '<div class="ttrees">';
+    for (const tk in TECH_TREES) {
+      const T = TECH_TREES[tk]; h += `<div class="ttree" style="--tc:${T.col}"><h3 style="color:${T.col}"><i>${T.ic}</i>${T.n}</h3>`;
+      for (const u in UPGRADES) {
+        const q = UPGRADES[u]; if (q.tree !== tk) continue;
+        const c = [Math.round(q.cost[0] * k), Math.round(q.cost[1] * k)], done = p.ups[u] || p.techAll, lab = busyAt(u), lock = q.req && !p.ups[q.req] && !p.techAll;
+        const st = done ? 'done' : lab ? 'busy' : lock ? 'lock' : '';
+        const prog = lab && lab.q[0].up === u ? Math.min(1, (lab.prog || 0) / q.t) : 0;
+        h += `<div class="tnode ${st}" data-u="${u}"><span class="tt">Tier ${q.tier} · ${q.t}s · ${q.hk}</span><b>${q.n}</b><p>${q.desc}</p>`
+          + (q.unlock.length ? `<div class="un">${q.unlock.filter(x => !UNITS[x] || v.trainable(Object.assign({}, p, {ups: Object.assign({}, p.ups, {[u]: 1})}), x)).map(x => `<span>${(UNITS[x] || BUILDINGS[x]).n}</span>`).join('')}</div>` : '')
+          + `<div class="tc">${done ? '✓ Researched' : lab ? (lab.q[0].up === u ? 'Researching… ' + Math.round(prog * 100) + '%' : 'Queued') : lock ? '🔒 Needs ' + UPGRADES[q.req].n : c[0] + ' steel · ' + c[1] + ' fuel'}</div>${lab ? `<div class="bar"><i style="width:${prog * 100}%"></i></div>` : ''}</div>`;
+      }
+      h += '</div>';
+    }
+    $('techBody').innerHTML = h + '</div><p class="small">Every tier makes that branch of your army stronger, so a late army beats an early one of the same size. Research is cheaper for the Dhruvs.</p>';
+    $('techBody').querySelectorAll('.tnode').forEach(n => n.onclick = () => {
+      const u = n.dataset.u, q = UPGRADES[u];
+      if (p.ups[u] || p.techAll || busyAt(u)) return;
+      if (q.req && !p.ups[q.req]) { this.addAlert('Research ' + UPGRADES[q.req].n + ' first', 'bad'); Sfx.bad(); return; }
+      if (!labs.length) { this.addAlert('Build a Research Lab first', 'bad'); Sfx.bad(); return; }
+      const lab = labs.slice().sort((a, b) => a.q.length - b.q.length)[0];
+      this.g.issue({c: 'research', b: lab.id, u}); Sfx.ui(); setTimeout(() => this.renderTech(), 150);
+    });
+  },
   // ---------- stats ----------
   toggleStats(on) {
     if (!this.g || this.demo) return;
@@ -9384,6 +9666,8 @@ const UI = {
       {h: 'Train soldiers', p: 'Click your <b>Barracks</b> to select it, then click <b>Rifleman</b> (or press its hotkey) three times. Each one costs steel and takes a few seconds.', hl: '#cards', f: () => cnt('rifle') >= rifles0 + 3, enter: () => { rifles0 = cnt('rifle'); }},
       {h: 'Fuel', p: 'Tanks, aircraft and research also need <b>fuel</b>. Deselect everything, pick <b>Oil Derrick</b> and place it on one of the black oil wells near your base.', hl: '#cards', f: () => cnt('derrick') > 0},
       {h: 'Dig in', p: 'Press <b>More…</b> in the build menu for defences. Place a <b>Trench</b> in front of your base: infantry standing in or beside it take <b>55% less damage</b>. Sandbags and Pillboxes work the same way.', hl: '#cards', f: () => cnt('trench') + cnt('sandbags') + cnt('pillbox') > 0},
+      {h: 'Research trees', p: 'Press <b>🔬 Research (F8)</b>. Three trees (Infantry, Armour & Industry, Air & Naval) each have three tiers. Every tier makes that part of your army stronger and unlocks new troops, tanks, planes and ships. You need a <b>Research Lab</b> to research.', hl: '#bTech'},
+      {h: 'Let advisors help', p: 'Too much to manage? Select your <b>Capital</b> and press <b>H</b> for <b>Auto economy</b>: workers keep training, idle workers go back to mining and Housing gets built before you run out of room. Turn it off any time to micro-manage for a faster economy.'},
       {h: 'Hardening', p: 'Any finished building can be <b>Hardened</b> (select it, press <b>V</b>): rebuilt in concrete, it then shrugs off artillery and air strikes. It is expensive, so save it for your capital and key buildings later on.'},
       {h: 'Send a scout', p: 'Click your <b>Capital</b>, press <b>Scout to… (L)</b> and click somewhere on the map. The scout rides there, counts the enemies it sees and reports back.', hl: '#cards', f: () => this.count(e => e.recon) > 0},
       {h: 'The War Room', p: 'With the Capital selected press <b>G</b> to walk into your War Room. Lean over the map table (<b>E</b>) to see every scout sighting, and click the table to send scouts. Press <b>Esc</b> to come back out.', f: () => WarRoom.on || this.tutWR, enter: () => { this.tutWR = false; }},
@@ -9643,6 +9927,7 @@ const UI = {
     if (c === 'F1' || c === 'F2' || c === 'F3' || c === 'F4') { e.preventDefault(); this.selGroup(['workers', 'ground', 'air', 'sea'][+c[1] - 1]); return; }
     if (c === 'F6') { e.preventDefault(); this.openDiplo(); return; }
     if (c === 'F7') { e.preventDefault(); this.toggleStats(); return; }
+    if (c === 'F8') { e.preventDefault(); this.toggleTech(); return; }
     if (c === 'Tab') { e.preventDefault(); this.toggleBigMap(); return; }
     if (c === 'Space') { e.preventDefault(); if (this.lastAlert) this.jump(this.lastAlert.x, this.lastAlert.y); return; }
     if (c === 'Period') { const list = [...this.g.view.ents.values()].filter(u => u.o === this.g.me && u.k === 'worker' && !u.task && !u.goal); if (list.length) { this.sel.clear(); const w = list[(this.idleI = (this.idleI || 0) + 1) % list.length]; this.sel.add(w.id); this.jump(w.x, w.y); this.refreshHud(true); } else this.addAlert('No idle workers'); return; }
@@ -9749,7 +10034,7 @@ const UI = {
       m.ok = ok;
       m.mat.color.set(ok ? 0x6dff9a : 0xff4a3a);
       if (R.ghost) R.ghost.position.set(x, Math.max(hAt(M, x, y), 0) + .05, y);
-    } else if (m.t === 'target' || m.t === 'road' || m.t === 'dig') {
+    } else if (m.t === 'target' || m.t === 'road' || m.t === 'dig' || m.t === 'digline') {
       const r = m.r || 0;
       R.rangeRing.visible = r > 0;
       if (r) { R.rangeRing.position.set(g.x, Math.max(hAt(M, g.x, g.y), 0) + .5, g.y); R.rangeRing.scale.setScalar(r); }
@@ -9771,6 +10056,10 @@ const UI = {
       const x = Math.round(g.x), y = Math.round(g.y);
       if (m.x1 === undefined) { m.x1 = x; m.y1 = y; $('modeHint').textContent = 'Click the end of the road  (right click cancels)'; this.R.ping(x, y, 0xffd97a); }
       else { this.g.issue({c: 'road', ids: this.ids(), x1: m.x1, y1: m.y1, x2: x, y2: y}); this.R.ping(x, y, 0xffd97a); Sfx.ack(); this.cancelMode(); }
+    } else if (m.t === 'digline') {
+      const x = Math.round(g.x), y = Math.round(g.y);
+      if (m.x1 === undefined) { m.x1 = x; m.y1 = y; $('modeHint').textContent = 'Click where the ' + (m.deep ? 'tunnel' : 'trench') + ' ends  (right click cancels)'; this.R.ping(x, y, 0xc9a26b); }
+      else { this.g.issue({c: 'digline', ids: this.ids(), x1: m.x1, y1: m.y1, x2: x, y2: y, deep: m.deep ? 1 : 0}); this.R.ping(x, y, 0xc9a26b); Sfx.ack(); this.addAlert('Workers are digging: 1 steel per shovelful', 'info'); this.cancelMode(); }
     } else if (m.t === 'target') this.fireTarget(g.x, g.y, shift, mx, my);
   },
   fireTarget(x, y, shift, mx, my) {
@@ -9800,11 +10089,13 @@ const UI = {
         for (const k in BUILDINGS) {
           const d = BUILDINGS[k];
           if (k === 'hq' || (d.page || 1) !== page || (d.only && !d.only.includes(p.nat.key))) continue;
-          const c = cost(d, k), reqOk = !d.req || v.has(G.me, d.req);
-          S.push({hk: d.hk, name: d.n, img: Thumbs.get(k, nat), cost: c, desc: d.desc, off: !reqOk || p.steel < c[0] || p.fuel < c[1], why: !reqOk ? 'Requires ' + BUILDINGS[d.req].n : (p.steel < c[0] || p.fuel < c[1]) ? 'Not enough resources' : '', act: () => this.startPlace(k)});
+          const c = cost(d, k), tl = v.techLock(p, k), reqOk = (!d.req || v.has(G.me, d.req)) && !tl;
+          S.push({hk: d.hk, name: d.n, img: Thumbs.get(k, nat), cost: c, desc: d.desc, off: !reqOk || p.steel < c[0] || p.fuel < c[1], why: tl ? 'Research ' + UPGRADES[tl].n + ' first' : !reqOk ? 'Requires ' + BUILDINGS[d.req].n : (p.steel < c[0] || p.fuel < c[1]) ? 'Not enough resources' : '', act: () => this.startPlace(k)});
         }
         S.push({hk: 'Z', name: page === 1 ? 'More...' : 'Back', gl: page === 1 ? '»' : '«', desc: page === 1 ? 'AA guns, jammers, mines, Patriots and missile silos.' : 'Main buildings.', act: () => { this.page = page === 1 ? 2 : 1; this.refreshHud(true); }});
         S.push({hk: 'L', name: 'Excavate', gl: '⛏', cost: [DIG_COST, 0], desc: 'Flatten a patch of ground (rock, slopes, shallows) so you can build on it. ' + DIG_COST + ' steel.', act: () => this.setMode({t: 'dig', r: DIG_R}, 'Click the ground to excavate  (right click cancels)')});
+        S.push({hk: 'I', name: 'Dig trench', gl: '⌇', desc: 'Workers dig a trench between two points, shovelful by shovelful. Infantry in it take 55% less damage.', act: () => this.setMode({t: 'digline'}, 'Click where the trench starts')});
+        S.push({hk: 'O', name: 'Dig tunnel', gl: '⛫', desc: 'Workers dig a deep, timber-roofed tunnel. Troops inside are hidden from the enemy unless they come right up close: dig toward the enemy for sneak attacks.', act: () => this.setMode({t: 'digline', deep: 1}, 'Click where the tunnel starts')});
         S.push({hk: 'X', name: 'Road', gl: '⛙', desc: 'Lay a road between two points (2 steel per tile). Units move 50% faster on roads.', act: () => this.setMode({t: 'road'}, 'Click the start of the road')});
         if (!autoB) S.push({hk: 'C', name: 'Stop', gl: '■', desc: 'Stop what they are doing.', act: () => G.issue({c: 'stop', ids})});
         return S;
@@ -9830,14 +10121,18 @@ const UI = {
     if (b.k === 'hq' && b.o === G.me) {
       S.push({hk: 'G', name: 'War Room', gl: '⚑', desc: 'Walk inside your capital as the general: a live map table, scout dispatch and reports.', act: () => { this.cancelMode(); WarRoom.enter(this); }});
       S.push({hk: 'J', name: 'Send scout', gl: '👁', cost: [50, 0], desc: 'A scout rides out, notes every enemy group it sees and reports back here. Uses an idle scout, or recruits one for 50 steel.', act: () => G.issue({c: 'recon', n: 1})});
+      S.push({hk: 'H', name: p.autoEco ? 'Auto economy: ON' : 'Auto economy: OFF', gl: '⚙', desc: 'Let your advisors run the economy: they keep workers training up to 12, put idle workers back to mining and build Housing before you hit the population cap. Turn it off to manage everything yourself.', act: () => { G.issue({c: 'autoeco', on: !p.autoEco}); }, active: p.autoEco});
       S.push({hk: 'L', name: 'Scout to...', gl: '⌖', cost: [50, 0], desc: 'Pick a spot on the map (or the Tab map) and a scout rides there, looks around and reports back.', act: () => this.setMode({t: 'target', kind: 'recon'}, 'Scout where?  (right click cancels)')});
       S.push({hk: 'K', name: p.autoRecon ? 'Auto scouting: ON' : 'Auto scouting: OFF', gl: '⟳', desc: 'Keep a scout patrolling and reporting on its own.', act: () => G.issue({c: 'autorecon', on: !p.autoRecon}), active: p.autoRecon});
     }
     if (d.trains) for (const u of d.trains) {
+      const tl = v.techLock(p, u);
+      if (tl && (!UNITS[u].only || UNITS[u].only.includes(p.nat.key)) && (!UNITS[u].notNation || !UNITS[u].notNation.includes(p.nat.key))) { const ud = UNITS[u]; S.push({hk: ud.hk, name: ud.n, img: Thumbs.get(u, nat), lock: 1, desc: ud.desc + ' 🔒 Unlock it with ' + UPGRADES[tl].n + ' research (' + TECH_TREES[UPGRADES[tl].tree].n + ').', off: true, why: 'Research ' + UPGRADES[tl].n + ' first (Research tree, F8)'}); continue; }
       if (!v.trainable(p, u)) continue;
       const ud = UNITS[u], c = cost(ud, u), full = p.pop + ud.pop > p.popCap;
       S.push({hk: ud.hk, name: ud.n, img: Thumbs.get(u, nat), cost: c, desc: ud.desc, pop: ud.pop, off: p.steel < c[0] || p.fuel < c[1], why: p.steel < c[0] || p.fuel < c[1] ? 'Not enough resources' : full ? 'Population full: build Housing' : '', act: () => { for (const e of es) if (e.k === b.k) G.issue({c: 'train', b: e.id, u}); Sfx.ui(); }});
     }
+    if (d.research) S.push({hk: 'B', name: 'Research tree', gl: '🔬', desc: 'Open the full research tree (F8): three branches that unlock new units and make them stronger.', act: () => this.toggleTech(true)});
     if (d.research) for (const u in UPGRADES) {
       const q = UPGRADES[u], k = p.nat.tr.research || 1, c = [Math.round(q.cost[0] * k), Math.round(q.cost[1] * k)], have = p.ups[u], busy = p.ups['_' + u], lock = q.req && !p.ups[q.req];
       if (have) continue;
@@ -9896,6 +10191,7 @@ const UI = {
       $('scores').innerHTML = v.players.map(q => `<span class="sc${q.alive ? '' : ' dead'}" style="--c:${q.nat.color}">${q.nat.name.replace('The ', '')} ${q.kills}</span>`).join('');
       this.tutTick();
       if (!$('statsScr').classList.contains('hidden')) this.renderStats($('statsBody'));
+      if (!$('techScr').classList.contains('hidden')) this.renderTech();
       if (this.objs) {
         let cur = false;
         // tick objectives in order, and show only the current one and the next (keeps the corner small)
@@ -9929,7 +10225,7 @@ const UI = {
       if (!same || force || cards.children.length !== this.slots.length) {
         cards.innerHTML = '';
         for (const s of this.slots) {
-          const b = document.createElement('button'); b.className = 'card' + (s.off ? ' off' : '') + (s.active ? ' act' : '');
+          const b = document.createElement('button'); b.className = 'card' + (s.lock ? ' lock' : s.off ? ' off' : '') + (s.active ? ' act' : '');
           b.innerHTML = `<kbd>${s.hk}</kbd>` + (s.img ? `<img src="${s.img}" alt="">` : `<span class="gl">${s.gl || ''}</span>`) + `<label>${s.name}</label>`;
           b.onclick = e => { this.useSlot(s, e.shiftKey); };
           b.onmouseenter = () => this.showTip(s, b); b.onmouseleave = () => $('tip').classList.add('hidden');
@@ -9938,7 +10234,7 @@ const UI = {
       } else this.slots.forEach((s, i) => { const b = cards.children[i]; b.classList.toggle('off', !!s.off); b.onclick = e => this.useSlot(s, e.shiftKey); b.onmouseenter = () => this.showTip(s, b); });
     }
     // selection panel
-    if (!es.length) { sp.innerHTML = '<div><h3>Build</h3><p>Pick a building on the right and place it: the nearest workers go and build it, then return to mining. Or click a unit or drag a box to select. F1 to F4 select groups.</p></div>'; return; }
+    if (!es.length) { const adv = this.advice(); sp.innerHTML = '<div><h3>Build</h3><p>Pick a building on the right and place it: the nearest workers go and build it, then return to mining. Or click a unit or drag a box to select. F1 to F4 select groups.</p>' + (adv ? '<p class="adv">💡 <b>Advisor:</b> ' + adv + '</p>' : '') + '</div>'; return; }
     if (es.length === 1) {
       const e = es[0], d = e.d, nat = v.players[e.o].nation, mine = e.o === G.me;
       let html = `<img class="big-pic" src="${Thumbs.get(e.k, nat)}" alt=""><div style="flex:1;min-width:0"><h3>${d.n}${e.hero ? ' "' + e.hero + '"' : ''}${e.vet ? ' ' + '★'.repeat(e.vet) : ''}</h3>`;
