@@ -15,6 +15,17 @@
 ## Log (newest first, Sydney time)
 
 
+### 2026-11-05 — Big maps, Stalingrad, War Room, transports, team deathmatch
+- **Build without selecting workers:** with nothing selected, the command card shows every building. Place one and the nearest workers go and build it, then go back to mining.
+- **New maps and sizes:** Middle East Desert, Strait of Hormuz, Stalingrad (a ruined city on a street grid by the Volga, in winter), and Pacific War (an island chain, at least Massive size). Sizes now go up to Huge and Massive. Highways and causeways link every capital, so everything can be reached on foot.
+- **Bigger capitals:** gatehouses, towers, a palace keep, a cathedral, a market square and streets of houses.
+- **War Room:** select your capital and press G to walk inside as the general. It has a live map table with what you can see and every scout sighting, a strategic wall map, a scout dispatch desk and a reports board. **Scouts** (capital: J, auto: K) ride out, note every enemy group, and report numbers and positions when they return. Sightings also show on the Tab map.
+- **Fog of war reworked:** soft edges, sharper on big maps, faster updates, high ground sees further, and explored ground stays readable.
+- **Swimming:** infantry can swim slowly. After 12 s (player) or 22 s (AI) they start to drown. You get a breath bar.
+- **New units:** Troop Truck (8 troops), Supply Truck (repairs), Hovercraft (amphibious, MG, 6 troops), Landing Craft (12 troops), Patrol Boat, C-130 Transport (arrives with 10 paratroopers), Chinook (10 troops, door gun) and AWACS (huge vision, spots aircraft). To load, select infantry and right click a transport. Unload with B, or "Unload at..." (N); U unloads in first person.
+- **ICBMs:** the nuclear sub's missile now cold-launches out of the water, boosts straight up, drops its first stage and comes down glowing. In a piloted nuclear sub, E fires it at the nearest enemy capital.
+- **FPS:** two team deathmatch arenas (Stalingrad Streets, Desert Mesas). Gunplay for every gun: recoil patterns you pull down against, FOV punch and shake, floating damage numbers, headshot and multikill banners, and a faster tactical reload with a round chambered.
+
 ### 2026-11-05 — FPS beach landings, diplomacy, patrols, new maps and cockpit
 - **FPS Battles (main menu):** *D-Day: Omaha Beach* and *Pacific: Island Landing*. Ride the landing craft in as one soldier among waves of troops, with destroyers offshore and fighters or gunships flying in. Capture four objectives in turn. Each soldier costs a reinforcement ticket; capturing an objective moves your respawn forward and gives 15 more. When you die, pick your class (1 to 7).
 - **Diplomacy (F6):** ceasefires (4 min), alliances, tribute demands, trades and gifts. Bots judge by army strength, gifts and grudges, sue for peace when losing and gang up on a runaway leader. Allies win together.
