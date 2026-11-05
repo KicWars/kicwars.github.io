@@ -1042,6 +1042,16 @@ const BATTLES = [
       ['rifle', .33, .37, 9, 4], ['sniper', .3, .39, 3, 3, 1], ['assault', .35, .35, 4, 2], ['bunker', .33, .34], ['mg', .34, .38, 2, 2, 1], ['tower', .3, .35],
       ['bunker', .66, .265], ['bunker', .62, .31], ['mg', .66, .29, 3, 1.5, 1], ['rifle', .66, .29, 10, 3], ['arty', .71, .24, 1, 0, 1], ['rocket', .63, .3, 3, 2], ['sniper', .69, .27, 2, 2, 1]]},
 ];
+BATTLES.push({n: 'Assault: Hollow Village', map: 10, seed: 3, size: 96, foe: 'toms', tickets: 70, wave: 34, waveN: 7, rein: 50, sea: [0, 1], noBoat: 1,
+  blurb: 'Take a village the enemy has had days to prepare. Mines and machine guns cover the ditch, snipers hold the bell tower, and defenders hold fire until you are close. Flank through the farm lane or the orchard, or push the causeway and pay for it.',
+  comp: ['rifle', 'rifle', 'assault', 'mg', 'rifle', 'rocket', 'medic', 'grenadier', 'rifle', 'sniper'],
+  land: [[.42, .94], [.5, .94], [.58, .94]],
+  obj: [{n: 'The ditch', u: .5, v: .64}, {n: 'Village square', u: .5, v: .39}, {n: 'Church', u: .6, v: .27}, {n: 'Manor house', u: .5, v: .15}],
+  def: [['mine', .5, .60, 3, 2.5], ['mine', .46, .70, 2, 2], ['mine', .56, .70, 2, 2], ['sandbags', .46, .62], ['sandbags', .54, .62], ['mg', .45, .615, 1, 0, 1], ['mg', .55, .615, 1, 0, 1],
+    ['rifle', .5, .55, 4, 3, 1], ['rifle', .2, .5, 3, 2, 1], ['sniper', .14, .545, 1, 0, 1], ['rifle', .8, .5, 4, 3, 1], ['rocket', .82, .52, 1, 0, 1],
+    ['rifle', .36, .34, 4, 3, 1], ['rifle', .62, .35, 4, 3, 1], ['mg', .5, .33, 1, 0, 1], ['sandbags', .5, .35], ['rifle', .45, .42, 3, 2], ['assault', .55, .42, 2, 1.5],
+    ['sniper', .645, .255, 1, 0, 1], ['rifle', .58, .29, 4, 2, 1], ['bunker', .6, .31], ['mg', .6, .30, 1, 0, 1],
+    ['bunker', .5, .19], ['tower', .44, .19], ['pillbox', .56, .19], ['rifle', .5, .16, 7, 4, 1], ['mg', .5, .2, 2, 3, 1], ['tank', .5, .1, 1], ['arty', .5, .06, 2, 3, 1]]});
 // Team deathmatch arenas: two squads respawn forever; first team to the kill limit wins.
 BATTLES.push(
   {n: 'Arena: Stalingrad Streets', tdm: 60, team: 11, map: 8, seed: 31, size: 104, foe: 'toms', tickets: 1e9, sea: [0, 1], obj: [], land: [], def: [],
@@ -1114,7 +1124,7 @@ function genBattleMap(N, seed, BT) {
   const rnd = mulberry(seed * 7919 + 29), nz = makeNoise(rnd), nz2 = makeNoise(rnd);
   const A = N * N, h = new Float32Array(A), bio = new Uint8Array(A), tree = new Uint8Array(A), water = new Uint8Array(A), block = new Uint8Array(A), road = new Uint8Array(A), occ = new Int32Array(A);
   const sm = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-  let spawns;
+  let spawns, ruins = [];
   if (BT === 4) {
     const draws = [.28, .5, .73];
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
@@ -1137,6 +1147,40 @@ function genBattleMap(N, seed, BT) {
     spawns = [{x: Math.round(N * .5), y: Math.round(N * .69)}, {x: Math.round(N * .55), y: Math.round(N * .2)}];
     const rd = (u0, v0, u1, v1) => { const n = Math.ceil(Math.hypot(u1 - u0, v1 - v0) * N * 1.5); for (let k = 0; k <= n; k++) { const f = k / n, x = Math.round((u0 + (u1 - u0) * f) * N + Math.sin(f * 9) * 1.2), y = Math.round((v0 + (v1 - v0) * f) * N); const i = y * N + x; road[i] = 1; tree[i] = 0; block[i] = 0; } };
     rd(.5, .62, .5, .45); rd(.5, .45, .55, .23); rd(.3, .44, .72, .44);
+  } else if (BT === 10) {
+    // HOLLOW VILLAGE: authored for tension, not noise. You attack from the south. A drainage ditch splits the field and only the stone causeway
+    // crosses it head-on; a walled farm lane runs up the west flank and an orchard hides the east. The village is a maze of alleys around a
+    // square that the church tower overlooks, and the manor behind it is the last stand. Every route is a trade: fast and exposed, or slow and covered.
+    const put = (kind, u, v, w, d, hh) => ruins.push({x: u * N, y: v * N, w, d, h: hh, kind});
+    const rd = (u0, v0, u1, v1) => { const n = Math.ceil(Math.hypot(u1 - u0, v1 - v0) * N * 1.5); for (let k = 0; k <= n; k++) { const f2 = k / n, x = Math.round((u0 + (u1 - u0) * f2) * N), y = Math.round((v0 + (v1 - v0) * f2) * N); for (let o = -1; o <= 1; o++) { const xx = x + o; if (xx > 0 && xx < N - 1 && y > 0 && y < N - 1) road[y * N + xx] = 1; } } };
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const i = y * N + x, u = x / N, v = y / N, n1 = nz(x * .07, y * .07, 3);
+      let e = 1.25 + (n1 - .5) * .5 + sm(.42, .05, v) * 1.1;
+      const dv = Math.abs(v - (.66 + Math.sin(u * 9) * .012)), causeway = Math.abs(u - .5) < .045;
+      if (dv < .028 && !causeway) e = Math.min(e, .5 + dv * 16);          // the ditch: sunken cover, but a long exposed climb out
+      h[i] = e; bio[i] = BIO.GRASS;
+      const edge = Math.min(u, 1 - u, v, 1 - v);
+      if (edge < .05 && rnd() < .8) tree[i] = 1 + (rnd() * 3 | 0);          // tree line walls the battlefield in
+      const orchard = u > .7 && u < .93 && v > .42 && v < .62 && x % 4 === 0 && y % 3 === 0 && rnd() < .85;
+      const hedgeW = Math.abs(u - .2) < .006 && v > .7 && v < .86 && ((y * 7) % 11 > 2);
+      const hedgeS = Math.abs(v - .82) < .006 && u > .1 && u < .9 && !(u > .44 && u < .56) && ((x * 5) % 9 > 1);
+      if (orchard || hedgeW || hedgeS) tree[i] = 1 + (rnd() * 3 | 0);
+    }
+    rd(.5, .95, .5, .66); rd(.5, .66, .5, .2); rd(.12, .48, .88, .48);
+    // south: broken ground for the first dash
+    put('rubble', .42, .78, 4, 3, .6); put('rubble', .58, .80, 4, 3, .6); put('house', .33, .76, 5, 5, 2.6); put('house', .67, .77, 5, 5, 2.4); put('house', .84, .74, 7, 5, 3.4);
+    // west flank: a walled farm lane (narrow, long sight lines)
+    put('house', .14, .52, 9, 3, 1.8); put('house', .14, .60, 9, 3, 1.8); put('house', .25, .56, 3, 3, 2.4);
+    // village: street at the middle, alleys either side, rubble breaking up the square
+    put('house', .34, .30, 6, 5, 3.2); put('house', .34, .38, 5, 6, 2.6); put('house', .40, .46, 5, 5, 3.4); put('house', .27, .46, 5, 5, 2.4);
+    put('house', .62, .31, 6, 5, 3.0); put('house', .66, .39, 5, 6, 3.6); put('house', .59, .47, 5, 5, 2.8); put('house', .73, .30, 5, 5, 2.4);
+    put('rubble', .41, .36, 3, 3, .5); put('rubble', .5, .38, 3, 3, .5); put('rubble', .47, .44, 2, 2, .5);
+    // church: nave plus a bell tower that sees the whole square
+    put('factory', .58, .255, 7, 5, 4.2); put('elevator', .645, .255, 4, 4, 9);
+    // manor: the last stand
+    put('factory', .5, .13, 10, 7, 4.5); put('house', .38, .15, 5, 5, 3); put('house', .62, .15, 5, 5, 3);
+    for (const R2 of ruins) if (R2.kind !== 'rubble') for (let y = Math.round(R2.y - R2.d / 2 + .5); y < Math.round(R2.y + R2.d / 2); y++) for (let x = Math.round(R2.x - R2.w / 2 + .5); x < Math.round(R2.x + R2.w / 2); x++) { const i = y * N + x; if (i >= 0 && i < A) { block[i] = 1; tree[i] = 0; } }
+    spawns = [{x: Math.round(N * .5), y: Math.round(N * .9)}, {x: Math.round(N * .5), y: Math.round(N * .08)}];
   } else {
     const cx = N * .5, cy = N * .48, mx = N * .66, my = N * .28, mr = N * .14;
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
@@ -1159,11 +1203,12 @@ function genBattleMap(N, seed, BT) {
   const t2 = new Float32Array(h);
   for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) { const i = y * N + x; h[i] = (t2[i] * 2 + t2[i - 1] + t2[i + 1] + t2[i - N] + t2[i + N]) / 6; }
   for (let i = 0; i < A; i++) { if (h[i] < 0) { water[i] = 1; tree[i] = 0; block[i] = 0; road[i] = 0; } if (block[i]) tree[i] = 0; }
-  return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes: []};
+  for (const R2 of ruins) R2.z = h[Math.round(R2.y) * N + Math.round(R2.x)];
+  return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes: [], ruins};
 }
 function genMap(N, seed, nPlayers) {
   const BT = Math.floor(seed / 1e7);
-  if (BT === 4 || BT === 5) return genBattleMap(N, seed, BT);
+  if (BT === 4 || BT === 5 || BT === 10) return genBattleMap(N, seed, BT);
   const rnd = mulberry(seed * 7919 + 13), nz = makeNoise(rnd), nz2 = makeNoise(rnd), nz3 = makeNoise(rnd), MT = mapType(seed);
   const A = N * N, hr = new Float32Array(A), te = new Float32Array(A), mo = new Float32Array(A);
   const sc = 1 / 26, cx = N / 2, cy = N / 2;
@@ -1651,17 +1696,27 @@ Sim.prototype.setupScen = function (B) {
   for (const f of B.fleet || []) { const o = P(f[1], f[2]), e = this.addUnit(f[0], 0, o.x, o.y); e.h = face + Math.PI; e.stance = 'hold'; }
 };
 // Put an attacker ashore: walk the point inland from the sea until it is dry.
+Sim.prototype.scenAttack = function (e, O) {
+  const ox = O.x + (this.rnd() - .5) * 8, oy = O.y + (this.rnd() - .5) * 6;
+  this.cmdMove([e], ox, oy, true, false);
+  const far = Math.hypot(e.x - O.x, e.y - O.y);
+  if (far > 30 && e.id % 3 === 0 && e.d.cat === 'inf' && !this.scen.tdm) {
+    const dx = (O.x - e.x) / far, dy = (O.y - e.y) / far, sg = (e.id % 2 ? 1 : -1) * Math.min(28, far * .55), N2 = this.N;
+    const wx = clamp(e.x + dx * far * .55 - dy * sg, 3, N2 - 4), wy = clamp(e.y + dy * far * .55 + dx * sg, 3, N2 - 4);
+    if (this.landOk(wx, wy)) { this.cmdMove([e], wx, wy, true, false); e.queue = [{x: ox, y: oy, a: true}]; }
+  }
+};
 Sim.prototype.scenUnit = function (k, x, y) {
   const S = this.scen, sx = S.B.sea[0], sy = S.B.sea[1], ud = UNITS[k];
   if (ud.cat !== 'air' && ud.cat !== 'heli') for (let t = 0; t < 40 && !this.landOk(x, y); t++) { x -= sx * .7; y -= sy * .7; }
   const e = this.addUnit(k, 0, x, y); e.h = Math.atan2(-sy, -sx);
   const O = S.obj[Math.min(S.oi, S.obj.length - 1)];
-  this.cmdMove([e], O.x + (this.rnd() - .5) * 8, O.y + (this.rnd() - .5) * 6, true, false); e.scenOi = S.oi;
+  this.scenAttack(e, O); e.scenOi = S.oi;
   return e;
 };
 Sim.prototype.scenLanding = function (pt, list, you) {
   const S = this.scen, sx = S.B.sea[0], sy = S.B.sea[1], d = 6;
-  this.ev({k: 'lcvp', x0: pt.x + sx * 24, y0: pt.y + sy * 24, x1: pt.x + sx * 1.5, y1: pt.y + sy * 1.5, d, o: 0});
+  if (!S.B.noBoat) this.ev({k: 'lcvp', x0: pt.x + sx * 24, y0: pt.y + sy * 24, x1: pt.x + sx * 1.5, y1: pt.y + sy * 1.5, d, o: 0});
   list.forEach((k, i) => S.queue.push({t: this.t + d + i * .25, k, x: pt.x + ((i % 3) - 1) * .9, y: pt.y + sy * (i / 3 | 0) * .6, you: i === 0 ? you : undefined}));
 };
 Sim.prototype.scenOver = function (win) {
@@ -1741,7 +1796,7 @@ Sim.prototype.scenStep = function () {
       if (e.b || e.pilot || e.hp <= 0 || e.d.cat === 'sea') continue;
       if (e.o === 0) {
         if ((e.tid && this.ents.get(e.tid)) || (e.goal && e.amove && e.scenOi === S.oi)) continue;
-        e.scenOi = S.oi; this.cmdMove([e], O2.x + (this.rnd() - .5) * 8, O2.y + (this.rnd() - .5) * 6, true, false);
+        e.scenOi = S.oi; this.scenAttack(e, O2);
       } else if (!e.tid && !e.goal && e.stance !== 'hold' && Math.hypot(e.x - O2.x, e.y - O2.y) < 24 && this.rnd() < .25) this.cmdMove([e], O2.x + (this.rnd() - .5) * 6, O2.y + (this.rnd() - .5) * 6, true, false);
     }
   }
@@ -2419,6 +2474,7 @@ Sim.prototype.acquire = function (e) {
 
 // ---------- damage ----------
 Sim.prototype.hurt = function (t, dmg, by) {
+  t.hurtT = this.t;
   if (t.hp <= 0) return;
   if (t.b && t.hard >= 1) dmg *= .35;                       // hardened: rebuilt underground in reinforced concrete
   t.hp -= dmg; t.hurtT = this.t;
@@ -3157,9 +3213,23 @@ Sim.prototype.stepGround = function (e, p) {
       this.moveAlong(e, tgt.x, tgt.y, dom, p, tgt.x, tgt.y); moving = true;   // Avanti! charge into bayonet range
       if (e.cd <= 0 && q <= d.rng) { this.fire(e, tgt); e.cd = d.cd * 1.4; }
     } else if (q <= d.rng && !(d.minRng && q < d.minRng)) {
-      e.moving = false;
-      e.face = Math.atan2(tgt.y - e.y, tgt.x - e.x);
-      if (e.cd <= 0) { this.fire(e, tgt); e.cd = d.cd * (.9 + this.rnd() * .2); }
+      const inf = d.cat === 'inf' && !e.force;
+      // hurt infantry break for the nearest friendly cover, then fight from it
+      if (inf && e.hp < e.hpm * .6 && (e.hurtT || 0) > this.t - 2 && (e.coverT || 0) <= this.t && this.M.cover) this.seekCover(e, dom);
+      if (e.coverGo) {
+        if (Math.hypot(e.coverGo.x - e.x, e.coverGo.y - e.y) < .7 || e.coverT < this.t - 5) e.coverGo = null;
+        else { this.moveAlong(e, e.coverGo.x, e.coverGo.y, dom, p, e.coverGo.x, e.coverGo.y); moving = true; }
+      }
+      if (!e.coverGo) {
+        e.moving = false;
+        e.face = Math.atan2(tgt.y - e.y, tgt.x - e.x);
+        // ambush: objective-battle defenders hold fire until the attackers are close (or one of them is hit), then everyone opens up
+        const waiting = inf && this.scen && !this.scen.tdm && e.o !== 0 && e.k !== 'mg' && e.k !== 'sniper' && !tgt.b && q > d.rng * .55 && (e.hurtT || 0) < this.t - 4;
+        if (!waiting && e.cd <= 0) {
+          this.fire(e, tgt); e.cd = d.cd * (.9 + this.rnd() * .2);
+          if (inf) { e.burst = (e.burst || 0) + 1; if (e.burst >= 3 + (e.id % 3)) { e.burst = 0; e.cd += .9 + this.rnd() * .9; } } // bursts, then a pause: fights breathe
+        }
+      }
     } else if (e.stance !== 'hold' || e.force) {
       this.moveAlong(e, tgt.x, tgt.y, dom, p, tgt.x, tgt.y);
       moving = true;
@@ -3202,6 +3272,17 @@ Sim.prototype.stepGround = function (e, p) {
   if (dom === 3 && e.z < 0) e.z = 0;
 };
 
+Sim.prototype.seekCover = function (e, dom) {
+  const C = this.M.cover, N = this.N; e.coverT = this.t + 6;
+  const x0 = Math.round(e.x), y0 = Math.round(e.y); if (C[y0 * N + x0] === e.o + 1) return;
+  let best = null, bd = 1e9;
+  for (let j = -7; j <= 7; j++) for (let i = -7; i <= 7; i++) {
+    const x = x0 + i, y = y0 + j; if (x < 1 || y < 1 || x >= N - 1 || y >= N - 1) continue;
+    const q = y * N + x; if (C[q] !== e.o + 1 || !passable(this.M, dom, q)) continue;
+    const dd = i * i + j * j; if (dd < bd) { bd = dd; best = {x, y}; }
+  }
+  if (best) e.coverGo = best;
+};
 Sim.prototype.moveAlong = function (e, gx, gy, dom, p, fx, fy) {
   const dd = Math.hypot(gx - e.x, gy - e.y), sp = this.moveSpeed(e, p);
   let dx = (gx - e.x) / (dd || 1), dy = (gy - e.y) / (dd || 1);
