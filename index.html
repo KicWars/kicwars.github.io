@@ -168,6 +168,16 @@ body.bigmap #selpanel{visibility:hidden}
 .mini{position:relative;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:4px;cursor:pointer;padding:0;border:1px solid transparent}
 .mini img{width:100%;height:100%;object-fit:contain;display:block}
 .mini i{position:absolute;left:2px;right:2px;bottom:1px;height:3px;background:#39d06f}
+#awaySum{position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:60;min-width:300px;max-width:min(520px,92vw);padding:14px 18px;background:rgba(12,18,24,.94);border:1px solid #ffd97a66;border-radius:10px;color:#e8eef2;font:14px system-ui;box-shadow:0 10px 40px #0008;cursor:pointer}
+#awaySum h3{margin:0 0 8px;color:#ffd97a;font-size:16px}#awaySum h3 small{color:#9fb0bb;font-weight:500;margin-left:6px}#awaySum ul{margin:0;padding-left:18px;line-height:1.6}#awaySum p{margin:8px 0 0;color:#9fb0bb;font-size:12px}
+#spyCard{position:fixed;right:18px;top:90px;z-index:55;width:290px;padding:12px 14px;background:rgba(10,14,18,.93);border:2px solid #888;border-radius:10px;color:#e8eef2;font:13px system-ui}
+#spyCard h3{margin:0 0 6px;font-size:15px}#spyCard p{margin:0 0 8px;color:#b8c4cc}#spyCard dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0 0 8px}#spyCard dt{color:#9fb0bb}#spyCard dd{margin:0;font-weight:700;color:#ffd97a}#spyCard small{color:#7d8c96}
+body.cutscene #direct,body.cutscene #spyCard,body.cutscene #freePanel,body.cutscene #lockHint,body.cutscene .lockbar{visibility:hidden!important}
+#cut{position:fixed;inset:0;z-index:80;pointer-events:none}#cut .bar{position:absolute;left:0;right:0;height:11vh;background:#000}#cut .bar.t{top:0}#cut .bar.b{bottom:0}
+#cut .say{position:absolute;left:50%;bottom:13vh;transform:translateX(-50%);width:min(620px,92vw);pointer-events:auto;text-align:center;color:#fff;font:16px system-ui;text-shadow:0 2px 6px #000}
+#cut .say b{color:#ffd97a;font-size:13px;letter-spacing:.08em;text-transform:uppercase}#cut .say p{margin:6px 0 12px;font-size:20px}#cut .say p.big{text-align:center;font-size:30px;font-weight:800;letter-spacing:.05em}
+#cut .opts{display:flex;flex-direction:column;gap:6px}#cut .opts button{background:rgba(10,14,18,.85);color:#fff;border:1px solid #ffffff44;border-radius:8px;padding:9px 12px;font:15px system-ui;cursor:pointer;text-align:left}#cut .opts button:hover{border-color:#ffd97a}#cut .opts kbd{color:#ffd97a;margin-right:6px}
+#cut .tm{height:3px;background:#ffffff22;margin-top:10px}#cut .tm i{display:block;height:100%;width:100%;background:#ff5a4a}
 .sqname{font:600 11px system-ui;color:#ffd97a;letter-spacing:.04em;text-transform:uppercase;margin:0 0 4px}
 .queue{display:flex;gap:4px;margin-top:5px;align-items:center}
 .qit{position:relative;width:38px;height:38px;padding:0;background:rgba(255,255,255,.06)}
@@ -811,6 +821,7 @@ const UNITS = {
   rocket:   {n: 'Rocket Trooper', cat: 'inf', arm: 'light', hp: 65, dmg: 34, rng: 10, cd: 2.8, spd: 2.5, vis: 11, cost: [80, 20], pop: 1, t: 10, from: 'barracks', shot: 'rocket', aa: 1, r: .35, hk: 'Y', desc: 'Kills tanks and helicopters. Poor against infantry.'},
   sniper:   {n: 'Sniper', cat: 'inf', arm: 'light', hp: 45, dmg: 55, rng: 15, cd: 3.5, spd: 2.5, vis: 17, cost: [90, 25], pop: 1, t: 12, from: 'barracks', shot: 'sniper', stealth: 7, r: .35, hk: 'U', desc: 'Stealthy, very long range. One shot, one soldier.'},
   xavier:   {n: 'Xavier', cat: 'inf', arm: 'light', hp: 500, dmg: 0, rng: 0, cd: 1, spd: 2.7, vis: 12, cost: [0, 0], pop: 0, t: 1, from: 'barracks', shot: null, heal: 14, r: .4, hidden: 1, desc: 'A friendly healer. Cannot attack or be attacked; heals everyone, on every side.'},
+  spy:      {n: 'Spy', cat: 'inf', arm: 'light', hp: 55, dmg: 9, rng: 7, cd: 1.2, spd: 3.1, vis: 13, cost: [90, 10], pop: 1, t: 9, from: 'barracks', shot: 'bullet', r: .35, hk: 'X', spy: 1, desc: 'Goes undercover in the enemy uniform: their troops ignore it while it watches their base and reports back. Firing blows its cover. Play it yourself and you may be questioned.'},
   medic:    {n: 'Medic', cat: 'inf', arm: 'light', hp: 60, dmg: 0, rng: 0, cd: 1, spd: 3, vis: 10, cost: [70, 15], pop: 1, t: 8, from: 'barracks', shot: null, heal: 8, r: .35, hk: 'G', desc: 'Heals nearby infantry automatically.'},
   mg:       {n: 'Machine Gunner', cat: 'inf', arm: 'light', hp: 95, dmg: 5, rng: 9, cd: .22, spd: 2.3, vis: 11, cost: [85, 10], pop: 1, t: 9, from: 'barracks', shot: 'bullet', aa: 1, r: .38, hk: 'J', desc: 'Belt-fed machine gun. A wall of bullets that pins down infantry.'},
   grenadier: {n: 'Grenadier', cat: 'inf', arm: 'light', hp: 75, dmg: 26, rng: 11, cd: 2.4, spd: 2.6, vis: 11, cost: [85, 15], pop: 1, t: 9, from: 'barracks', shot: 'shell', splash: 1.8, r: .36, hk: 'K', desc: 'Grenade launcher. Splash damage against groups and light vehicles.'},
@@ -850,10 +861,10 @@ const UNITS = {
 
 // s: footprint side in cells. Buildings need a worker unless they are the HQ.
 const BUILDINGS = {
-  hq:       {n: 'Capital City', hp: 14000, s: 17, vis: 16, dmg: 26, rng: 13, cd: .9, shot: 'bullet', aa: 1, trains: ['worker'], pop: 15, cost: [0, 0], t: 0, drop: 1, desc: 'Your walled capital. Lose it and you lose the war.'},
+  hq:       {n: 'Capital City', hp: 14000, s: 17, vis: 24, dmg: 26, rng: 13, cd: .9, shot: 'bullet', aa: 1, trains: ['worker'], pop: 15, cost: [0, 0], t: 0, drop: 1, desc: 'Your walled capital. Lose it and you lose the war.'},
   housing:  {n: 'Housing', hp: 400, s: 3, vis: 6, pop: 10, cost: [80, 0], t: 12, hk: 'R', desc: '+10 population cap.'},
   depot:    {n: 'Supply Depot', hp: 500, s: 4, vis: 8, drop: 1, cost: [100, 0], t: 14, hk: 'T', desc: 'Workers drop steel here. Build near distant mines.'},
-  barracks: {n: 'Barracks', hp: 800, s: 5, vis: 8, trains: ['rifle', 'assault', 'rocket', 'sniper', 'medic', 'scout', 'mg', 'grenadier', 'para'], cost: [150, 0], t: 18, hk: 'Y', desc: 'Trains all infantry.'},
+  barracks: {n: 'Barracks', hp: 800, s: 5, vis: 8, trains: ['rifle', 'assault', 'rocket', 'sniper', 'medic', 'scout', 'mg', 'grenadier', 'para', 'spy'], cost: [150, 0], t: 18, hk: 'Y', desc: 'Trains all infantry.'},
   dronebay: {n: 'Drone Bay', hp: 450, s: 4, vis: 9, trains: ['fpv', 'hunter'], cost: [120, 30], t: 14, hk: 'U', desc: 'Builds FPV bomb drones and hunter drones. No population used.'},
   derrick:  {n: 'Oil Derrick', hp: 400, s: 3, vis: 7, oil: 1, cost: [100, 0], t: 12, hk: 'G', desc: 'Build on an oil well for steady fuel.'},
   factory:  {n: 'War Factory', hp: 1100, s: 6, vis: 8, trains: ['tank', 'ifv', 'arty', 'mlrs', 'sam', 'truck', 'supply', 'laser'], req: 'barracks', cost: [260, 40], t: 24, hk: 'H', desc: 'Builds armoured vehicles.'},
@@ -949,6 +960,7 @@ const PWPN = {
             {n: 'Sidearm', t: 'hit', dmg: 10, vs: 'bullet', rpm: 300, mag: 12, rl: 1.2, sp: 1.8, ads: .6, kick: 1.2, rng: 22, crit: 2, zoom: .85, snd: 'bullet'}],
   sniper:  [{n: 'Sniper Rifle', t: 'hit', dmg: 40, vs: 'sniper', rpm: 48, mag: 5, rl: 2.6, sp: 4, ads: .02, kick: 5, rng: 90, crit: 2.2, zoom: .22, scope: 1, snd: 'sniper'},
             {n: 'Sidearm', t: 'hit', dmg: 10, vs: 'bullet', rpm: 300, mag: 12, rl: 1.2, sp: 1.8, ads: .6, kick: 1.2, rng: 22, crit: 2, zoom: .85, snd: 'bullet'}],
+  spy:     [{n: 'Suppressed Pistol', t: 'hit', dmg: 16, vs: 'bullet', rpm: 260, mag: 10, rl: 1.4, sp: 1.2, ads: .5, kick: .9, rng: 24, crit: 3, zoom: .85, snd: 'bullet'}],
   medic:   [{n: 'SMG', t: 'hit', dmg: 7, vs: 'bullet', rpm: 750, mag: 32, rl: 1.5, sp: 2.4, ads: .9, kick: .35, rng: 20, crit: 2, zoom: .82, auto: 1, snd: 'bullet'},
             {n: 'Heal Burst', t: 'heal', cd: 8, rng: 4, dmg: 45}],
   wolf:    [{n: 'Bite', t: 'mel', dmg: 38, vs: 'bite', rpm: 110, rng: 2.4, crit: 1.3, sp: 0, snd: 'bite'},
@@ -2107,6 +2119,11 @@ Sim.prototype.addUnit = function (k, o, x, y) {
   return e;
 };
 
+const SPY_WORDS = ['Pineapple', 'Thunderbird', 'Marmalade', 'Bluebell', 'Cobra', 'Teapot', 'Nightjar', 'Biscuit', 'Glacier', 'Lantern', 'Walrus', 'Saffron', 'Kingfisher', 'Sprocket', 'Tangerine', 'Badger'];
+function spyCover(v, o) {
+  const q = v.players[o], n = q.nat, h = ((v.seed || 1) * 31 + (o + 3) * 977) >>> 0;
+  return {name: n.name, leader: n.leader, cry: WAR_CRIES[n.key] || 'For ' + n.leader + '!', pw: SPY_WORDS[h % SPY_WORDS.length], color: n.color, player: q.name};
+}
 // Squads: infantry fight in platoons of 20 with a realistic mix; vehicles, ships and aircraft in sections of 5 of one type.
 const PLATOON = {rifle: 11, mg: 2, rocket: 2, grenadier: 2, sniper: 1, medic: 1, assault: 1}, PLATOON_N = 20, SECTION_N = 5;
 const squadKind = d => d.cat === 'inf' ? 'pl' : d.cat === 'veh' || d.cat === 'sea' || d.cat === 'air' || d.cat === 'heli' ? 'sec' : null;
@@ -2115,7 +2132,7 @@ function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n 
 function squadName(e) { if (!e.sq) return ''; return e.d.cat === 'inf' ? ordinal(e.sqn) + ' Platoon' : e.d.n + ' Section ' + e.sqn; }
 Sim.prototype.joinSquad = function (e) {
   const d = e.d, kind = squadKind(d), p = this.players[e.o];
-  if (!kind || !p || e.k === 'worker' || e.k === 'scout' || e.k === 'xavier' || d.xav || !d.dmg && kind === 'pl') return;
+  if (!kind || !p || e.k === 'worker' || e.k === 'scout' || e.k === 'spy' || e.k === 'xavier' || d.xav || !d.dmg && !d.heal && kind === 'pl') return;
   const S = {};
   for (const t of this.ents.values()) if (t.sq && t.o === e.o && t !== e && (kind === 'pl' ? t.d.cat === 'inf' : t.k === e.k)) {
     const g = S[t.sq] || (S[t.sq] = {n: 0, sqn: t.sqn, c: {}, x: 0, y: 0}); g.n++; g.x += t.x; g.y += t.y; const sl = slotOf(t.k); g.c[sl] = (g.c[sl] || 0) + 1;
@@ -2225,6 +2242,7 @@ Sim.prototype.issue = function (c, pi) {
   const p = this.players[pi];
   if (!p || !p.alive || this.over) return;
   const mine = (c.ids || []).map(i => this.ents.get(i)).filter(e => e && e.o === pi);
+  if ((c.c === 'pfire' || c.c === 'phit' || c.c === 'pnear' || c.c === 'pproj') && c.id) { const sp = this.ents.get(c.id); if (sp && sp.o === pi && sp.d.spy) this.blowCover(sp); }
   switch (c.c) {
     case 'move': this.cmdMove(mine, c.x, c.y, !!c.a, !!c.q); break;
     case 'patrol': for (const e of mine) if (!e.b) { const from = {x: e.x, y: e.y}; this.clearOrders(e); e.patrol = [from, {x: c.x, y: c.y}]; e.pi = 1; this.go(e, c.x, c.y); e.amove = true; } break;
@@ -2252,6 +2270,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'train': { const b = this.ents.get(c.b); if (b && b.o === pi) this.cmdTrain(b, p, c.u); break; }
     case 'cancel': { const b = this.ents.get(c.b); if (b && b.o === pi && b.q[c.i]) this.cancelQ(b, p, c.i); break; }
     case 'rally': { const b = this.ents.get(c.b); if (b && b.o === pi) b.rally = {x: c.x, y: c.y}; break; }
+    case 'answer': { const e = this.ents.get(c.id); if (e && e.o === pi && e.inter) this.answerSpy(e, !!c.ok); break; }
     case 'autotrain': { const b = this.ents.get(c.b); if (b && b.o === pi && b.d.trains) { b.auto = !!c.on; if (c.u && b.d.trains.includes(c.u)) b.autoK = c.u; } break; }
     case 'research': { const b = this.ents.get(c.b); if (b && b.o === pi && b.d.research) this.cmdResearch(b, p, c.u); break; }
     case 'power': break; // commander powers were removed
@@ -2409,7 +2428,7 @@ Sim.prototype.autoPick = function (b, p) {
   // the fullest unfinished platoon (queued troops count too) and the role it is short of
   const S = {}; for (const t of this.ents.values()) if (t.sq && t.o === p.i && t.d.cat === 'inf') { const g = S[t.sq] || (S[t.sq] = {n: 0, c: {}}); g.n++; const sl = slotOf(t.k); g.c[sl] = (g.c[sl] || 0) + 1; }
   let g = null; for (const id in S) if (S[id].n < PLATOON_N && (!g || S[id].n > g.n)) g = S[id];
-  const c = Object.assign({}, g ? g.c : {}); for (const e of this.ents.values()) if (e.b && e.o === p.i && e.q) for (const it of e.q) if (it.u) { const sl = slotOf(it.u); c[sl] = (c[sl] || 0) + 1; }
+  const c = Object.assign({}, g ? g.c : {}); for (const e of this.ents.values()) if (e.b && e.o === p.i && e.q) for (const it of e.q) if (it.u && UNITS[it.u].cat === 'inf' && it.u !== 'worker' && it.u !== 'scout' && it.u !== 'spy') { const sl = slotOf(it.u); c[sl] = (c[sl] || 0) + 1; }
   let best = null, bn = -1;
   for (const k in PLATOON) if (T.includes(k)) { const need = PLATOON[k] - (c[k] || 0); if (need > bn) { bn = need; best = k; } }
   if (bn <= 0) return T.includes('rifle') ? 'rifle' : T[0]; // specialist slots full or still locked: riflemen fill the platoon
@@ -2608,6 +2627,7 @@ Sim.prototype.inSmoke = function (e) {
 
 // Can player a target e? Stealth units must be very close unless a detector is around.
 Sim.prototype.targetable = function (a, e, from) {
+  if (e.disg === a) return false; // a spy in our uniform: just one of the lads
   if (e.b) { if (e.d.mine) return false; return e.bp > 0 || true; }
   if (!e.air && inTunnel(this.M, this.N, e) && Math.hypot(e.x - from.x, e.y - from.y) > TUNNEL_SEE && !((e.revealed || 0) > this.t)) return false;
   const st = e.d.stealth;
@@ -2888,6 +2908,7 @@ Sim.prototype.splash = function (x, y, r, dmg, o, ty, src) {
 
 // ---------- firing ----------
 Sim.prototype.fire = function (a, t) {
+  if (a.d.spy && a.disg !== undefined && a.disg !== null) this.blowCover(a);
   const d = a.d, ty = d.shot, p = this.players[a.o];
   let miss = false;
   if (t.pilot && !t.b && !a.pilot) { const r = this.aimAtPilot(a, t); if (r === 'wait') { a.cd = .15; return; } miss = r === 'miss'; }
@@ -3023,6 +3044,10 @@ Sim.prototype.step = function () {
   }
   if (this.tick % 10 === 3) this.stepMorale();
   if (this.tick % 50 === 21) for (const p of this.players) if (p.alive && p.autoEco && !this.battle && !this.scen) this.stepAutoEco(p);
+  if (this.tick % 100 === 47 && !this.battle && !this.scen) { // your deputy runs the base (a bit slower than you would) while you fight on the ground
+    const away = {}; for (const e of this.ents.values()) if (e.pilot) away[e.pilot - 1] = 1;
+    for (const p of this.players) if (p.alive && !p.bot && away[p.i]) this.stepDeputy(p);
+  }
   if (this.coverDirty && this.tick % 5 === 0) this.rebuildCover(); // batched: a dig or build marks it dirty, the rebuild runs at most 12 times a second
   if (this.tick % 300 === 7) this.sampleStats();
   if (this.tick % 10 === 0) this.stepDiplo();
@@ -3046,6 +3071,23 @@ Sim.prototype.step = function () {
 };
 
 // Auto economy (for relaxed players): keep workers coming, idle workers mining, and housing ahead of the population cap.
+Sim.prototype.stepDeputy = function (p) {
+  if (!p.autoEco) this.stepAutoEco(p);
+  let trained = 0;
+  for (const b of this.ents.values()) {
+    if (trained >= 1) break;                                // one order per ten seconds: slower than a player
+    if (b.o !== p.i || !b.b || b.bp < 1 || !b.d.trains || b.q.length || b.d.trains.every(u => u === 'worker')) continue;
+    const k = this.autoPick(b, p); if (!k) continue;
+    const c = this.costOf(p, UNITS[k], k);
+    if (p.steel >= c[0] + 120 && p.fuel >= c[1] + 20 && p.pop + UNITS[k].pop <= p.popCap) { this.cmdTrain(b, p, k); trained++; }
+  }
+  if (this.tick % 300 === 147 && p.steel > 700) for (const b of this.ents.values()) if (b.o === p.i && b.b && b.d.research && b.bp >= 1 && !b.q.length) {
+    const k = p.nat.tr.research || 1; let best = null, bc = 1e9;
+    for (const u in UPGRADES) { const q = UPGRADES[u]; if (p.ups[u] || p.ups['_' + u] || (q.req && !p.ups[q.req]) || (q.only && !q.only.includes(p.nat.key))) continue; const c = [q.cost[0] * k, q.cost[1] * k]; if (c[0] + 300 < p.steel && c[1] + 40 < p.fuel && c[0] < bc) { bc = c[0]; best = u; } }
+    if (best) this.cmdResearch(b, p, best);
+    break;
+  }
+};
 Sim.prototype.stepAutoEco = function (p) {
   const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
   let wk = 0, idle = [], housingUp = false;
@@ -3315,9 +3357,73 @@ Sim.prototype.spawnFrom = function (b, k, p) {
   return u;
 };
 
+// ---------- spies: wear the enemy uniform, watch, report; questioned now and then, and shot if the story does not hold ----------
+Sim.prototype.blowCover = function (e) {
+  if (e.disg === undefined || e.disg === null) return;
+  e.disg = null; e.coverT = this.t + 20; e.inter = null;
+  this.notify(e.o, 'Cover blown! The enemy will shoot your spy now (it changes back in 20s if it lives)', 'bad', e.x, e.y);
+};
+Sim.prototype.stepSpy = function (e) {
+  const p = this.players[e.o];
+  if (e.exec) {
+    if (this.t >= e.exec && e.disg !== null) { e.disg = null; for (const id of e.squadF || []) { const f = this.ents.get(id); if (f) { f.tid = e.id; f.stance = 'aggr'; } } }
+    if (this.t >= e.exec + 1.3) { const by = e.execBy; e.exec = 0; this.hurt(e, 1e5, by); }
+    return;
+  }
+  if (e.inter) { if (this.t - e.inter.t > 25) this.answerSpy(e, false); return; } // no answer is a wrong answer
+  if ((e.disg === undefined || e.disg === null) && this.t > (e.coverT || 0)) { // put on the uniform of the nearest enemy
+    let best = null, bd = 1e9;
+    for (const q of this.players) if (q.alive && q.spawn && q.i >= 0 && !this.friendly(q.i, e.o)) { const dd = Math.hypot(q.spawn.x - e.x, q.spawn.y - e.y); if (dd < bd) { bd = dd; best = q; } }
+    if (best) { e.disg = best.i; e.spyT = this.t; }
+  }
+  if (e.disg === undefined || e.disg === null) return;
+  const foe = e.disg, R = e.d.vis * 1.6;
+  let near = null, base = false;
+  for (const t of this.ents.values()) {
+    if (t.o !== foe) continue;
+    const dd = Math.hypot(t.x - e.x, t.y - e.y);
+    if (dd < R) t.revealed = Math.max(t.revealed || 0, this.t + 1.6);
+    if (t.b && dd < 24) base = true;
+    if (!t.b && t.d.cat === 'inf' && !t.pilot && dd < 4.5 && (!near || dd < near.dd)) near = {t, dd};
+  }
+  // reports home from inside their base
+  if (base && this.t - (e.repT || 0) > 30) {
+    e.repT = this.t; const q = this.players[foe];
+    const sight = {}, units = {}, blds = {};
+    for (const t of this.ents.values()) if (t.o === foe && Math.hypot(t.x - e.x, t.y - e.y) < 32) { if (t.b) blds[t.d.n] = (blds[t.d.n] || 0) + 1; else units[t.d.cat] = (units[t.d.cat] || 0) + 1; }
+    const nU = Object.values(units).reduce((a, b) => a + b, 0), nB = Object.values(blds).reduce((a, b) => a + b, 0);
+    p.intel.unshift({t: Math.round(this.t), sight: [{o: foe, x: Math.round(e.x), y: Math.round(e.y), n: nU + nB, kinds: units, b: blds}], units: nU, blds: nB, dir: 0, spy: 1}); if (p.intel.length > 10) p.intel.pop();
+    const res = Object.keys(q.ups).filter(u => u[0] === '_').map(u => UPGRADES[u.slice(1)] && UPGRADES[u.slice(1)].n).filter(Boolean);
+    this.notify(e.o, `Spy report from ${q.name}: ${nU} troops and ${nB} buildings nearby, about ${Math.round(q.steel / 50) * 50} steel in their treasury${res.length ? ', researching ' + res.join(', ') : ''}.`, 'gold', e.x, e.y);
+    this.ev({k: 'intel', p: e.o});
+  }
+  // a guard gets suspicious
+  if (near && this.t - (e.spyT || 0) > 12 && this.t > (e.interCd || 0) && this.rnd() < (e.pilot ? .07 : .02)) {
+    e.interCd = this.t + 70;
+    if (e.pilot) { const g = near.t; this.clearOrders(g); g.h = Math.atan2(e.y - g.y, e.x - g.x); g.guardT = this.t + 30; e.inter = {by: g.id, t: this.t}; this.ev({k: 'interrogate', id: e.id, by: g.id, p: e.o, foe}); }
+    else if (this.rnd() < .45) { e.inter = {by: near.t.id, t: this.t}; this.answerSpy(e, false); }
+  }
+};
+Sim.prototype.answerSpy = function (e, ok) {
+  const I = e.inter; e.inter = null; if (!I) return;
+  const g = this.ents.get(I.by); if (g) g.guardT = 0;
+  if (ok) { e.spyT = this.t; this.ev({k: 'spyok', id: e.id, p: e.o}); return; }
+  // caught: the guards gather round, and that is that
+  const foe = e.disg; e.exec = this.t + 3.4; e.execBy = foe; e.squadF = [];
+  for (const t of this.ents.values()) if (t.o === foe && !t.b && t.d.cat === 'inf' && t.d.dmg && !t.pilot && Math.hypot(t.x - e.x, t.y - e.y) < 22 && e.squadF.length < 6) {
+    const a = e.squadF.length * 1.05 + 2.2, x = e.x + Math.cos(a) * 3.2, y = e.y + Math.sin(a) * 3.2;
+    this.clearOrders(t); this.go(t, x, y); t.stance = 'hold'; e.squadF.push(t.id);
+  }
+  if (g && !e.squadF.includes(g.id)) e.squadF.push(g.id);
+  this.ev({k: 'spycaught', id: e.id, p: e.o, by: I.by, x: e.x, y: e.y});
+  this.notify(e.o, 'Your spy was found out and is being executed', 'bad', e.x, e.y);
+  if (this.players[foe]) this.notify(foe, 'An enemy spy was caught in our ranks', 'good', e.x, e.y);
+};
 Sim.prototype.stepUnit = function (e) {
   const d = e.d, p = this.players[e.o];
   if (e.xav) this.stepXav(e);
+  if (d.spy && this.tick % 5 === e.id % 5) this.stepSpy(e);
+  if (e.guardT && this.t < e.guardT) { e.vx = e.vy = 0; e.moving = false; return; } // a guard stops to question someone
   if (e.inside) { const T = this.ents.get(e.inside); if (T && !T.b) { e.x = T.x; e.y = T.y; } else if (!T) e.inside = 0; return; }
   if (e.recon && !e.pilot && this.tick % 10 === e.id % 10) this.stepRecon(e);
   if (e.reconNext && this.t > e.reconNext && !e.recon) { e.reconNext = 0; if (p.autoRecon) { this.clearOrders(e); this.sendRecon(p, 1, true); } }
@@ -4276,10 +4382,10 @@ function encodeSnap(sim, sendSlow) {
     fl |= (e.vet || 0) << 8;
     out[b + 8] = fl; out[b + 9] = e.tid || 0; out[b + 10] = ((e.tu || 0) % 6.2832) * 1000;
     i++;
-    const sig = e.k + '|' + e.o + '|' + (e.hero || '') + '|' + (e.task ? e.task.type : '') + '|' + (e.sq || 0);
+    const sig = e.k + '|' + e.o + '|' + (e.hero || '') + '|' + (e.task ? e.task.type : '') + '|' + (e.sq || 0) + '|' + (e.disg === undefined || e.disg === null ? '' : e.disg);
     if (e.sent !== sig) {
       e.sent = sig;
-      const m = {id: e.id, k: e.k, o: e.o, hpm: Math.ceil(e.hpm), hero: e.hero || null, task: e.task ? e.task.type : null, sq: e.sq || 0, sqn: e.sqn || 0};
+      const m = {id: e.id, k: e.k, o: e.o, hpm: Math.ceil(e.hpm), hero: e.hero || null, task: e.task ? e.task.type : null, sq: e.sq || 0, sqn: e.sqn || 0, dg: e.disg === undefined || e.disg === null ? -9 : e.disg};
       if (e.b) { m.b = 1; m.x = e.x; m.y = e.y; m.z = e.z; }
       meta.push(m);
     } else if (e.hpmS !== e.hpm) { e.hpmS = e.hpm; meta.push({id: e.id, hpm: Math.ceil(e.hpm)}); }
@@ -4323,7 +4429,7 @@ Mirror.prototype.apply = function (m) {
     let e = this.ents.get(k.id);
     if (!e) { e = {id: k.id, z: 0, h: 0, p: 0, r: 0, hp: 1, st: 0, q: [], tu: 0, garrison: []}; this.ents.set(k.id, e); }
     if (k.k) {
-      e.k = k.k; e.o = k.o; e.hero = k.hero; e.task = k.task ? {type: k.task} : null; e.sq = k.sq || 0; e.sqn = k.sqn || 0;
+      e.k = k.k; e.o = k.o; e.hero = k.hero; e.task = k.task ? {type: k.task} : null; e.sq = k.sq || 0; e.sqn = k.sqn || 0; e.disg = k.dg === undefined || k.dg === -9 ? null : k.dg;
       e.d = k.b ? BUILDINGS[k.k] : UNITS[k.k];
       if (k.b) { e.b = true; e.x = k.x; e.y = k.y; e.z = k.z; if (e.bp === undefined) e.bp = 0; }
       else { const d = e.d; e.air = d.cat === 'air' || d.cat === 'heli' || d.cat === 'drone'; e.sea = d.cat === 'sea'; }
@@ -6737,7 +6843,7 @@ Renderer.prototype.updateFog = function (dt) {
   if (this.fogTick <= 0) {
     this.fogTick = .12;
     F.fill(0);
-    const sc = R / N, tr = p && p.nat ? p.nat.tr : {}, boost = (tr.vision || 1) * (p && p.ups && p.ups.inf3 ? 1.2 : 1);
+    const sc = R / N, tr = p && p.nat ? p.nat.tr : {}, boost = 1.3 * (tr.vision || 1) * (p && p.ups && p.ups.inf3 ? 1.2 : 1); // everything sees a good way out, so you need few watchtowers
     const all = (p && p.reveal > v.t) || !p || !p.alive || this.spectate;
     if (!all) for (const e of v.ents.values()) {
       if (v.friendly && !v.friendly(e.o, me)) continue;
@@ -6859,7 +6965,7 @@ Renderer.prototype.put = function (key, geoFn, cap, opts, x, y, z, ry, rz, rx, s
 };
 
 Renderer.prototype.drawUnit = function (e, dt, tint) {
-  const nat = this.view.players[e.o].nation, k = e.k, d = e.d, key = k + '|' + nat, h = -e.ry, x = e.rx, y = e.rz, z = e.ryy;
+  const dg = e.disg !== undefined && e.disg !== null && this.view.players[e.disg], nat = dg ? dg.nation : this.view.players[e.o].nation, k = dg ? 'rifle' : e.k, d = e.d, key = k + '|' + nat, h = -e.ry, x = e.rx, y = e.rz, z = e.ryy;
   if (e.id === this.hideId) return;
   if (d.cat === 'inf') {
     if (k === 'wolf') {
@@ -7097,7 +7203,10 @@ Renderer.prototype.handle = function (ev, view) {
       const ax = a.rx === undefined ? a.x : a.rx, ay = a.ryy === undefined ? a.y : a.ryy, az = (a.rz === undefined ? a.z : a.rz) + (a.b ? a.d.s * .5 : a.air ? 0 : a.d.cat === 'inf' ? .55 : .7);
       const tz = t ? (t.rz === undefined ? t.z : t.rz) + (t.b ? 1 : .5) : hAt(M, ev.x, ev.y);
       const tx = t ? (t.rx === undefined ? t.x : t.rx) : ev.x, ty = t ? (t.ryy === undefined ? t.y : t.ryy) : ev.y;
-      if (!this.isVisible(ax, ay) && !this.isVisible(tx, ty)) break;
+      if (!this.isVisible(ax, ay) && !this.isVisible(tx, ty)) { // fighting in the fog: you hear it, and it shows on the map
+        const H = this.heard || (this.heard = []); if (H.length < 60 && !(H.length && H[H.length - 1].a === ev.a && this.time - H[H.length - 1].t0 < .8)) H.push({a: ev.a, x: ax + (Math.random() - .5) * 4, y: ay + (Math.random() - .5) * 4, t0: this.time, big: /arty|shell|bomb|missile|rocket/.test(ev.ty)});
+        break;
+      }
       this.fxShot(ev.ty, ax, az, ay, tx, tz, ty, ev.d, a, t);
       Sfx.shot(ev.ty, ax, ay, this);
       break;
@@ -7880,7 +7989,7 @@ const Direct = {
   exit(msg) {
     this.pullUp = false; this.warnT = 0; if (window.Tension) window.Tension.clear();
     if (!this.on) return;
-    this.on = false; this.aboard = null; this.knifeEnd = 0; this.savedW = null; VM.knife = false; this.shovel = false; VM.shovel = false;
+    this.endCut(); this.spyNat = undefined; if (this.ui && this.ui.spyCard) this.ui.spyCard(null); this.on = false; this.aboard = null; this.knifeEnd = 0; this.savedW = null; VM.knife = false; this.shovel = false; VM.shovel = false;
     const ui = this.ui, R = ui.g.R, e = ui.g.view.ents.get(this.id);
     if (e) ui.g.issue({c: 'pilot', ids: [this.id], on: 0});
     R.fpId = 0; R.fpPose = null; R.hideId = 0; R.post = null;
@@ -7988,6 +8097,7 @@ const Direct = {
   // returns true when the key was used by direct control
   onKey(e, down) {
     const B = Settings.binds, c = e.code;
+    if (this.cut) { if (down && !e.repeat && /^Digit[1-3]$/.test(c)) this.cutAnswer(+c.slice(5) - 1); e.preventDefault(); return true; }
     if (c === 'AltLeft' || c === 'AltRight' || c === B.free) { e.preventDefault(); if (down && !e.repeat) this.toggleFree(); return true; }
     if (c === 'Tab' || c === 'Space') e.preventDefault();
     this.keys[c] = down;
@@ -8010,6 +8120,60 @@ const Direct = {
       this.msg(this.shovel ? 'SHOVEL: ' + Settings.keyName(Settings.binds.fire) + ' digs where you look. Dig deep for a hidden tunnel. Y: back to your gun' : 'Weapon ready', 2.2); return true; }
     if (c === 'Digit1' || c === 'Digit2') { const s = +c.slice(5) - 1; if (this.W[s] && this.W[s].w.mag) { this.slot = s; VM.build(this.e, this.ui.g.view.players[this.e.o].nation, s); } return true; }
     return true;
+  },
+  // ---------- spy: cover briefing, questioning and execution cutscenes ----------
+  spyHud(e, g) {
+    const dg = e.disg === undefined ? null : e.disg;
+    if (dg === this.spyNat) return; this.spyNat = dg;
+    if (dg === null || !g.view.players[dg]) { this.ui.spyCard(null); return; }
+    this.ui.spyCard(spyCover(g.view, dg));
+  },
+  startCut(ev) {
+    const g = this.ui.g, v = g.view, C = spyCover(v, ev.foe), all = NATIONS.filter(n => n && n.key !== v.players[ev.foe].nat.key);
+    const pick = (right, pool) => { const w = pool.filter(x => x && x !== right); const o = [right]; while (o.length < 3 && w.length) o.push(w.splice(Math.floor(Math.random() * w.length), 1)[0]); return o.sort(() => Math.random() - .5); };
+    const Q = [
+      ['Halt. Who leads us?', C.leader, all.map(n => n.leader)],
+      ["You there. What's tonight's password?", C.pw, SPY_WORDS],
+      ["Let's hear our battle cry, soldier.", C.cry, Object.values(WAR_CRIES)],
+      ['Which nation are you fighting for?', C.name, all.map(n => n.name)],
+    ][Math.floor(Math.random() * 4)];
+    this.cut = {by: ev.by, id: ev.id, t: 0, phase: 'ask', q: Q[0], opts: pick(Q[1], Q[2]), right: Q[1], left: 12, nat: C.name};
+    this.keys = {}; this.mouseDown = false; this.ads = false;
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.cutHide = g.R.hideId; g.R.hideId = 0;
+    this.ui.cutShow(this.cut);
+  },
+  cutAnswer(i) {
+    const C = this.cut; if (!C || C.phase !== 'ask') return;
+    const ok = C.opts[i] === C.right; C.phase = ok ? 'pass' : 'exec'; C.t = 0; C.wrong = !ok;
+    this.ui.g.issue({c: 'answer', id: this.id, ok});
+    this.ui.cutShow(C);
+  },
+  cutStep(dt, g, e) {
+    const C = this.cut, R = g.R, cam = R.cam, v = g.view, p = this.pose; C.t += dt;
+    if (C.phase === 'ask') { C.left -= dt; if (C.left <= 0) { C.left = 0; this.cutAnswer(-1); } else this.ui.cutTimer(C.left); }
+    if (C.phase === 'pass' && C.t > 2.2) { this.endCut(); this.msg("They wave you through. Stay calm. Click to aim again", 2.5); return; }
+    const G = v.ents.get(C.by) || e, gx = G.rx === undefined ? G.x : G.rx, gy = G.ryy === undefined ? G.y : G.ryy, gz = (G.rz === undefined ? G.z : G.rz) || hAt(v.M, gx, gy);
+    const sx = p.x, sy = p.y, sz = p.z || hAt(v.M, sx, sy);
+    let cx, cy, cz, lx, ly, lz;
+    if (C.phase === 'exec' && C.t > 1.2) { // pull back: the firing line around the spy
+      const a = Math.atan2(sy - gy, sx - gx) + 1.2 + C.t * .18, r = 6.5 - Math.min(2, C.t * .4);
+      cx = sx + Math.cos(a) * r; cy = sy + Math.sin(a) * r; cz = sz + 2.4; lx = sx; ly = sy; lz = sz + .5;
+    } else { // over the spy's shoulder, looking at the guard
+      let dx = sx - gx, dy = sy - gy; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+      cx = sx + dx * 2.6 - dy * .9; cy = sy + dy * 2.6 + dx * .9; cz = sz + 1.5; lx = gx; ly = gy; lz = gz + .6;
+    }
+    cz = Math.max(cz, hAt(v.M, cx, cy) + .4);
+    const k = this.cutCam ? Math.min(1, dt * 3) : 1, P = this.cutCam || {x: cx, y: cy, z: cz};
+    P.x += (cx - P.x) * k; P.y += (cy - P.y) * k; P.z += (cz - P.z) * k; this.cutCam = P;
+    cam.position.set(P.x, P.z, P.y); cam.up.set(0, 1, 0); cam.lookAt(lx, lz, ly);
+    cam.fov = 50; cam.updateProjectionMatrix();
+    if (C.phase === 'exec' && C.t > 3.4 && !C.shot) { C.shot = 1; this.ui.cutLine('FIRE!'); Sfx.shot && Sfx.shot('bullet', sx, sy, R); }
+  },
+  endCut() {
+    if (!this.cut) return;
+    this.cut = null; this.cutCam = null;
+    if (this.ui && this.ui.g) { this.ui.g.R.hideId = this.cutHide || 0; this.ui.cutShow(null); this.applyView && this.applyView(); }
   },
   special() {
     const g = this.ui.g, p = g.view.players[g.me], S = PSPECIAL[p.nat.key];
@@ -8053,10 +8217,16 @@ const Direct = {
   // ---------- per-frame ----------
   update(dt, g) {
     const e = g.view.ents.get(this.id);
+    if (!e && this.cut) { // linger on the scene for a moment before cutting back
+      const c = this.cut; if (!c.deadT) { c.deadT = performance.now(); this.ui.cutLine(c.wrong ? 'EXECUTED AS A SPY' : 'KILLED'); }
+      if (performance.now() - c.deadT < 3000) return;
+      this.endCut(); this.exit(c.wrong ? 'Executed as a spy' : 'Your spy was killed'); return; }
     if (!e) { if (this.mode !== 'fpv' && window.Tension && window.Tension.dead(this, dt, g)) return; this.exit(this.mode === 'fpv' ? 'Signal lost' : this.e.d.n + ' destroyed'); return; }
     if (window.Tension) window.Tension.tick(this, e, dt);
     if (e.k !== this.e.k) { this.W = (PWPN[e.k] || []).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0})); this.slot = 0; VM.build(e, g.view.players[e.o].nation, 0); this.msg(e.k === 'wolf' ? 'ALPHA WOLF! ' + Settings.keyName(Settings.binds.fire) + ' bites, ' + Settings.keyName(Settings.binds.alt) + ' pounces' : 'Back to blob form', 2); }
     this.e = e; this.g = g;
+    if (e.d.spy) this.spyHud(e, g);
+    if (this.cut) { this.cutStep(dt, g, e); return; }
     if (this.knifeEnd && performance.now() > this.knifeEnd) { this.sheatheKnife(); this.msg('Knife away', .8); }
     const k = this.keys, B = Settings.binds, M = g.view.M;
     // look input: mouse (locked), cursor offset (fallback), arrow keys (keyboard and trackpad friendly)
@@ -8618,7 +8788,7 @@ const Direct = {
       const ac = r.autoClear; r.autoClear = false; r.clearDepth(); r.render(I.scene, C); r.autoClear = ac;
       return;
     }
-    if (!this.on || !this.firstPerson() || this.mode !== 'soldier') return;
+    if (!this.on || this.cut || !this.firstPerson() || this.mode !== 'soldier') return;
     const W = this.W[this.slot] && this.W[this.slot].w, scoped = W && W.scope && this.adsK > .8;
     if (scoped) return;
     VM.draw(this.ui.g.R, this, W);
@@ -10035,6 +10205,8 @@ const UI = {
       case 'scenYou': if (ev.p === me && this.scen) { const u = v.ents.get(ev.id); if (u) { if (Direct.on) Direct.exit(); this.showScenSpawn(false); Direct.enter(this, u); } } break;
       case 'scenCap': if (this.scen) { Sfx.good(); if (Direct.on) Direct.msg('OBJECTIVE ' + String.fromCharCode(65 + ev.i) + ' CAPTURED', 2.5); } break;
       case 'nuke': { const mine = v.friendly(ev.o, me); this.nukes.push({id: ev.id, until: performance.now() + ev.d * 1000, mine, x: ev.x, y: ev.y}); this.addAlert(mine ? 'ICBM launched!' : 'WARNING: enemy ICBM launched!', 'bad', ev.x, ev.y); break; }
+      case 'interrogate': if (ev.p === me && Direct.on && Direct.id === ev.id) Direct.startCut(ev); break;
+      case 'spycaught': if (ev.p === me && !(Direct.on && Direct.id === ev.id)) this.addAlert('Your spy was caught and executed', 'bad'); break;
       case 'deployed': if (ev.p === me) { const u = v.ents.get(ev.id); if (u && this.deployMode === 'army') { this.addAlert(u.d.n + ' deployed', 'good'); if (!$('deploy').classList.contains('hidden')) this.openDeploy(); } else if (u) { this.deployed = true; this.flown = true; this.closeDeploy(); Direct.enter(this, u); } } break;
       case 'nukekill': this.nukes = this.nukes.filter(n => n.id !== ev.id); break;
       case 'dead': if (ev.id === Direct.id && Direct.on && window.Tension) window.Tension.killedBy = ev.by; if (ev.air && ev.by === me && ev.o !== me && !Direct.on && !ev.quiet) { this.addAlert('Enemy ' + (UNITS[ev.kk] ? UNITS[ev.kk].n : 'aircraft') + ' shot down', 'good', ev.x, ev.y); Sfx.good(); } break;
@@ -10787,7 +10959,7 @@ const UI = {
     const c = this.ovx, m = this.mouse;
     c.clearRect(0, 0, this.ov.width, this.ov.height);
     if (WarRoom.on) return;
-    if (Direct.on) { Direct.drawHud(c, this.ov.width, this.ov.height); return; }
+    if (Direct.on) { if (!Direct.cut) Direct.drawHud(c, this.ov.width, this.ov.height); return; }
     if (!this.g || this.demo) return;
     if (this.camp && !this.campLive()) this.drawZones(c);
     if (this.mode && this.mode.t === 'place' && this.mode.x !== undefined) this.drawBuildMask(c);
@@ -10842,6 +11014,23 @@ const UI = {
       if (e.b) { const s = Math.max(3, e.d.s * sc); c.fillRect(e.x * sc - s / 2, e.y * sc - s / 2, s, s); }
       else { c.fillRect(e.x * sc - 1, e.y * sc - 1, e.air ? 2 : 2.5, e.air ? 2 : 2.5); }
     }
+    { // last known positions of enemy troops that slipped back into the fog, and gunfire heard out there
+      const gh = this.ghosts || (this.ghosts = new Map()), now = v.t;
+      for (const e of (R.visEnts || [])) if (!e.b && !v.friendly(e.o, G.me)) gh.set(e.id, {x: e.x, y: e.y, t: now, o: e.o, air: e.air});
+      for (const [id, q] of gh) {
+        const e = v.ents.get(id), age = now - q.t;
+        if (!e || age > 60) { gh.delete(id); continue; }
+        if (age < .5) continue;
+        c.globalAlpha = Math.max(.15, .8 - age / 70); c.strokeStyle = v.players[q.o] ? v.players[q.o].nat.color : '#f44'; c.lineWidth = 1;
+        c.strokeRect(q.x * sc - 2, q.y * sc - 2, 4, 4);
+      }
+      if (R.heard) R.heard = R.heard.filter(h => {
+        const age = R.time - h.t0; if (age > 4) return false;
+        c.globalAlpha = 1 - age / 4; c.fillStyle = h.big ? '#ffb040' : '#ffe27a';
+        c.beginPath(); c.arc(h.x * sc, h.y * sc, (h.big ? 3 : 2) + age * 1.5, 0, 6.3); c.fill(); return true;
+      });
+      c.globalAlpha = 1;
+    }
     if (this.blips) this.blips = this.blips.filter(b => { b.t += dt; c.strokeStyle = 'rgba(255,60,40,' + (1 - b.t / 3) + ')'; c.lineWidth = 2; c.beginPath(); c.arc(b.x * sc, b.y * sc, 4 + b.t * 10 % 12, 0, 6.3); c.stroke(); return b.t < 3; });
     for (const n of this.nukes) { c.strokeStyle = '#ff2020'; c.lineWidth = 2; c.beginPath(); c.arc(n.x * sc, n.y * sc, 16 * sc, 0, 6.3); c.stroke(); }
     if (this.bigMap) { // labels on the big map
@@ -10866,8 +11055,8 @@ const UI = {
     if (!p || !p.alive) return;
     if (Direct.on) { this.deployed = true; Direct.exit(); }
     const w = $('dList'); w.innerHTML = '';
-    const groups = [['Infantry', ['rifle', 'assault', 'rocket', 'sniper', 'scout', 'medic', 'mg', 'grenadier', 'para', 'worker', 'wolf']], ['Vehicles', ['tank', 'ifv', 'arty', 'mlrs', 'sam', 'truck', 'supply', 'hover']], ['Aircraft', ['fighter', 'interceptor', 'bomber', 'f16', 'f15', 'f35', 'a10', 'fa18', 'typhoon', 'gunship', 'transport', 'chinook', 'awacs']], ['Drones', ['fpv', 'hunter']], ['Navy', ['destroyer', 'attacksub', 'nukesub', 'lcboat', 'patrolboat']]];
-    const role = {truck: 'Drive troops to the front fast.', supply: 'Repairs everything around it.', hover: 'Over land and sea. MG, carries 6.', lcboat: 'Troop boat for 12.', patrolboat: 'Fast twin-MG gunboat.', transport: 'Paratrooper plane (10 aboard).', chinook: 'Troop helicopter with door gun.', awacs: 'Flying radar, no weapons.', worker: 'Carbine, and builds your base when commanded.', wolf: 'Fast melee beast. Bite and pounce.', rifle: 'All-rounder. Rifle + frag grenades.', mg: 'Belt-fed machine gun, 100-round box.', grenadier: 'Grenade launcher with splash.', para: 'Carbine and grenades. Drops in by parachute.', a10: 'GAU-8 cannon, Mavericks (E), Sidewinder (R).', fa18: 'Vulcan, Sidewinders (E), bombs (R).', typhoon: 'Cannon, Meteor (E), IRIS-T (R).', assault: 'Flamethrower and napalm. Brutal up close.', rocket: 'Rocket launcher. Kills tanks and helicopters.', sniper: 'Scoped rifle, hold breath. One shot, one blob.', scout: 'Fast. Shotgun and sticky bombs.', medic: 'SMG and a heal burst for your squad.', tank: 'Heavy cannon on a free turret, coax MG.', ifv: 'Autocannon (hits aircraft) and TOW missiles.', arty: 'Arcing 155mm with aim preview. Smoke shells.', mlrs: 'Ripple salvo of six rockets onto the aim point.', sam: 'Lock on and shoot down aircraft.', fighter: 'Guns, rocket salvos, Sidewinder (R).', interceptor: 'Air-to-air missiles.', bomber: 'Bomb sticks, Sidewinder (R).', f16: 'Agile. Vulcan cannon and Sidewinders.', f15: 'Air superiority. Long-range AMRAAMs.', f35: 'Stealth. Laser-guided bombs.', gunship: 'Hover and strafe. Rockets and chin gun.', fpv: 'Fast goggles drone. Dive and boom.', hunter: 'Rams aircraft and drones.', destroyer: 'Deck gun and anti-air missiles.', attacksub: 'Torpedoes against ships.', nukesub: 'Torpedoes and an ICBM.'};
+    const groups = [['Infantry', ['rifle', 'assault', 'rocket', 'sniper', 'scout', 'medic', 'mg', 'grenadier', 'para', 'spy', 'worker', 'wolf']], ['Vehicles', ['tank', 'ifv', 'arty', 'mlrs', 'sam', 'truck', 'supply', 'hover']], ['Aircraft', ['fighter', 'interceptor', 'bomber', 'f16', 'f15', 'f35', 'a10', 'fa18', 'typhoon', 'gunship', 'transport', 'chinook', 'awacs']], ['Drones', ['fpv', 'hunter']], ['Navy', ['destroyer', 'attacksub', 'nukesub', 'lcboat', 'patrolboat']]];
+    const role = {spy: 'Wears the enemy uniform. Sneak into their base for intel; answer their questions right.', truck: 'Drive troops to the front fast.', supply: 'Repairs everything around it.', hover: 'Over land and sea. MG, carries 6.', lcboat: 'Troop boat for 12.', patrolboat: 'Fast twin-MG gunboat.', transport: 'Paratrooper plane (10 aboard).', chinook: 'Troop helicopter with door gun.', awacs: 'Flying radar, no weapons.', worker: 'Carbine, and builds your base when commanded.', wolf: 'Fast melee beast. Bite and pounce.', rifle: 'All-rounder. Rifle + frag grenades.', mg: 'Belt-fed machine gun, 100-round box.', grenadier: 'Grenade launcher with splash.', para: 'Carbine and grenades. Drops in by parachute.', a10: 'GAU-8 cannon, Mavericks (E), Sidewinder (R).', fa18: 'Vulcan, Sidewinders (E), bombs (R).', typhoon: 'Cannon, Meteor (E), IRIS-T (R).', assault: 'Flamethrower and napalm. Brutal up close.', rocket: 'Rocket launcher. Kills tanks and helicopters.', sniper: 'Scoped rifle, hold breath. One shot, one blob.', scout: 'Fast. Shotgun and sticky bombs.', medic: 'SMG and a heal burst for your squad.', tank: 'Heavy cannon on a free turret, coax MG.', ifv: 'Autocannon (hits aircraft) and TOW missiles.', arty: 'Arcing 155mm with aim preview. Smoke shells.', mlrs: 'Ripple salvo of six rockets onto the aim point.', sam: 'Lock on and shoot down aircraft.', fighter: 'Guns, rocket salvos, Sidewinder (R).', interceptor: 'Air-to-air missiles.', bomber: 'Bomb sticks, Sidewinder (R).', f16: 'Agile. Vulcan cannon and Sidewinders.', f15: 'Air superiority. Long-range AMRAAMs.', f35: 'Stealth. Laser-guided bombs.', gunship: 'Hover and strafe. Rockets and chin gun.', fpv: 'Fast goggles drone. Dive and boom.', hunter: 'Rams aircraft and drones.', destroyer: 'Deck gun and anti-air missiles.', attacksub: 'Torpedoes against ships.', nukesub: 'Torpedoes and an ICBM.'};
     const free = (p.freeT || 0) <= v.t;
     const atRow = document.createElement('div'); atRow.className = 'atrow';
     atRow.innerHTML = `Spawn at: <button data-at="hq">Capital</button><button data-at="front">Front line (next to your troops nearest the enemy)</button>`;
@@ -10903,7 +11092,53 @@ const UI = {
   closeDeploy() { $('deploy').classList.add('hidden'); },
 
   // ---------- direct control screens ----------
+  spyCard(C) {
+    let el = $('spyCard'); if (!el) { el = document.createElement('div'); el.id = 'spyCard'; document.body.appendChild(el); }
+    clearTimeout(this.spyCardT);
+    if (!C) { el.classList.add('hidden'); return; }
+    el.innerHTML = `<h3>Undercover with ${C.name}</h3><p>Their troops think you are one of them. Firing blows your cover. Learn your story: guards may question you.</p><dl><dt>Leader</dt><dd>${C.leader}</dd><dt>Battle cry</dt><dd>${C.cry}</dd><dt>Password</dt><dd>${C.pw}</dd></dl><small>This card hides in 15 seconds. Walk into their base and your reports come home.</small>`;
+    el.style.borderColor = C.color; el.classList.remove('hidden');
+    this.spyCardT = setTimeout(() => el.classList.add('hidden'), 15000);
+  },
+  cutShow(C) {
+    let el = $('cut'); if (!el) { el = document.createElement('div'); el.id = 'cut'; el.innerHTML = '<i class="bar t"></i><i class="bar b"></i><div class="say"></div>'; document.body.appendChild(el); }
+    document.body.classList.toggle('cutscene', !!C);
+    if (!C) { el.classList.add('hidden'); return; }
+    const say = el.querySelector('.say'); el.classList.remove('hidden');
+    if (C.phase === 'ask') {
+      say.innerHTML = `<b>Guard of ${C.nat}</b><p>"${C.q}"</p><div class="opts">${C.opts.map((o, i) => `<button data-i="${i}"><kbd>${i + 1}</kbd> ${o}</button>`).join('')}</div><div class="tm"><i></i></div>`;
+      say.querySelectorAll('button').forEach(b => b.onclick = () => Direct.cutAnswer(+b.dataset.i));
+    } else if (C.phase === 'pass') say.innerHTML = `<b>Guard of ${C.nat}</b><p>"...Fine. Carry on, soldier."</p>`;
+    else say.innerHTML = `<b>Guard of ${C.nat}</b><p>"That's not right. SPY! Seize the spy!"</p>`;
+    if (C.phase === 'exec') { setTimeout(() => this.cutLine('"Up against the wall."'), 1400); setTimeout(() => this.cutLine('"Ready... aim..."'), 2600); }
+  },
+  cutLine(t) { const el = $('cut'); if (el && !el.classList.contains('hidden')) el.querySelector('.say').innerHTML = `<p class="big">${t}</p>`; },
+  cutTimer(left) { const i = document.querySelector('#cut .tm i'); if (i) i.style.width = (left / 12 * 100) + '%'; },
+  awaySnap() {
+    const v = this.g.view, me = this.g.me, P = v.players[me]; if (!P) return;
+    const ids = new Set(); for (const e of v.ents.values()) if (e.o === me) ids.add(e.id);
+    this.away = {t: v.t, ids, ups: Object.keys(P.ups || {}).filter(u => u[0] !== '_'), losses: P.losses || 0, kills: P.kills || 0};
+  },
+  awaySummary() {
+    const A = this.away; this.away = null; if (!A || !this.g) return;
+    const v = this.g.view, me = this.g.me, P = v.players[me], dt = v.t - A.t; if (!P || dt < 20) return;
+    const tr = {}, bl = {}; let nT = 0, nB = 0;
+    for (const e of v.ents.values()) if (e.o === me && !A.ids.has(e.id) && !e.pilot) { if (e.b) { bl[e.d.n] = (bl[e.d.n] || 0) + 1; nB++; } else { tr[e.d.n] = (tr[e.d.n] || 0) + 1; nT++; } }
+    const ups = Object.keys(P.ups || {}).filter(u => u[0] !== '_' && !A.ups.includes(u) && UPGRADES[u]).map(u => UPGRADES[u].n);
+    const lost = (P.losses || 0) - A.losses, kills = (P.kills || 0) - A.kills;
+    if (!nT && !nB && !ups.length && lost < 3 && kills < 3) return;
+    const list = o => Object.entries(o).map(([n, c]) => c + ' ' + (c > 1 ? (/man$/.test(n) ? n.replace(/man$/, 'men') : /y$/.test(n) ? n.replace(/y$/, 'ies') : /(s|sh|ch)$/.test(n) ? n + 'es' : n + 's') : n)).join(', ');
+    let h = `<h3>While you were out <small>${Math.floor(dt / 60)}m ${Math.round(dt % 60)}s</small></h3><ul>`;
+    if (nT) h += `<li><b>Trained</b> ${list(tr)}</li>`;
+    if (nB) h += `<li><b>Built</b> ${list(bl)}</li>`;
+    if (ups.length) h += `<li><b>Researched</b> ${ups.join(', ')}</li>`;
+    if (kills || lost) h += `<li><b>Fighting</b> ${kills} enemies downed, ${lost} of ours lost</li>`;
+    h += `<li><b>Treasury</b> ${P.steel | 0} steel, ${P.fuel | 0} fuel</li></ul><p>Your deputy keeps the base running while you fight, but slower than you would.</p>`;
+    let el = $('awaySum'); if (!el) { el = document.createElement('div'); el.id = 'awaySum'; document.body.appendChild(el); el.onclick = () => el.classList.add('hidden'); }
+    el.innerHTML = h; el.classList.remove('hidden'); clearTimeout(this.awayT); this.awayT = setTimeout(() => el.classList.add('hidden'), 12000);
+  },
   enterDirect(D) {
+    if (!this.away) this.awaySnap();
     document.body.classList.add('direct-mode');
     $('direct').classList.remove('hidden');
     const fpv = D.mode === 'fpv';
@@ -10926,6 +11161,7 @@ const UI = {
     $('dmsg').textContent = '';
   },
   exitDirect(msg) {
+    this.awaySummary();
     if (this.scen && this.g && !this.g.sim.over) setTimeout(() => { if (!Direct.on && this.scen) this.showScenSpawn(true); }, 1200);
     document.body.classList.remove('direct-mode');
     $('direct').classList.add('hidden');
