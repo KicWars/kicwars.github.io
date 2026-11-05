@@ -1485,6 +1485,8 @@ const DT = .1;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const FlightScratch = {e: new THREE.Euler(), d: new THREE.Quaternion(), F: new THREE.Vector3(), U: new THREE.Vector3(), L: new THREE.Vector3(), A: new THREE.Vector3(), a: new THREE.Vector3()};
+// plane guns are ballistic: rounds take time to arrive, so you must lead moving aircraft (the HUD pipper shows where)
+const GUN_V = 60, leadShift = (h, p, sp, t) => { const c = Math.cos(p || 0) * sp * t; return {x: Math.cos(h) * c, y: Math.sin(h) * c, z: Math.sin(p || 0) * sp * t}; };
 const angDiff = (a, b) => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; };
 
 // Excavation: flatten a patch of ground to its average height (filling shallow water), clearing rock and trees so it becomes buildable.
@@ -2677,7 +2679,8 @@ Sim.prototype.pilotFire = function (c, pi) {
   const R = d.rng * 1.5;
   const test = t => {
     if (this.friendly(t.o, pi) || !this.canHit(a, t)) return;
-    const vx = t.x - a.x, vy = t.y - a.y, vz = (t.z + (t.b ? 1.5 : .5)) - a.z, along = vx * dx + vy * dy + vz * dz;
+    let vx = t.x - a.x, vy = t.y - a.y, vz = (t.z + (t.b ? 1.5 : .5)) - a.z, along = vx * dx + vy * dy + vz * dz;
+    if (t.air && d.cat === 'air' && !t.b) { const ls = leadShift(t.h, t.p, t.sp || t.d.spd, Math.max(along, 0) / GUN_V); vx += ls.x; vy += ls.y; vz += ls.z; along = vx * dx + vy * dy + vz * dz; }
     const extra = t.b ? t.d.s / 2 : 0;
     if (along < 0 || along > R + extra) return;
     const off = Math.hypot(vx - dx * along, vy - dy * along, vz - dz * along), width = (t.b ? t.d.s * .6 : Math.max(.7, t.d.r * 1.4)) + along * .025;
@@ -7841,6 +7844,9 @@ const Direct = {
       yawCmd = clamp(aL * 1.2, -.3, .3);
     }
     rollCmd += rollIn * 3.6;
+    // battle damage: a hurt jet loses thrust (engine) and pulls to one side (wing)
+    const hurt = e.hpm ? clamp(1 - e.hp / e.hpm, 0, 1) : 0;
+    if (hurt > .45) { rollCmd += (e.id % 2 ? 1 : -1) * (hurt - .45) * 2.2; if (!this.hurtMsg || this.hurtMsg < this.flyT - 6) { this.hurtMsg = this.flyT; this.msg(hurt > .7 ? 'CRITICAL: engine failing, bail out (F) or land' : 'Damaged: losing thrust', 2); } }
     if (assist) { aCmd = aS * .9; rollCmd = -this.rollR * 3; this.camPitch = Math.max(this.camPitch, .45); }
     const al = Math.atan2(-V.dot(U), V.dot(F)), ca = Math.abs(al);
     let pr = clamp((aCmd - al) * 6, -2.4, 2.4) * auth - al * (1 - auth) * 1.5; // elevator holds the commanded AoA; the nose weathervanes onto the path when slow
@@ -7848,7 +7854,7 @@ const Direct = {
     FL.d.setFromEuler(FL.e.set(this.rr * dt, -pr * dt, yawCmd * auth * dt, 'XYZ')); q.multiply(FL.d).normalize(); axes();
     // forces: thrust along the nose, lift along body-up (peaks at the stall AoA), side-slip damping, drag, gravity
     const CL = Math.sign(al) * (ca < aS ? ca / aS : Math.max(.25, 1 - (ca - aS) * 2.5)), lift = LM * qd * CL;
-    const tgt = vc * (.45 + 1.1 * this.throttle), cd = .35 / vc, thrust = cd * tgt * tgt * (1 - clamp(p.z / 70, 0, 1) * .25);
+    const tgt = vc * (.45 + 1.1 * this.throttle), cd = .35 / vc, thrust = cd * tgt * tgt * (1 - clamp(p.z / 70, 0, 1) * .25) * (1 - clamp(hurt - .4, 0, .6) * 1.1);
     const dragK = cd * sp + (.04 * Math.abs(lift) + sp * Math.max(0, ca - aS) * 1.5) / sp;
     FL.a.set(0, 0, -G).addScaledVector(F, thrust).addScaledVector(U, lift).addScaledVector(L, -V.dot(L) * 2.5 * (.3 + qd)).addScaledVector(V, -dragK);
     V.addScaledVector(FL.a, dt); if (V.length() > vc * 1.9) V.setLength(vc * 1.9);
@@ -7980,7 +7986,8 @@ const Direct = {
     this.adsK += ((this.ads ? 1 : 0) - this.adsK) * Math.min(1, dt * 12);
     const z = W && W.zoom ? 1 + (W.zoom - 1) * this.adsK : 1;
     this.curZoom = z;
-    cam.fov = base * z * (this.sprinting ? 1.06 : 1) + (this.fovPunch || 0) * (this.mode === 'soldier' ? 1 : .3); cam.near = fp ? .03 : .1; cam.updateProjectionMatrix();
+    cam.fov = base * z * (this.sprinting ? 1.06 : 1) + (this.fovPunch || 0) * (this.mode === 'soldier' ? 1 : .3) + (this.mode === 'plane' ? clamp((this.speed / this.e.d.spd - 1) * 14, -3, 9) : 0); // speed rush cam.near = fp ? .03 : .1; cam.updateProjectionMatrix();
+    if (this.mode === 'plane' && (this.stalled || (this.gLoad || 1) > 2.6 || this.afterburner)) { const sh = this.stalled ? .5 : this.afterburner ? .06 : clamp(((this.gLoad || 1) - 2.6) * .15, 0, .4); cam.position.x += (Math.random() - .5) * sh; cam.position.y += (Math.random() - .5) * sh; cam.rotateZ((Math.random() - .5) * sh * .04); } // buffet in stalls, hard pulls and afterburner
     if (R.shake > .01) { cam.position.x += (Math.random() - .5) * R.shake * .25; cam.position.y += (Math.random() - .5) * R.shake * .25; }
     R.camTarget = R.camTarget || new THREE.Vector3(); R.camTarget.set(p.x, p.z, p.y);
     // where the centre of the screen points: shots from the gun go here, so the crosshair never lies
@@ -8611,6 +8618,24 @@ const Direct = {
       const V = this.fV, sp = Math.max(V.length(), .1), fp = this.toScreen(p.x + V.x / sp * 30, p.y + V.y / sp * 30, p.z + V.z / sp * 30), ap = this.manualFly ? null : this.toScreen(p.x + Math.cos(this.camYaw) * Math.cos(this.camPitch) * 30, p.y + Math.sin(this.camYaw) * Math.cos(this.camPitch) * 30, p.z + Math.sin(this.camPitch) * 30);
       if (fp) { c.beginPath(); c.arc(fp.x, fp.y, 7, 0, 6.2832); c.moveTo(fp.x - 17, fp.y); c.lineTo(fp.x - 7, fp.y); c.moveTo(fp.x + 7, fp.y); c.lineTo(fp.x + 17, fp.y); c.moveTo(fp.x, fp.y - 7); c.lineTo(fp.x, fp.y - 14); c.stroke(); }
       if (ap) { c.save(); c.strokeStyle = '#ffd45a'; c.beginPath(); c.arc(ap.x, ap.y, 15, 0, 6.2832); c.stroke(); c.fillStyle = '#ffd45a'; c.fillRect(ap.x - 1.5, ap.y - 1.5, 3, 3); c.restore(); }
+    }
+    // lead pipper: the nearest enemy aircraft ahead, with where your rounds will meet it
+    if (this.firstPerson() && this.e && this.e.d.shot === 'cannon') {
+      let bt = null, bd = 1e9;
+      for (const t of this.ui.g.R.visEnts || []) {
+        if (!t.air || t.id === this.id || this.ui.g.view.friendly(t.o, this.ui.g.me)) continue;
+        const vx = t.rx - p.x, vy = t.ryy - p.y, vz = t.rz - p.z, dist = Math.hypot(vx, vy, vz); if (dist > 28 || dist < 1) continue;
+        const cosA = (vx * Math.cos(p.h) * Math.cos(p.p) + vy * Math.sin(p.h) * Math.cos(p.p) + vz * Math.sin(p.p)) / dist; if (cosA < .8 || dist * (1 - cosA) > bd) continue;
+        bd = dist * (1 - cosA); bt = t;
+      }
+      if (bt) {
+        const dist = Math.hypot(bt.rx - p.x, bt.ryy - p.y, bt.rz - p.z), ls = leadShift(bt.ry, bt.rp, bt.sp || bt.d.spd, dist / GUN_V);
+        const ts = this.toScreen(bt.rx, bt.ryy, bt.rz), ps = this.toScreen(bt.rx + ls.x, bt.ryy + ls.y, bt.rz + ls.z);
+        c.save(); c.strokeStyle = '#ff5a4a'; c.fillStyle = '#ff5a4a'; c.lineWidth = 1.5;
+        if (ts) { c.strokeRect(ts.x - 14, ts.y - 14, 28, 28); c.font = '700 11px ui-monospace,monospace'; c.textAlign = 'center'; c.fillText((dist * 40 | 0) + 'm', ts.x, ts.y + 28); }
+        if (ps) { c.beginPath(); c.arc(ps.x, ps.y, 9, 0, 6.2832); c.stroke(); c.fillRect(ps.x - 1.5, ps.y - 1.5, 3, 3); if (ts) { c.globalAlpha = .4; c.beginPath(); c.moveTo(ts.x, ts.y); c.lineTo(ps.x, ps.y); c.stroke(); } }
+        c.restore();
+      }
     }
     // speed and altitude tapes
     const alt = (p.z - Math.max(hAt(M, p.x, p.y), 0)) * 10, spd = this.speed * 36;
