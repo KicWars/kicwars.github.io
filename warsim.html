@@ -1147,6 +1147,7 @@ BATTLES.push(
     comp: ['rifle', 'sniper', 'mg', 'rifle', 'rocket', 'assault', 'rifle', 'scout', 'grenadier', 'rifle']});
 // Arcade battles (in the spirit of arcade air and ground realistic-lite): two teams, endless respawns, tickets.
 // Air: shoot down planes and destroy the enemy's ground targets. Ground: hold the capture points, kill tanks.
+const MSL_LOAD = 4; // missiles per sortie in arcade air battles (each missile weapon)
 const AIR_CLASSES = ['fighter', 'f16', 'interceptor', 'typhoon', 'fa18', 'a10', 'bomber'], TANK_CLASSES = ['tank', 'htank', 'ltank', 'td', 'ifv', 'sam'];
 BATTLES.push(
   {n: 'Air Battle: Island Skies', arc: 'air', team: 9, map: 2, seed: 41, size: 240, foe: 'toms', tickets: 1e9, tix: 2400, sea: [0, 1], obj: [], land: [], def: [], classes: AIR_CLASSES,
@@ -1155,15 +1156,18 @@ BATTLES.push(
   {n: 'Air Battle: Desert Strike', arc: 'air', team: 9, map: 6, seed: 23, size: 240, foe: 'jethroes', tickets: 1e9, tix: 2400, sea: [0, 1], obj: [], land: [], def: [], classes: AIR_CLASSES,
     comp: ['f16', 'fighter', 'a10', 'interceptor', 'typhoon', 'bomber', 'fa18', 'fighter'],
     blurb: 'Arcade air battle above the desert. Strafe the enemy armour columns, dogfight their fighters, and keep your own convoys alive.'},
-  {n: 'Tank Battle: Desert Ridge', arc: 'ground', team: 11, map: 6, seed: 29, size: 160, foe: 'dhruvs', tickets: 1e9, tix: 2500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
+  {n: 'Air Battle: Grand Theatre', arc: 'air', team: 11, map: 14, seed: 47, size: 480, foe: 'valentinos', tickets: 1e9, tix: 3000, sea: [0, 1], obj: [], land: [], def: [], classes: AIR_CLASSES,
+    comp: ['fighter', 'f16', 'typhoon', 'a10', 'interceptor', 'fa18', 'bomber', 'fighter', 'f16', 'bomber'],
+    blurb: 'The big one: a theatre four times the size of a Massive map, with a mountain range, rivers, towns and a northern sea. 12 planes a side. Climb, pick your fights and hunt the enemy columns and bases. Drawn with lighter ground detail so it stays smooth.'},
+  {n: 'Tank Battle: Ashford Crossing', arc: 'ground', team: 11, map: 15, seed: 29, size: 144, foe: 'dhruvs', tickets: 1e9, tix: 2500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
     comp: ['tank', 'htank', 'ltank', 'tank', 'td', 'tank', 'htank', 'ltank', 'td', 'tank', 'sam'],
-    blurb: 'Arcade tank battle in the desert: 12 vehicles a side (medium, heavy and light tanks, tank destroyers, SPAA) fight over three capture points, A, B and C. Hold more points than the enemy and their tickets bleed away; every tank kill costs them too. 3 kills in one life earns you a strike plane.'},
-  {n: 'Tank Battle: Highland Pass', arc: 'ground', team: 11, map: 3, seed: 37, size: 160, foe: 'valentinos', tickets: 1e9, tix: 2500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
+    blurb: 'A river village. A sits on a long ridge: go hull-down and snipe. B is the crossroads in the village: a close brawl round the church and silo. C is a farm over the river, reached by the bridge or two fords. Hold more points to bleed their tickets; 3 kills in one life earns a strike plane.'},
+  {n: 'Tank Battle: Kessel Heights', arc: 'ground', team: 11, map: 16, seed: 37, size: 144, foe: 'valentinos', tickets: 1e9, tix: 2500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
     comp: ['tank', 'td', 'ltank', 'htank', 'tank', 'td', 'tank', 'ltank', 'htank', 'ifv', 'sam'],
-    blurb: 'Domination in the hills: hull-down on the ridges, flank through the valleys. Three points, tickets, endless respawns.'},
-  {n: 'Tank Battle: Steppe Fields', arc: 'ground', team: 11, map: 1, seed: 53, size: 160, foe: 'jethroes', tickets: 1e9, tix: 2500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
+    blurb: 'A rocky hill holds B and sees the whole map, but cliffs ring it and only two switchback roads climb it. A is a quarry town in the western valley; C hides in a thick eastern forest with a sunken lane.'},
+  {n: 'Tank Battle: Sandstone Gorge', arc: 'ground', team: 11, map: 17, seed: 53, size: 144, foe: 'jethroes', tickets: 1e9, tix: 2500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
     comp: ['tank', 'ltank', 'htank', 'td', 'tank', 'ltank', 'tank', 'htank', 'td', 'ifv', 'sam'],
-    blurb: 'Wide open farmland and forests, 12 against 12. Light tanks race for the far points, heavies hold the centre and tank destroyers snipe from the treelines.'});
+    blurb: 'Desert. B is a walled old town, A an oasis in the palms, and C lies at the bottom of a canyon you can only enter from the ends. Rock mesas break the long sightlines: perfect for ambushes.'});
 const BAT_CLASSES = ['rifle', 'mg', 'rocket', 'assault', 'sniper', 'medic', 'grenadier'];
 const batClasses = B => B && B.classes || BAT_CLASSES;
 // the Toms' special swaps the pilot's guns for this blade for a few seconds (sent as weapon slot 9)
@@ -1220,7 +1224,7 @@ function rankField(f, n) {
 
 // Map styles ride along in the seed (seed / 1e7), so every client rebuilds the same world from it.
 // ids 4 and 5 are the FPS battle maps
-const MAP_TYPES = {11: 'Twin Rivers', 12: 'Mountain Kingdoms', 13: 'Iron Bay', 0: 'Island', 1: 'Continent', 2: 'Archipelago', 3: 'Highlands', 6: 'Middle East Desert', 7: 'Strait of Hormuz', 8: 'Stalingrad', 9: 'Pacific War'};
+const MAP_TYPES = {11: 'Twin Rivers', 12: 'Mountain Kingdoms', 13: 'Iron Bay', 0: 'Island', 1: 'Continent', 2: 'Archipelago', 3: 'Highlands', 6: 'Middle East Desert', 7: 'Strait of Hormuz', 8: 'Stalingrad', 9: 'Pacific War', 14: 'Grand Theatre', 15: 'Ashford Crossing', 16: 'Kessel Heights', 17: 'Sandstone Gorge'};
 const MAP_KEYS = [0, 1, 2, 3, 6, 7, 8, 9, 11, 12, 13];
 const mapType = seed => Math.floor(seed / 1e7);
 // Battle maps for the FPS landings: 4 = a beach under bluffs, 5 = a jungle island with a mountain.
@@ -1310,6 +1314,123 @@ function genBattleMap(N, seed, BT) {
   for (const R2 of ruins) R2.z = h[Math.round(R2.y) * N + Math.round(R2.x)];
   return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes: [], ruins};
 }
+// ---------- Arcade maps ----------
+// 14 Grand Theatre: a huge air map (4x the area of Massive). Built cheap on purpose: smooth hills, a mountain range, a coast with islands,
+//    sparse forests and a few towns, and the renderer draws it with a coarser mesh and no rocks (M.lite), so it stays smooth.
+// 15-17 tank maps in the arcade ground style: a compact field walled by tree lines, spawns at the two ends, three points across the middle,
+//    a town to brawl in, a ridge to go hull-down on, and a flank route for the light tanks.
+function arcKit(N, rnd) {
+  const A = N * N, M = {N, h: new Float32Array(A).fill(1.2), bio: new Uint8Array(A), tree: new Uint8Array(A), water: new Uint8Array(A), block: new Uint8Array(A), road: new Uint8Array(A), occ: new Int32Array(A), nodes: [], ruins: []};
+  const inb = (x, y) => x > 1 && y > 1 && x < N - 2 && y < N - 2;
+  const K = {M,
+    each: (u, v, r, fn) => { const cx = u * N, cy = v * N, R2 = r * N; for (let y = Math.floor(cy - R2); y <= Math.ceil(cy + R2); y++) for (let x = Math.floor(cx - R2); x <= Math.ceil(cx + R2); x++) { if (!inb(x, y)) continue; const d = Math.hypot(x - cx, y - cy) / R2; if (d <= 1) fn(y * N + x, d, x, y); } },
+    path: (pts, step, fn) => { for (let k = 0; k + 1 < pts.length; k++) { const [u0, v0] = pts[k], [u1, v1] = pts[k + 1], n = Math.max(1, Math.ceil(Math.hypot(u1 - u0, v1 - v0) * N / step)); for (let q = 0; q <= n; q++) fn(u0 + (u1 - u0) * q / n, v0 + (v1 - v0) * q / n); } }};
+  K.hill = (u, v, r, ht, pw) => K.each(u, v, r, (i, d) => { M.h[i] += ht * Math.pow(1 - d, pw || 1.5); });
+  K.flat = (u, v, r, to) => K.each(u, v, r, (i, d) => { M.h[i] = to + (M.h[i] - to) * Math.pow(d, 2); });
+  K.ridge = (pts, w, ht) => K.path(pts, .5, (u, v) => K.each(u, v, w, (i, d) => { M.h[i] = Math.max(M.h[i], 1.2 + ht * Math.pow(1 - d, 1.3)); }));
+  K.river = (pts, w, depth) => K.path(pts, .6, (u, v) => K.each(u, v, w, (i, d) => { M.h[i] = Math.min(M.h[i], -depth + d * d * (1.35 + depth)); if (d > .55 && M.bio[i] !== BIO.DESERT) M.bio[i] = BIO.SWAMP; }));
+  K.ford = (u, v, r) => K.each(u, v, r, (i, d) => { M.h[i] = Math.max(M.h[i], .3 + d * .3); M.bio[i] = BIO.DESERT; });
+  K.forest = (u, v, r, dens) => K.each(u, v, r, (i, d) => { if (rnd() < dens * (1.15 - d)) M.tree[i] = 1 + (rnd() * 3 | 0); });
+  K.hedge = (pts, gap) => K.path(pts, .9, (u, v) => { const x = Math.round(u * N), y = Math.round(v * N); if (inb(x, y) && rnd() > (gap || .18)) M.tree[y * N + x] = 1 + (rnd() * 2 | 0); });
+  K.lane = (pts, w) => K.path(pts, .7, (u, v) => K.each(u, v, w, (i) => { M.road[i] = 1; M.tree[i] = 0; if (M.h[i] < .5) M.h[i] = .55; }));
+  K.put = (kind, u, v, w, d, hh) => M.ruins.push({x: u * N, y: v * N, w, d, h: hh, kind});
+  K.town = (u, v, r, n, tall) => { // a village: rows of houses facing two crossing streets, a back row behind, and the odd bombed-out gap
+    const N1 = 1 / N, step = 6.5 * N1, off = 4.2 * N1, back = 10 * N1; let k = 0;
+    const ts = []; for (let t = off * 1.5; t <= r + 1e-6; t += step) ts.push(t, -t);
+    for (const t of ts) for (const sd of [-1, 1]) for (const [o, p] of [[off, .92], [back, .55]]) {
+      if (rnd() > p || k >= n) continue; k++;
+      const big = 3 + (rnd() * 3 | 0), hh = (tall || 2.4) + rnd() * 1.4, kind = rnd() < .12 ? 'rubble' : 'house';
+      K.put(kind, u + t, v + sd * o, big, 3 + (rnd() * 2 | 0), hh);                     // along the east-west street
+      if (k < n) { k++; K.put(rnd() < .12 ? 'rubble' : 'house', u + sd * o, v + t, 3 + (rnd() * 2 | 0), big, hh); } // along the north-south street
+    }
+    K.lane([[u - r * 1.3, v], [u + r * 1.3, v]], .007); K.lane([[u, v - r * 1.3], [u, v + r * 1.3]], .007);
+  };
+  K.finish = (spawns, wob, seed) => {
+    const nz = makeNoise(rnd), h = M.h;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const i = y * N + x; if (!M.road[i]) h[i] += (nz(x * .09, y * .09, 3) - .5) * (h[i] > 0 ? wob : .1); }
+    M.spawns = spawns.map(s => ({x: Math.round(s[0] * N), y: Math.round(s[1] * N)}));
+    for (const s of M.spawns) K.each(s.x / N, s.y / N, 10 / N, (i, d) => { h[i] = 1.4 + (h[i] - 1.4) * Math.pow(d, 1.5); M.tree[i] = 0; M.block[i] = 0; });
+    const t2 = new Float32Array(h);
+    for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) { const i = y * N + x; h[i] = (t2[i] * 2 + t2[i - 1] + t2[i + 1] + t2[i - N] + t2[i + N]) / 6; }
+    for (const R2 of M.ruins) if (R2.kind !== 'rubble') for (let y = Math.round(R2.y - R2.d / 2 + .5); y < Math.round(R2.y + R2.d / 2); y++) for (let x = Math.round(R2.x - R2.w / 2 + .5); x < Math.round(R2.x + R2.w / 2); x++) { const i = y * N + x; if (inb(x, y)) { M.block[i] = 1; M.tree[i] = 0; M.road[i] = 0; } }
+    for (let i = 0; i < N * N; i++) { if (h[i] < 0) { M.water[i] = 1; M.tree[i] = 0; M.block[i] = 0; M.road[i] = 0; } if (M.block[i]) M.tree[i] = 0; }
+    for (const R2 of M.ruins) R2.z = h[Math.round(R2.y) * N + Math.round(R2.x)];
+    M.seed = seed; return M;
+  };
+  return K;
+}
+function genAirMap(N, seed) {
+  const rnd = mulberry(seed * 7919 + 53), nz = makeNoise(rnd), nz2 = makeNoise(rnd), K = arcKit(N, rnd), M = K.M, h = M.h;
+  const sm = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const segD = (u, v, a, b, c, d) => { const dx = c - a, dy = d - b, t = clamp(((u - a) * dx + (v - b) * dy) / (dx * dx + dy * dy), 0, 1); return Math.hypot(u - a - dx * t, v - b - dy * t); };
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x, u = x / N, v = y / N, n1 = nz(x * .012, y * .012, 5), n2 = nz2(x * .04, y * .04, 3);
+    // a mountain range runs down the middle of the theatre, broken by two wide passes
+    const rd = Math.min(segD(u, v, .42, .3, .55, .5), segD(u, v, .55, .5, .48, .78)), pass = Math.min(Math.hypot(u - .49, v - .4), Math.hypot(u - .52, v - .64));
+    let e = 1 + n1 * 2.6 + Math.exp(-Math.pow(rd / .06, 2)) * (7 + n2 * 6) * sm(.02, .07, pass);
+    e += Math.exp(-Math.pow(Math.hypot(u - .2, v - .78) / .08, 2)) * 4 + Math.exp(-Math.pow(Math.hypot(u - .8, v - .22) / .08, 2)) * 4;   // lone massifs near each home
+    const coast = .16 + (nz(x * .008 + 40, y * .008, 4) - .5) * .14;                                                                    // the sea along the north edge
+    if (v < coast) e = Math.min(e, -.6 - (coast - v) * 30); else if (v < coast + .04) e = Math.min(e, -.6 + (v - coast) / .04 * 2);
+    if (Math.max(u, 1 - u, 1 - v) > .97) e = Math.min(e, -.6 - (Math.max(u, 1 - u, 1 - v) - .97) * 60);                                 // the rest of the rim is sea too
+    h[i] = e; M.bio[i] = e > 8 ? BIO.SNOW : e > 5.5 ? BIO.ROCK : e < 1.1 ? BIO.DESERT : n2 > .66 ? BIO.SWAMP : BIO.GRASS;
+    if (e > 1.3 && e < 5 && n2 < .36 && nz2(x * .11 + 5, y * .11, 2) > .5 && rnd() < .45) M.tree[i] = 1 + (rnd() * 2 | 0);            // sparse forests
+  }
+  for (const [u, v, r] of [[.2, .07, .03], [.36, .1, .02], [.62, .06, .035], [.82, .1, .025]]) K.hill(u, v, r, 4.5, 1);                  // islands in the northern sea
+  K.river([[.3, .14], [.33, .35], [.28, .55], [.33, .97]], .008, 1.2); K.river([[.7, .14], [.66, .4], [.72, .6], [.68, .97]], .008, 1.2);
+  for (const [u, v] of [[.3, .45], [.7, .55], [.18, .3], [.82, .7], [.4, .9], [.6, .1 + .2]]) K.town(u, v, .025, 12);
+  K.lane([[.1, .55], [.3, .45], [.49, .4], [.7, .55], [.9, .45]], .004); K.lane([[.1, .55], [.18, .3]], .004); K.lane([[.9, .45], [.82, .7], [.6, .3]], .004);
+  return Object.assign(K.finish([[.08, .55], [.92, .45]], .3, seed), {lite: 1});
+}
+function genTankMap(N, seed, BT) {
+  const rnd = mulberry(seed * 7919 + 61), K = arcKit(N, rnd), M = K.M, h = M.h;
+  const wall = () => { for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const e = Math.min(x, y, N - 1 - x, N - 1 - y); if (e < 5 && rnd() < .85) M.tree[y * N + x] = 1 + (rnd() * 3 | 0); if (e < 3) h[y * N + x] += 1.5; } };
+  let sp, caps;
+  if (BT === 15) {
+    // ASHFORD CROSSING: a river village. A on a long western ridge (hull-down, long sightlines), B in the village at the crossroads
+    // (close-range brawl through the streets), C on a farm across the river reached by a stone bridge or a shallow ford (the flank).
+    K.ridge([[.16, .25], [.2, .5], [.16, .75]], .07, 3.2); K.flat(.22, .5, .05, 3.0);
+    K.river([[.78, 0], [.75, .3], [.8, .5], [.75, .7], [.79, 1]], .028, 1.6); K.ford(.76, .32, .035); K.ford(.76, .68, .035);
+    K.town(.5, .5, .11, 40, 2.8); K.put('factory', .55, .44, 7, 5, 4); K.put('elevator', .46, .56, 4, 4, 8);           // church and grain silo overlook the square
+    for (const v of [.4, .6]) K.hedge([[.6, v], [.72, v]]); for (const u of [.62, .7]) K.hedge([[u, .38], [u, .62]], .3);
+    K.put('house', .87, .48, 6, 4, 2.6); K.put('house', .9, .55, 4, 4, 2.2); K.put('rubble', .86, .56, 3, 3, .6);
+    K.forest(.32, .3, .07, .7); K.forest(.32, .7, .07, .7); K.forest(.65, .2, .06, .6); K.forest(.65, .8, .06, .6);
+    K.lane([[.5, .06], [.5, .94]], .008); K.lane([[.06, .5], [.75, .5]], .008); K.lane([[.75, .5], [.82, .5], [.88, .5]], .006);
+    for (let v = .44; v <= .56; v += .004) for (let x = Math.round(N * .72); x <= Math.round(N * .82); x++) { const i = Math.round(v * N) * N + x; if (Math.abs(v - .5) < .014) { h[i] = Math.max(h[i], 1.0); M.road[i] = 1; } } // stone bridge
+    sp = [[.5, .93], [.5, .07]]; caps = [['A', .2, .5], ['B', .5, .5], ['C', .87, .52]];
+  } else if (BT === 16) {
+    // KESSEL HEIGHTS: a tall rocky hill in the middle holds B; whoever owns the crest sees the whole map, but its faces are cliffs and
+    // only two switchback roads climb it. A sits in a quarry town in the western valley, C in a dense forest on the east with a sunken lane.
+    K.hill(.5, .5, .2, 6.5, 1.1); K.flat(.5, .5, .06, 6.2);
+    for (let i = 0; i < N * N; i++) if (h[i] > 3.3 && h[i] < 5.9) { const x = i % N, y = (i / N) | 0; if (Math.hypot(x / N - .5, y / N - .5) > .07) M.block[i] = 2; }
+    const climbs = [[[.5, .78], [.42, .68], [.55, .6], [.5, .53]], [[.5, .22], [.58, .32], [.45, .4], [.5, .47]]];
+    for (const c of climbs) K.path(c, .5, (u, v) => K.each(u, v, .03, (i) => { if (M.block[i] === 2) M.block[i] = 0; }));
+    for (let i = 0; i < N * N; i++) { if (M.block[i] === 2) { M.block[i] = 1; M.bio[i] = BIO.ROCK; } else if (h[i] > 4) M.bio[i] = BIO.ROCK; }
+    for (const c of climbs) K.lane(c, .008);
+    K.each(.18, .5, .1, (i, d) => { h[i] = Math.min(h[i], .9 + d * .5); M.bio[i] = BIO.DESERT; }); K.town(.18, .5, .07, 22, 2.4); K.put('factory', .12, .44, 8, 6, 4.5);
+    K.forest(.82, .5, .13, .55); K.path([[.82, .25], [.84, .5], [.82, .75]], .5, (u, v) => K.each(u, v, .02, (i, d) => { h[i] = Math.max(.6, h[i] - .8 * (1 - d)); M.tree[i] = 0; M.road[i] = 1; })); // sunken lane
+    K.hill(.3, .82, .08, 1.6); K.hill(.7, .18, .08, 1.6); K.hill(.3, .18, .07, 1.2); K.hill(.7, .82, .07, 1.2);
+    K.lane([[.5, .94], [.5, .78]], .008); K.lane([[.5, .06], [.5, .22]], .008); K.lane([[.18, .1], [.18, .9]], .007); K.lane([[.5, .85], [.18, .7]], .006); K.lane([[.5, .15], [.82, .3]], .006);
+    sp = [[.5, .93], [.5, .07]]; caps = [['A', .18, .5], ['B', .5, .5], ['C', .83, .5]];
+  } else {
+    // SANDSTONE GORGE: desert. B is a walled old town in the centre, A an oasis among palms in the west, C at the bottom of a canyon in the
+    // east that you can only enter from the ends; rocky mesas everywhere break up the long sightlines for ambushes.
+    for (let i = 0; i < N * N; i++) M.bio[i] = BIO.DESERT;
+    for (const [u, v, r] of [[.33, .3, .05], [.67, .7, .05], [.3, .68, .04], [.66, .28, .04], [.42, .82, .03], [.58, .18, .03], [.12, .2, .04], [.12, .8, .04]])
+      K.each(u, v, r, (i, d) => { const e = d < .78 ? 4.2 : 4.2 * (1 - d) / .22; h[i] = Math.max(h[i], 1.2 + e); if (d < .85) { M.block[i] = 1; M.bio[i] = BIO.ROCK; } });
+    K.ridge([[.72, .2], [.73, .8]], .035, 4); K.ridge([[.92, .2], [.93, .8]], .035, 4);
+    K.path([[.73, .2], [.73, .8]], .4, (u, v) => K.each(u, v, .028, (i) => { M.block[i] = 1; M.bio[i] = BIO.ROCK; }));
+    K.path([[.92, .2], [.93, .8]], .4, (u, v) => K.each(u, v, .028, (i) => { M.block[i] = 1; M.bio[i] = BIO.ROCK; }));
+    K.lane([[.83, .1], [.83, .9]], .01);
+    K.town(.5, .5, .08, 30, 2.6); K.path([[.41, .41], [.59, .41], [.59, .59], [.41, .59], [.41, .41]], .9, (u, v) => { if (Math.abs(u - .5) > .03 && Math.abs(v - .5) > .03) K.put('rubble', u, v, 2, 2, .5); });
+    K.each(.18, .5, .05, (i, d) => { h[i] = Math.min(h[i], -.5 + d * 1.8); }); K.each(.18, .5, .11, (i, d) => { if (d > .45 && rnd() < .2) M.tree[i] = 1; if (d > .45) M.bio[i] = BIO.GRASS; });
+    K.lane([[.5, .06], [.5, .94]], .008); K.lane([[.1, .5], [.9, .5]], .007);
+    sp = [[.5, .93], [.5, .07]]; caps = [['A', .2, .38], ['B', .5, .5], ['C', .83, .5]];
+  }
+  wall();
+  const out = K.finish(sp, BT === 17 ? .25 : .4, seed);
+  out.caps = caps.map(([n, u, v]) => ({n, x: u * N, y: v * N}));
+  return out;
+}
 // ---------- Hand-built war maps. Each one is a designed battlefield: fixed capitals, fixed routes, fixed resources, so every game has the same good bones. ----------
 // 11 Twin Rivers: two river lines, three fords each, a rich heartland between them and a crown hill in the middle.
 // 12 Mountain Kingdoms: a great massif with four passes and a high plateau; the long ring road round it is safe but slow.
@@ -1397,6 +1518,8 @@ function genMap(N, seed, nPlayers) {
   const BT = Math.floor(seed / 1e7);
   if (BT >= 11 && BT <= 13) return genWarMap(N, seed, BT, nPlayers);
   if (BT === 4 || BT === 5 || BT === 10) return genBattleMap(N, seed, BT);
+  if (BT === 14) return genAirMap(N, seed);
+  if (BT >= 15 && BT <= 17) return genTankMap(N, seed, BT);
   const rnd = mulberry(seed * 7919 + 13), nz = makeNoise(rnd), nz2 = makeNoise(rnd), nz3 = makeNoise(rnd), MT = mapType(seed);
   const A = N * N, hr = new Float32Array(A), te = new Float32Array(A), mo = new Float32Array(A);
   const sc = 1 / 26, cx = N / 2, cy = N / 2;
@@ -3014,7 +3137,7 @@ Sim.prototype.stepBuilding = function (b) {
       if (p.pop + ud.pop > p.popCap) { if (this.tick % 150 === 0) this.notify(p.i, 'Population capped: build Housing', 'bad'); }
       else {
         b.prog += DT / (p.nat.tr.train || 1) * (it.auto ? AUTO_TRAIN_K : 1);
-        if (b.prog >= ud.t) { b.q.shift(); b.prog = 0; this.spawnFrom(b, it.u, p); }
+        if (b.prog >= ud.t) { b.q.shift(); b.prog = 0; this.spawnB = it.auto ? b : null; this.spawnFrom(b, it.u, p); this.spawnB = null; }
       }
     }
   }
@@ -3833,10 +3956,12 @@ Sim.prototype.joinSquad = function (e) {
   for (const t of this.ents.values()) if (t.sq && t.o === e.o && t !== e && (kind === 'pl' ? t.d.cat === 'inf' && (t.k === 'para') === (e.k === 'para') : t.k === e.k)) {
     const g = S[t.sq] || (S[t.sq] = {n: 0, sqn: t.sqn, c: {}, x: 0, y: 0}); g.n++; g.x += t.x; g.y += t.y; const sl = slotOf(t.k); g.c[sl] = (g.c[sl] || 0) + 1;
   }
-  const cap = kind === 'pl' ? PLATOON_N : SECTION_N, sl = slotOf(e.k);
+  const cap = kind === 'pl' ? PLATOON_N : SECTION_N, sl = slotOf(e.k), own = this.sqOwn || (this.sqOwn = {}), B = this.spawnB;
+  const mine = id => { const ob = own[id]; return ob && this.ents.has(ob) ? ob : 0; }; // a squad belongs to the auto-training building that started it, while it stands
   let best = null, bs = -1e9;
   for (const id in S) {
     const g = S[id]; if (g.n >= cap) continue;
+    if (B ? mine(id) !== B.id : mine(id)) continue; // auto-trained troops fill only their own building's squad; nobody else joins it
     let sc = g.n * 2 - Math.hypot(g.x / g.n - e.x, g.y / g.n - e.y) * .05; // fill the fullest squad first
     if (kind === 'pl' && e.k !== 'para') sc += (g.c[sl] || 0) < PLATOON[sl] ? 100 : 0;    // and the one that still has a slot for this role
     if (sc > bs) { bs = sc; best = +id; }
@@ -3844,8 +3969,9 @@ Sim.prototype.joinSquad = function (e) {
   if (best === null) {
     p.sqN = p.sqN || {}; const key = kind === 'pl' ? (e.k === 'para' ? 'para' : 'inf') : e.k;
     best = this.nextSq = (this.nextSq || 0) + 1; e.sqn = p.sqN[key] = (p.sqN[key] || 0) + 1;
+    if (B) own[best] = B.id;
   } else e.sqn = S[best].sqn;
-  e.sq = best;
+  e.sq = best; if (B && kind === 'pl' && e.k !== 'para') B.ownSq = best;
 };
 // A squad fights together: when one member is hit, idle squadmates nearby move up to help.
 Sim.prototype.squadAlert = function (t) {
@@ -3864,8 +3990,9 @@ Sim.prototype.autoPick = function (b, p) {
   if (!T.some(k => PLATOON[k])) return T[0];
   // the fullest unfinished platoon (queued troops count too) and the role it is short of
   const S = {}; for (const t of this.ents.values()) if (t.sq && t.o === p.i && t.d.cat === 'inf' && t.k !== 'para') { const g = S[t.sq] || (S[t.sq] = {n: 0, c: {}}); g.n++; const sl = slotOf(t.k); g.c[sl] = (g.c[sl] || 0) + 1; }
-  let g = null; for (const id in S) if (S[id].n < PLATOON_N && (!g || S[id].n > g.n)) g = S[id];
-  const c = Object.assign({}, g ? g.c : {}); for (const e of this.ents.values()) if (e.b && e.o === p.i && e.q) for (const it of e.q) if (it.u && UNITS[it.u].cat === 'inf' && it.u !== 'worker' && it.u !== 'scout' && it.u !== 'spy' && it.u !== 'para') { const sl = slotOf(it.u); c[sl] = (c[sl] || 0) + 1; }
+  // an auto-training barracks only ever fills its own platoon, so two barracks never fight over one (Tom's rule)
+  let g = null; if (b.auto) { const o = S[b.ownSq]; if (o && o.n < PLATOON_N) g = o; } else for (const id in S) if (S[id].n < PLATOON_N && (!g || S[id].n > g.n)) g = S[id];
+  const c = Object.assign({}, g ? g.c : {}); for (const e of this.ents.values()) if (e.b && e.o === p.i && e.q && (!b.auto || e === b)) for (const it of e.q) if (it.u && UNITS[it.u].cat === 'inf' && it.u !== 'worker' && it.u !== 'scout' && it.u !== 'spy' && it.u !== 'para') { const sl = slotOf(it.u); c[sl] = (c[sl] || 0) + 1; }
   let best = null, bn = -1;
   for (const k in PLATOON) if (T.includes(k)) { const need = PLATOON[k] - (c[k] || 0); if (need > bn) { bn = need; best = k; } }
   if (bn <= 0) return T.includes('rifle') ? 'rifle' : T[0]; // specialist slots full or still locked: riflemen fill the platoon
@@ -4210,7 +4337,8 @@ Sim.prototype.arcSetup = function (B) {
   const S = this.scen = {B, arc: B.arc, tdm: 0, oi: 0, prog: 0, tickets: 1e9, nextWave: 1e9, waves: 0, queue: [], obj: [], land: [], fwd: {x: H[0].x, y: H[0].y}, reinT: 1e9, att: 0, def: 0, spawnI: 0, tix: [B.tix, B.tix], caps: [], gt: [[], []], strike: {}, streak: {}};
   const mx = (H[0].x + H[1].x) / 2, my = (H[0].y + H[1].y) / 2, ax = H[1].x - H[0].x, ay = H[1].y - H[0].y, L = Math.hypot(ax, ay) || 1, px = -ay / L, py = ax / L;
   const land = (x, y) => { for (let t = 0; t < 60; t++) { const a = t * 2.4, r = t * .6, qx = clamp(x + Math.cos(a) * r, 5, N - 6), qy = clamp(y + Math.sin(a) * r, 5, N - 6); if (this.landOk(qx, qy)) return {x: qx, y: qy}; } return {x, y}; };
-  if (!air) ['A', 'B', 'C'].forEach((n, i) => { const o = (i - 1) * N * .26, q = land(mx + px * o, my + py * o); S.caps.push({n, x: q.x, y: q.y, r: 8, own: -1, prog: 0}); });
+  if (!air && this.M.caps) for (const C of this.M.caps) { const q = land(C.x, C.y); S.caps.push({n: C.n, x: q.x, y: q.y, r: 8, own: -1, prog: 0}); }
+  else if (!air) ['A', 'B', 'C'].forEach((n, i) => { const o = (i - 1) * N * .26, q = land(mx + px * o, my + py * o); S.caps.push({n, x: q.x, y: q.y, r: 8, own: -1, prog: 0}); });
   else for (const o of [0, 1]) { // ground targets: an armour column, trucks and AA on each side
     const bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45;
     ['tank', 'tank', 'tank', 'truck', 'truck', 'truck', 'sam', 'ifv', 'tank', 'truck'].forEach((k, i) => { const q = land(bx + px * (i - 4.5) * 3.2, by + py * (i - 4.5) * 3.2); const e = this.addUnit(k, o, q.x, q.y); e.gt = 1; e.stance = 'hold'; e.h = Math.atan2(-ay * (o ? -1 : 1), -ax * (o ? -1 : 1)); e.sq = 0; S.gt[o].push(k); });
@@ -6745,7 +6873,7 @@ const Sfx = {
   },
   jet() { this.noise(3.5, 300, .7, 'bandpass', .6, 2600); },
   howl() { if (this.limit('h', 1500)) { this.tone(300, 700, .8, .14, 'sine'); setTimeout(() => this.tone(700, 260, 1.4, .14, 'sine'), 700); } },
-  ui() { if (this.limit('u', 40)) this.noise(.025, 2400, .06, 'bandpass', 3); },
+  ui() {}, // menus and buttons are silent
   ack() { if (this.limit('a', 90)) this.noise(.04, 1600, .08, 'bandpass', 3); },
   bad() { if (this.limit('x', 300)) this.noise(.12, 400, .1, 'lowpass', 1); },
   good() { if (this.limit('g', 300)) this.noise(.05, 1900, .08, 'bandpass', 3); },
@@ -6824,15 +6952,16 @@ Renderer.prototype.loadWorld = function (view) {
   this.buildFog(N);
   this.buildSelection();
   this.buildVillagers();
-  this.scene.fog.near = N * 1.1; this.scene.fog.far = N * 3.6;
+  this.scene.fog.near = Math.min(N * 1.1, 420); this.scene.fog.far = Math.min(N * 3.6, 1300);
   this.me = view.me === undefined ? 0 : view.me;
 };
 
 Renderer.prototype.buildTerrain = function (M, N) {
-  const g = new THREE.PlaneGeometry(N - 1, N - 1, N - 1, N - 1);
+  const st = this.terStep = M.lite ? 3 : 1, sg = Math.ceil((N - 1) / st); // huge air maps: one vertex every 3 cells (planes never see the difference)
+  const g = new THREE.PlaneGeometry(N - 1, N - 1, sg, sg);
   g.rotateX(-Math.PI / 2); g.translate((N - 1) / 2, 0, (N - 1) / 2);
   const pos = g.attributes.position;
-  for (let i = 0; i < pos.count; i++) pos.setY(i, M.h[i]);
+  for (let i = 0; i < pos.count; i++) pos.setY(i, st > 1 ? hAt(M, pos.getX(i), pos.getZ(i)) : M.h[i]);
   g.computeVertexNormals();
   const S = this.quality === 'low' ? 1024 : 2048, c = this.tc = document.createElement('canvas'); c.width = c.height = S;
   const ctx = this.tg = c.getContext('2d'), img = ctx.createImageData(S, S), d = img.data;
@@ -6893,6 +7022,7 @@ Renderer.prototype.buildTerrain = function (M, N) {
 // Boulders and rock outcrops on steep mountainsides and scattered across open ground (visual only).
 Renderer.prototype.buildRocks = function (M, N) {
   if (this.rockMesh) { this.world.remove(this.rockMesh); this.rockMesh.dispose(); }
+  if (M.lite) return; // huge air maps: rocks are too small to see from a plane
   const r = mulberry(M.seed + 909), L = [];
   for (let y = 2; y < N - 2; y++) for (let x = 2; x < N - 2; x++) {
     const i = y * N + x; if (M.water[i] || M.occ[i] || M.road[i] || M.tree[i]) continue;
@@ -6963,6 +7093,7 @@ Renderer.prototype.paintRoad = function (x, y) {
 };
 // Re-light only the vertices around a change (central differences on the height grid) instead of recomputing the whole terrain's normals.
 Renderer.prototype.fixNormals = function (x0, y0, x1, y1) {
+  if (this.terStep > 1) return; // the coarse mesh has no per-cell vertices
   const M = this.view.M, N = this.view.N, nrm = this.terrain.geometry.attributes.normal, h = M.h;
   x0 = Math.max(0, x0 - 1); y0 = Math.max(0, y0 - 1); x1 = Math.min(N - 1, x1 + 1); y1 = Math.min(N - 1, y1 + 1);
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
@@ -6972,6 +7103,7 @@ Renderer.prototype.fixNormals = function (x0, y0, x1, y1) {
   nrm.needsUpdate = true;
 };
 Renderer.prototype.digTerrain = function (x, y) { // re-shape the terrain mesh around a dig and paint it as bare earth
+  if (this.terStep > 1) return;
   const M = this.view.M, N = this.view.N, pos = this.terrain.geometry.attributes.position, E = Math.ceil(DIG_R + 2);
   for (let j = -E; j <= E; j++) for (let i = -E; i <= E; i++) { const cx = x + i, cy = y + j; if (cx >= 0 && cy >= 0 && cx < N && cy < N) pos.setY(cy * N + cx, M.h[cy * N + cx]); }
   pos.needsUpdate = true; this.fixNormals(x - E, y - E, x + E, y + E);
@@ -6983,6 +7115,7 @@ Renderer.prototype.digTerrain = function (x, y) { // re-shape the terrain mesh a
 // Dug ground: reshape the mesh, paint the earth darker the deeper it goes, and roof tunnels with timber planks.
 Renderer.prototype.flushDig = function () {
   const Q = this.digQ; if (!Q || !Q.length) return; this.digQ = [];
+  if (this.terStep > 1) return;
   const M = this.view.M, N = this.view.N, pos = this.terrain.geometry.attributes.position, q = this.tc.width / N, g = this.tg;
   const seen = new Set(); let bx0 = N, by0 = N, bx1 = 0, by1 = 0; const tun = this.tunnels = this.tunnels || new Set();
   for (const [i] of Q) { if (seen.has(i)) continue; seen.add(i); pos.setY(i, M.h[i]);
@@ -7065,7 +7198,7 @@ Renderer.prototype.buildTrees = function (M, N) {
       if (!sl) this.treeSlots.set(e.cell, sl = []);
       sl.push([t, i]);
     });
-    im.castShadow = true; im.receiveShadow = false;
+    im.castShadow = !M.lite; im.receiveShadow = false;
     this.world.add(im);
     return im;
   });
@@ -7107,10 +7240,10 @@ Renderer.prototype.buildFog = function (N) {
     pos.setY(i, (x >= 0 && z >= 0 && x <= N && z <= N ? Math.max(0, hAt(M, x, z)) : 0) + .35);
     uv.setXY(i, x / N, z / N);
   }
-  const fine = new THREE.PlaneGeometry(N - 1, N - 1, N - 1, N - 1);
+  const fs = M.lite ? 3 : 1, fine = new THREE.PlaneGeometry(N - 1, N - 1, Math.ceil((N - 1) / fs), Math.ceil((N - 1) / fs));
   fine.rotateX(-Math.PI / 2); fine.translate((N - 1) / 2, 0, (N - 1) / 2);
   const fp = fine.attributes.position, fu = fine.attributes.uv;
-  for (let i = 0; i < fp.count; i++) { fp.setY(i, Math.max(0, M.h[i]) + .25); fu.setXY(i, fp.getX(i) / N, fp.getZ(i) / N); }
+  for (let i = 0; i < fp.count; i++) { fp.setY(i, Math.max(0, fs > 1 ? hAt(M, fp.getX(i), fp.getZ(i)) : M.h[i]) + .25); fu.setXY(i, fp.getX(i) / N, fp.getZ(i) / N); }
   const mat = new THREE.MeshBasicMaterial({color: 0x050a12, transparent: true, depthWrite: false, alphaMap: tex, fog: false});
   // alphaMap reads green; the data below writes all channels
     const edge = new THREE.Mesh(new THREE.RingGeometry(N * .72, N * 8, 48), new THREE.MeshBasicMaterial({color: 0x050a12, transparent: true, opacity: .55, depthWrite: false, fog: false}));
@@ -8253,7 +8386,8 @@ const Direct = {
     this.yaw = e.h; this.pitch = this.mode === 'plane' ? 0 : -.05; this.roll = 0; this.fq = undefined; this.manualFly = false; this.fpP = 0; this.pRate = 0; this.rollRate = 0; this.pullUp = false; this.warnT = 0; this.killStreak = 0; this.strikeBank = 0; this.confirm = null; this.vz = 0; this.mx = this.my = 0; this.keys = {}; this.mouseDown = false;
     this.speed = this.mode === 'plane' ? d.spd : this.mode === 'fpv' ? d.spd : 0; this.batt = 1; this.vel = {x: 0, y: 0}; this.hullSpd = 0;
     this.aimYaw = this.yaw; this.aimPitch = 0; this.camYaw = this.yaw; this.camPitch = this.mode === 'plane' ? -.05 : 0;
-    this.W = (PWPN[e.k] || []).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0}));
+    const arcAir = ui.g && ((ui.g.view && ui.g.view.scen) || (ui.g.sim && ui.g.sim.scen) || {}).arc === 'air';
+    this.W = (PWPN[e.k] || []).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0, msl: arcAir && w.t === 'msl' ? MSL_LOAD : undefined}));
     this.slot = 0; this.ads = false; this.adsK = 0; this.bloom = 0; this.recoilP = 0; this.recoilY = 0; this.breath = 1; this.lockId = 0; this.lockK = 0;
     this.hits = []; this.nums = []; this.dmgDir = []; this.kick = 0; this.flyT = 0; this.reloadK = 0; this.bobT = 0; this.flashT = 0; this.stickT = 0; this.salvo = 0; this.dead = false;
     const p = this.pose; p.x = e.x; p.y = e.y; p.z = e.z; p.h = e.h; p.p = 0; p.r = 0; p.tu = e.tu === undefined ? e.h : e.tu;
@@ -8999,6 +9133,8 @@ const Direct = {
       g.issue({c: 'nuke', id: this.id, x: best.x, y: best.y}); this.msg('ICBM AWAY: target ' + g.view.players[best.o].name, 2.5);
       return;
     }
+    if (W.t === 'msl') { const sc = g.view.scen || (g.sim && g.sim.scen); // arcade air battles: a limited missile load, refilled at your airfield
+      if (sc && sc.arc === 'air') { if (S.msl === undefined) S.msl = MSL_LOAD; if (S.msl <= 0) { this.msg('OUT OF MISSILES: fly low over your airfield to rearm', 1.8); Sfx.empty(); S.cd = .6; return; } } }
     if (this.sprinting && this.mode === 'soldier') { this.sprinting = false; this.keys[Settings.binds.sprint] = false; }
     if (W.mag && S.ammo <= 0) { Sfx.empty(); this.reload(s); return; }
     if (W.mag) S.ammo--;
@@ -9108,6 +9244,7 @@ const Direct = {
     const tgt = W.t === 'msl' ? (lockFits ? this.lockId : (W.guided && this.aimHit && this.aimHit.ent && !g.view.friendly(this.aimHit.ent.o, g.me) ? this.aimHit.ent.id : 0)) : 0;
     if (W.t === 'msl' && W.air && !tgt) { this.msg('No lock: hold your nose on an aircraft (or press T)', 1.4); this.W[s].cd = .3; return; }
     if (W.guided && W.t === 'bomb' && this.aimHit && this.aimHit.ent && !g.view.friendly(this.aimHit.ent.o, g.me)) this.lockId = this.aimHit.ent.id;
+    if (W.t === 'msl' && this.W[s] && this.W[s].msl !== undefined) this.W[s].msl--;
     g.issue({c: 'pproj', id: this.id, w: s, x: mz.x, y: mz.y, z: mz.z, dx, dy, dz, vx: vel.x || 0, vy: vel.y || 0, vz: vel.z || 0, tgt: tgt || (W.guided && W.t === 'bomb' ? this.lockId : 0)});
     g.R.muzzleFlash(mz.x, mz.y, mz.z, W.vs === 'shell' || W.vs === 'arty' ? 1.4 : .6);
     if (W.vs === 'shell' || W.vs === 'arty') g.R.shake = Math.min(1.2, g.R.shake + .5);
@@ -9298,7 +9435,7 @@ const Direct = {
     // ammo, weapon, health bar (bottom right)
     if (S && W) {
       c.textAlign = 'right'; c.font = '800 30px system-ui'; c.fillStyle = 'rgba(255,255,255,.95)'; c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = 4;
-      const am = !W.mag ? '' : S.rl > 0 ? 'RELOADING' : S.ammo + ' / ' + W.mag;
+      const am = S.msl !== undefined ? S.msl + ' / ' + MSL_LOAD + ' missiles' : !W.mag ? '' : S.rl > 0 ? 'RELOADING' : S.ammo + ' / ' + W.mag;
       c.fillText(am, w - 24, h - 54);
       c.font = '600 13px system-ui'; const o = this.W[this.slot === 0 ? 1 : 0];
       c.fillText(W.n + (o ? '   ·   ' + Settings.keyName(Settings.binds.alt) + ': ' + o.w.n + (o.cd > 0 && !o.w.mag ? ' (' + o.cd.toFixed(1) + 's)' : o.w.mag > 1 && this.mode !== 'soldier' ? ' ' + o.ammo : '') : ''), w - 24, h - 32);
@@ -9496,7 +9633,7 @@ const Direct = {
         const sel = i === this.slot, ready = (s.cd || 0) <= 0 && s.rl <= 0;
         c.fillStyle = sel ? '#05080a' : G; if (sel) { c.fillStyle = G; c.fillRect(rx + 4 * U, yy - 11 * U, sw - 8 * U, 15 * U); c.fillStyle = '#05080a'; }
         c.fillText((i + 1) + ' ' + s.w.n.toUpperCase().slice(0, 15), rx + 7 * U, yy);
-        c.textAlign = 'right'; c.fillStyle = sel ? '#05080a' : ready ? G : A; c.fillText(s.w.mag ? s.ammo + '' : ready ? 'RDY' : 'RLD', rx + sw - 7 * U, yy); c.textAlign = 'left';
+        c.textAlign = 'right'; c.fillStyle = sel ? '#05080a' : ready ? G : A; c.fillText(s.w.mag ? s.ammo + '' : s.msl !== undefined ? (s.msl ? s.msl + (ready ? '' : '…') : 'EMPTY') : ready ? 'RDY' : 'RLD', rx + sw - 7 * U, yy); c.textAlign = 'left';
         yy += 17 * U;
       });
       const cm = chaffLeft(this.cm || (this.cm = {}), v.t);
@@ -10635,7 +10772,7 @@ const UI = {
       case 'out': { this.addAlert(`${v.players[ev.p].name} has fallen!`, ev.p === me ? 'bad' : 'gold'); if (ev.p === me) this.showOver(false); break; }
       case 'over': this.showOver(ev.wins ? ev.wins.includes(me) : v.players[me].team === ev.team); break;
       case 'diplo': if (this.diploOpen) this.renderDiplo(); break;
-      case 'rearm': if (ev.p === me && Direct.on && Direct.id === ev.id) { for (const W of Direct.W) if (W && W.w) { W.ammo = W.w.mag || 1; W.rl = 0; } if (!Direct.rearmMsg || performance.now() - Direct.rearmMsg > 3000) { Direct.rearmMsg = performance.now(); Direct.msg('AIRFIELD: repairing and rearming', 1.8); } } break;
+      case 'rearm': if (ev.p === me && Direct.on && Direct.id === ev.id) { for (const W of Direct.W) if (W && W.w) { W.ammo = W.w.mag || 1; W.rl = 0; if (W.msl !== undefined) W.msl = MSL_LOAD; } if (!Direct.rearmMsg || performance.now() - Direct.rearmMsg > 3000) { Direct.rearmMsg = performance.now(); Direct.msg('AIRFIELD: repairing and rearming', 1.8); } } break;
       case 'scenYou': if (ev.p === me && this.scen) { const u = v.ents.get(ev.id); if (u) { if (Direct.on) Direct.exit(); this.showScenSpawn(false); Direct.enter(this, u); } } break;
       case 'scenCap': if (this.scen) { Sfx.good(); if (Direct.on) Direct.msg('OBJECTIVE ' + String.fromCharCode(65 + ev.i) + ' CAPTURED', 2.5); } break;
       case 'nuke': { const mine = v.friendly(ev.o, me); this.nukes.push({id: ev.id, until: performance.now() + ev.d * 1000, mine, x: ev.x, y: ev.y}); this.addAlert(mine ? 'ICBM launched!' : 'WARNING: enemy ICBM launched!', 'bad', ev.x, ev.y); break; }
