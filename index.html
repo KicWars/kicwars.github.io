@@ -1737,6 +1737,11 @@ Fields.prototype.dir = function (f, x, y, out) {
 </script>
 
 <script>// Authoritative game simulation, runs on the host (and in Node for balance runs). 10 ticks per second.
+// Contents of this script:
+//   Core: constants and helpers, Sim constructor, players, units and buildings, commands (issue), orders and movement,
+//         combat (targeting, hurt, kill, fire), diplomacy, the main step loop, buildings, units, ground/air/drone movement,
+//         hit shapes, player-controlled fire.
+//   Feature sections at the end: Neutral nation; Scouting; Squads; Deputy commander; Paratroopers; Spies; Mode: FPS battles; Mode: arcade Air Battle and Tank Battle.
 const DT = .1;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -1811,30 +1816,6 @@ function Sim(opts) {
   if (opts.battle) this.setupBattle(opts.battle); else if (opts.scen) this.setupScen(opts.scen); else for (const p of this.players) this.setupPlayer(p);
   this.addXaviers();
 }
-// A couple of Xaviers wander every war: invulnerable, unarmed, and they heal anyone nearby on any side.
-Sim.prototype.addXaviers = function () {
-  this.players[-1] = xavPlayer();
-  const r = mulberry(this.seed * 17 + 3), N = this.N, n = 2 + (r() < .5 ? 1 : 0);
-  for (let i = 0, tries = 0; i < n && tries < 600; tries++) {
-    const x = N * (.22 + r() * .56), y = N * (.22 + r() * .56);
-    if (this.landOk(x, y)) { const e = this.addUnit('xavier', -1, x, y); e.xav = 1; e.wr = mulberry(e.id * 7 + 1); i++; }
-  }
-};
-Sim.prototype.stepXav = function (e) {
-  e.hp = e.hpm;
-  if (this.tick % 10 === e.id % 10) this.near(e.x, e.y, 8, t => {
-    if (t === e || t.b || t.xav || t.hp >= t.hpm) return;
-    t.hp = Math.min(t.hpm, t.hp + (t.d.cat === 'inf' ? 14 : 7)); this.ev({k: 'heal', a: e.id, t: t.id});
-  });
-  if (!e.wr) e.wr = mulberry(e.id * 7 + 1);
-  if (!e.goal && (e.wanderT || 0) <= this.t) { // stroll to a nearby spot, preferring places where people are hurt
-    e.wanderT = this.t + 3 + e.wr() * 5;
-    let hx = 0, hy = 0, hn = 0; this.near(e.x, e.y, 22, t => { if (!t.b && !t.xav && t.hp < t.hpm * .8) { hx += t.x; hy += t.y; hn++; } });
-    const a = e.wr() * 6.28, d = 3 + e.wr() * 9, tx = hn ? hx / hn : e.x + Math.cos(a) * d, ty = hn ? hy / hn : e.y + Math.sin(a) * d;
-    if (this.landOk(tx, ty)) this.go(e, tx, ty);
-  }
-};
-
 // Campaign battle: no bases. Find the stretch of land between the two spawns with the most ground, mark the two deploy zones and place the enemy army.
 Sim.prototype.landOk = function (x, y) {
   const M = this.M, N = this.N, i = Math.round(x), j = Math.round(y);
@@ -1875,314 +1856,6 @@ Sim.prototype.setupBattle = function (lv) {
       if (this.inZone(1, x, y) && this.landOk(x, y)) { const e = this.addUnit(k, 1, x, y); e.h = Math.atan2(Z.ay, Z.ax); if (this.coverMul(e, 'bullet') < 1) e.dug = 1; break; }
     }
   });
-};
-// ---------- FPS battles ----------
-Sim.prototype.setupScen = function (B) {
-  const N = this.N, P = (u, v) => ({x: u * N, y: v * N});
-  for (const p of this.players) { p.steel = 0; p.fuel = 0; p.popCap = 99999; }
-  this.players[0].reveal = 1e9;
-  if (B.arc) return this.arcSetup(B);
-  if (B.tdm) {
-    const H = this.M.spawns;
-    this.scen = {B, tdm: 1, oi: 0, prog: 0, tickets: B.tickets, nextWave: 1e9, waves: 0, queue: [], obj: [], land: [], fwd: {x: H[0].x, y: H[0].y}, reinT: 1e9, att: 0, def: 0, spawnI: 0};
-    return;
-  }
-  this.scen = {B, oi: 0, prog: 0, tickets: B.tickets, nextWave: 1, waves: 0, queue: [], obj: B.obj.map(o => Object.assign({}, o, P(o.u, o.v))), land: B.land.map(l => P(l[0], l[1])), fwd: null, reinT: B.rein, att: 0, def: 0};
-  const face = Math.atan2(B.sea[1], B.sea[0]);
-  const unit = (k, x, y, hold) => {
-    for (let t = 0; t < 24; t++) {
-      const px = x + (t ? (this.rnd() - .5) * t * .7 : 0), py = y + (t ? (this.rnd() - .5) * t * .7 : 0);
-      if (this.landOk(px, py)) { const e = this.addUnit(k, 1, px, py); e.h = face; if (hold) e.stance = 'hold'; return e; }
-    }
-  };
-  const bld = (k, x, y) => {
-    const d = BUILDINGS[k];
-    for (let t = 0; t < 16; t++) {
-      const px = Math.round(x + (t ? (this.rnd() - .5) * t : 0)), py = Math.round(y + (t ? (this.rnd() - .5) * t : 0));
-      let ok = true; this.footprint(d, px, py, (i, j) => { const q = j * N + i; if (i < 1 || j < 1 || i >= N - 1 || j >= N - 1 || this.M.water[q] || this.M.occ[q] || this.M.block[q]) ok = false; });
-      if (ok) return this.addBuilding(k, 1, px, py, true);
-    }
-  };
-  for (const D of B.def) {
-    const o = P(D[1], D[2]), n = D[3] || 1, r = D[4] || 0;
-    for (let i = 0; i < n; i++) { const a = i / n * 6.283 + .4, x = o.x + Math.cos(a) * r, y = o.y + Math.sin(a) * r * .6; if (BUILDINGS[D[0]]) bld(D[0], x, y); else unit(D[0], x, y, D[5]); }
-  }
-  for (const f of B.fleet || []) { const o = P(f[1], f[2]), e = this.addUnit(f[0], 0, o.x, o.y); e.h = face + Math.PI; e.stance = 'hold'; }
-};
-// Put an attacker ashore: walk the point inland from the sea until it is dry.
-Sim.prototype.scenAttack = function (e, O) {
-  const ox = O.x + (this.rnd() - .5) * 8, oy = O.y + (this.rnd() - .5) * 6;
-  this.cmdMove([e], ox, oy, true, false);
-  const far = Math.hypot(e.x - O.x, e.y - O.y);
-  if (far > 30 && e.id % 3 === 0 && e.d.cat === 'inf' && !this.scen.tdm) {
-    const dx = (O.x - e.x) / far, dy = (O.y - e.y) / far, sg = (e.id % 2 ? 1 : -1) * Math.min(28, far * .55), N2 = this.N;
-    const wx = clamp(e.x + dx * far * .55 - dy * sg, 3, N2 - 4), wy = clamp(e.y + dy * far * .55 + dx * sg, 3, N2 - 4);
-    if (this.landOk(wx, wy)) { this.cmdMove([e], wx, wy, true, false); e.queue = [{x: ox, y: oy, a: true}]; }
-  }
-};
-Sim.prototype.scenUnit = function (k, x, y) {
-  const S = this.scen, sx = S.B.sea[0], sy = S.B.sea[1], ud = UNITS[k];
-  if (ud.cat !== 'air' && ud.cat !== 'heli') for (let t = 0; t < 40 && !this.landOk(x, y); t++) { x -= sx * .7; y -= sy * .7; }
-  const e = this.addUnit(k, 0, x, y); e.h = Math.atan2(-sy, -sx);
-  const O = S.obj[Math.min(S.oi, S.obj.length - 1)];
-  this.scenAttack(e, O); e.scenOi = S.oi;
-  return e;
-};
-Sim.prototype.scenLanding = function (pt, list, you) {
-  const S = this.scen, sx = S.B.sea[0], sy = S.B.sea[1], d = 6;
-  if (!S.B.noBoat) this.ev({k: 'lcvp', x0: pt.x + sx * 24, y0: pt.y + sy * 24, x1: pt.x + sx * 1.5, y1: pt.y + sy * 1.5, d, o: 0});
-  list.forEach((k, i) => S.queue.push({t: this.t + d + i * .25, k, x: pt.x + ((i % 3) - 1) * .9, y: pt.y + sy * (i / 3 | 0) * .6, you: i === 0 ? you : undefined}));
-};
-Sim.prototype.scenOver = function (win) {
-  const S = this.scen, w = win ? 0 : 1;
-  this.players[1 - w].alive = false; S.done = 1;
-  this.over = {winner: w, team: this.players[w].team, wins: [w], t: this.t};
-  this.ev({k: 'over', winner: w, team: this.over.team, wins: [w]});
-};
-Sim.prototype.arcSetup = function (B) {
-  const H = this.M.spawns, N = this.N, air = B.arc === 'air';
-  for (const p of this.players) p.reveal = 1e9; // arcade: every enemy is marked
-  const S = this.scen = {B, arc: B.arc, tdm: 0, oi: 0, prog: 0, tickets: 1e9, nextWave: 1e9, waves: 0, queue: [], obj: [], land: [], fwd: {x: H[0].x, y: H[0].y}, reinT: 1e9, att: 0, def: 0, spawnI: 0, tix: [B.tix, B.tix], caps: [], gt: [[], []], strike: {}, streak: {}};
-  const mx = (H[0].x + H[1].x) / 2, my = (H[0].y + H[1].y) / 2, ax = H[1].x - H[0].x, ay = H[1].y - H[0].y, L = Math.hypot(ax, ay) || 1, px = -ay / L, py = ax / L;
-  const land = (x, y) => { for (let t = 0; t < 60; t++) { const a = t * 2.4, r = t * .6, qx = clamp(x + Math.cos(a) * r, 5, N - 6), qy = clamp(y + Math.sin(a) * r, 5, N - 6); if (this.landOk(qx, qy)) return {x: qx, y: qy}; } return {x, y}; };
-  if (!air) ['A', 'B', 'C'].forEach((n, i) => { const o = (i - 1) * N * .26, q = land(mx + px * o, my + py * o); S.caps.push({n, x: q.x, y: q.y, r: 8, own: -1, prog: 0}); });
-  else for (const o of [0, 1]) { // ground targets: an armour column, trucks and AA on each side
-    const bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45;
-    ['tank', 'tank', 'tank', 'truck', 'truck', 'truck', 'sam', 'ifv', 'tank', 'truck'].forEach((k, i) => { const q = land(bx + px * (i - 4.5) * 3.2, by + py * (i - 4.5) * 3.2); const e = this.addUnit(k, o, q.x, q.y); e.gt = 1; e.stance = 'hold'; e.h = Math.atan2(-ay * (o ? -1 : 1), -ax * (o ? -1 : 1)); e.sq = 0; S.gt[o].push(k); });
-    // bases for the bombers to level, and a home airfield: a low pass over it repairs and rearms you
-    const bb = {x: H[o].x + (mx - H[o].x) * .25, y: H[o].y + (my - H[o].y) * .25};
-    for (const sd of [-1, 0, 1]) { const q = land(bb.x + px * sd * 13, bb.y + py * sd * 13); const b = this.addBuilding('bunker', o, Math.round(q.x), Math.round(q.y), true); if (b) { b.base = 1; b.hp = b.hpm = 2600; } }
-    const af = land(H[o].x, H[o].y); const A = this.addBuilding('airfield', o, Math.round(af.x), Math.round(af.y), true); if (A) { A.hp = A.hpm = 1e6; A.field = 1; S.field = S.field || []; S.field[o] = {x: A.x, y: A.y}; }
-  }
-};
-Sim.prototype.arcLoss = function (t, by) {
-  const S = this.scen, o = t.o; if (o !== 0 && o !== 1) return;
-  const air = S.arc === 'air', cost = t.base ? 120 : air ? (t.gt ? 12 : t.air ? 30 : 8) : (t.air ? 12 : 16);
-  if (t.base) this.ev({k: 'msg', p: 0, text: (o === 0 ? 'Our base was destroyed' : 'Enemy base destroyed') + ': −120 tickets', kind: o === 0 ? 'bad' : 'good', x: t.x, y: t.y});
-  S.tix[o] = Math.max(0, S.tix[o] - cost);
-  if (t.pilot) { S.streak[o + ':' + (t.pilot - 1)] = 0; }
-  const killer = by === 0 || by === 1 ? by : null;
-  if (killer !== null) for (const e of this.ents.values()) if (e.pilot && e.o === killer && Math.hypot(e.x - t.x, e.y - t.y) < 60) { // credit the player nearby with a streak
-    const key = killer + ':' + (e.pilot - 1); S.streak[key] = (S.streak[key] || 0) + 1;
-    if (!air && S.streak[key] === 3) { S.strike[e.pilot - 1] = (S.strike[e.pilot - 1] || 0) + 1; this.notify(e.pilot - 1, '3 kills! Strike plane earned: pick the A-10 next time you spawn', 'gold'); }
-    break;
-  }
-};
-Sim.prototype.arcStep = function () {
-  const S = this.scen, B = S.B, H = this.M.spawns, N = this.N, air = S.arc === 'air';
-  if (S.tix[0] <= 0 || S.tix[1] <= 0) { this.scenOver(S.tix[1] <= 0); return; }
-  // capture points: only ground vehicles count; more of yours inside moves the bar your way
-  if (!air && this.tick % 5 === 0) {
-    for (const C of S.caps) {
-      const n = [0, 0]; for (const e of this.ents.values()) if (!e.b && !e.air && (e.o === 0 || e.o === 1) && Math.hypot(e.x - C.x, e.y - C.y) < C.r) n[e.o]++;
-      C.cnt = n; const d = n[0] - n[1];
-      if (d && !(n[0] && n[1])) { C.prog = clamp(C.prog + Math.sign(d) * Math.min(3, Math.abs(d)) * .035, -1, 1); if (Math.abs(C.prog) >= 1 && C.own !== (d > 0 ? 0 : 1)) { C.own = d > 0 ? 0 : 1; this.ev({k: 'msg', p: 0, text: (C.own === 0 ? 'We captured ' : 'The enemy captured ') + 'point ' + C.n, kind: C.own === 0 ? 'good' : 'bad', x: C.x, y: C.y}); } else if (C.own !== -1 && Math.sign(C.prog) !== (C.own === 0 ? 1 : -1)) C.own = -1; }
-    }
-    if (this.tick % 10 === 0) { const a = S.caps.filter(C => C.own === 0).length, b = S.caps.filter(C => C.own === 1).length; if (a > b) S.tix[1] = Math.max(0, S.tix[1] - (a - b) * 1.1); if (b > a) S.tix[0] = Math.max(0, S.tix[0] - (b - a) * 1.1); }
-  }
-  if (this.tick % 5 === 0) for (const e of this.ents.values()) {
-    if (e.b || e.gt || (e.o !== 0 && e.o !== 1) || e.hp >= e.hpm) continue;
-    if (!air && !e.air && !e.moving && this.t - (e.hurtT || -99) > 6) { e.hp = Math.min(e.hpm, e.hp + e.hpm * .025); e.repairing = this.t; } // field repair: stop out of the fight and the crew patch the tank up
-    if (air && e.air && S.field && S.field[e.o]) { const F = S.field[e.o]; if (Math.hypot(e.x - F.x, e.y - F.y) < 10 && e.z - Math.max(0, hAt(this.M, e.x, e.y)) < 7) { e.hp = Math.min(e.hpm, e.hp + e.hpm * .08); e.repairing = this.t; if (e.pilot && (!e.rearmT || this.t - e.rearmT > 2)) { e.rearmT = this.t; this.ev({k: 'rearm', id: e.id, p: e.pilot - 1}); } } }
-  }
-  if (!air && this.tick % 10 === 0) { // WT-style strike aircraft: a side with kill streaks calls in an attacker now and then
-    S.airT = S.airT || [90, 120];
-    for (const o of [0, 1]) if (this.t > S.airT[o]) { S.airT[o] = this.t + 100 + this.rnd() * 40; if (![...this.ents.values()].some(e => e.o === o && e.air && !e.pilot)) { const e = this.arcSpawn(o, this.rnd() < .5 ? 'a10' : 'fa18'); if (e) { e.strike = 1; this.ev({k: 'msg', p: 0, text: o === 0 ? 'Friendly strike aircraft inbound' : 'ENEMY AIRCRAFT INBOUND: SPAA to the front!', kind: o === 0 ? 'good' : 'bad', x: e.x, y: e.y}); } } }
-  }
-  // keep each side's team topped up (you are one of team 0)
-  const isFighter = e => !e.b && !e.gt && (air ? e.air : !e.air && e.d.cat === 'veh') && !e.inside;
-  const n = [0, 0]; for (const e of this.ents.values()) if (isFighter(e) && !e.pilot && e.o < 2) n[e.o]++;
-  for (const o of [0, 1]) {
-    const want = B.team + o;
-    S.spT = S.spT || [0, 0];
-    if (n[o] < want && this.t >= S.spT[o]) { S.spT[o] = this.t + 1.2;
-      const kk = B.comp[(S.spawnI++) % B.comp.length], e = this.arcSpawn(o, kk); if (e) n[o]++;
-    }
-  }
-  // air: ground targets come back in waves
-  if (air && this.tick % 600 === 300) for (const o of [0, 1]) {
-    const have = [...this.ents.values()].filter(e => e.gt && e.o === o).length;
-    if (have < 5) { const mx = (H[0].x + H[1].x) / 2, my = (H[0].y + H[1].y) / 2, bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45; for (let i = 0; i < 4; i++) { const x = bx + (this.rnd() - .5) * 14, y = by + (this.rnd() - .5) * 14; if (this.landOk(x, y)) { const e = this.addUnit(['tank', 'truck', 'sam', 'truck'][i], o, x, y); e.gt = 1; e.stance = 'hold'; e.sq = 0; } } }
-  }
-  S.queue = S.queue.filter(q => {
-    if (q.t > this.t) return true;
-    const e = this.arcSpawn(0, q.k);
-    if (e) { this.ev({k: 'scenYou', p: q.you, id: e.id}); if (q.k === 'a10' && !air) S.strike[q.you] = Math.max(0, (S.strike[q.you] || 0) - 1); }
-    return false;
-  });
-  // bots: planes hunt across the map, tanks drive for the nearest point they do not hold
-  if (this.tick % 20 === 0) for (const e of this.ents.values()) {
-    if (e.b || e.pilot || e.o > 1 || e.o < 0 || e.gt || e.inside) continue;
-    if ((e.tid && this.ents.get(e.tid)) || e.goal) continue;
-    if (air && (e.k === 'bomber' || e.k === 'a10') || e.strike) { let best = null, bd = 1e9; for (const t of this.ents.values()) if (t.o === 1 - e.o && (t.base || t.gt || (!air && !t.air && !t.b))) { const d = Math.hypot(t.x - e.x, t.y - e.y) - (t.base ? 30 : 0); if (d < bd) { bd = d; best = t; } } if (best) { this.cmdMove([e], best.x, best.y, true, false); continue; } }
-    if (air || e.air) { const en = H[1 - e.o], f = .3 + this.rnd() * .6; this.cmdMove([e], clamp(H[e.o].x + (en.x - H[e.o].x) * f + (this.rnd() - .5) * N * .5, 4, N - 5), clamp(H[e.o].y + (en.y - H[e.o].y) * f + (this.rnd() - .5) * N * .5, 4, N - 5), true, false); continue; }
-    let best = null, bd = 1e9; for (const C of S.caps) { if (C.own === e.o && Math.abs(C.prog) >= 1 && this.rnd() < .8) continue; const d = Math.hypot(C.x - e.x, C.y - e.y) + this.rnd() * 20; if (d < bd) { bd = d; best = C; } }
-    if (!best) best = S.caps[Math.floor(this.rnd() * S.caps.length)];
-    if (best) this.cmdMove([e], best.x + (this.rnd() - .5) * 6, best.y + (this.rnd() - .5) * 6, true, false);
-  }
-};
-Sim.prototype.arcSpawn = function (o, k) {
-  const H = this.M.spawns, sp = H[o], en = H[1 - o], d = UNITS[k], N = this.N, h = Math.atan2(en.y - sp.y, en.x - sp.x);
-  if (d.cat === 'air' || d.cat === 'heli') { // planes spawn in the air, already flying toward the fight
-    const x = clamp(sp.x - Math.cos(h) * 6 + (this.rnd() - .5) * 16, 3, N - 4), y = clamp(sp.y - Math.sin(h) * 6 + (this.rnd() - .5) * 16, 3, N - 4);
-    const e = this.addUnit(k, o, x, y); e.h = h; e.z = Math.max(hAt(this.M, x, y), 0) + 18 + this.rnd() * 6; e.sp = d.spd; e.sq = 0;
-    return e;
-  }
-  for (let tr = 0; tr < 20; tr++) { const x = sp.x + (this.rnd() - .5) * 12, y = sp.y + (this.rnd() - .5) * 12; if (this.landOk(x, y)) { const e = this.addUnit(k, o, x, y); e.h = h; e.sq = 0; return e; } }
-  return null;
-};
-Sim.prototype.tdmStep = function () {
-  const S = this.scen, B = S.B, H = this.M.spawns;
-  const k = [this.players[0].kills, this.players[1].kills];
-  if (k[0] >= B.tdm || k[1] >= B.tdm) { this.scenOver(k[0] >= B.tdm); return; }
-  const n = [0, 0];
-  for (const e of this.ents.values()) if (!e.b && e.d.cat === 'inf' && e.o < 2 && !e.inside && !e.pilot) n[e.o]++;
-  for (const o of [0, 1]) {
-    const want = B.team + o; // you plus B.team bots against B.team + 1 bots
-    for (let i = 0; i < 2 && n[o] < want; i++) {
-      const sp = H[o], kk = B.comp[(S.spawnI++) % B.comp.length];
-      for (let tr = 0; tr < 12; tr++) { const x = sp.x + (this.rnd() - .5) * 9, y = sp.y + (this.rnd() - .5) * 9; if (this.landOk(x, y)) { const e = this.addUnit(kk, o, x, y); e.h = Math.atan2(H[1 - o].y - y, H[1 - o].x - x); n[o]++; break; } }
-    }
-  }
-  S.queue = S.queue.filter(q => {
-    if (q.t > this.t) return true;
-    const sp = H[0]; let e = null;
-    for (let tr = 0; tr < 12 && !e; tr++) { const x = sp.x + (this.rnd() - .5) * 6, y = sp.y + (this.rnd() - .5) * 6; if (this.landOk(x, y)) e = this.addUnit(q.k, 0, x, y); }
-    if (e) this.ev({k: 'scenYou', p: q.you, id: e.id});
-    return false;
-  });
-  if (this.tick % 20 === 0) for (const e of this.ents.values()) {
-    if (e.b || e.pilot || e.o > 1 || e.d.cat !== 'inf' || e.inside) continue;
-    if ((e.tid && this.ents.get(e.tid)) || e.goal) continue;
-    // push across the map through a random point in the middle, so the fight spreads over the whole arena
-    const en = H[1 - e.o], mx = this.N / 2 + (this.rnd() - .5) * this.N * .45, my = this.N / 2 + (this.rnd() - .5) * this.N * .45;
-    const far = Math.hypot(e.x - en.x, e.y - en.y) > this.N * .35;
-    this.cmdMove([e], far ? mx : en.x + (this.rnd() - .5) * 10, far ? my : en.y + (this.rnd() - .5) * 10, true, false);
-  }
-};
-Sim.prototype.scenStep = function () {
-  const S = this.scen, B = S.B, t = this.t;
-  if (this.over) return;
-  if (S.arc) return this.arcStep();
-  if (S.tdm) return this.tdmStep();
-  // landing waves
-  if (t >= S.nextWave && S.tickets > 0) {
-    S.nextWave = t + B.wave; S.waves++;
-    const n = Math.min(B.waveN, S.tickets); S.tickets -= n;
-    const list = []; for (let i = 0; i < n; i++) list.push(B.comp[(i + S.waves * 3) % B.comp.length]);
-    for (let b = 0; b * 5 < list.length; b++) this.scenLanding(S.land[(b + S.waves) % S.land.length], list.slice(b * 5, b * 5 + 5));
-    if (B.air && S.waves % 3 === 0) for (let i = 0; i < 2; i++) { const L = S.land[i % S.land.length]; S.queue.push({t: t + 3, k: B.air, x: L.x + i * 4, y: L.y + B.sea[1] * 30, air: 1}); }
-    this.ev({k: 'msg', p: 0, text: 'Wave ' + S.waves + ' is landing!', kind: 'info'});
-  }
-  S.queue = S.queue.filter(q => {
-    if (q.t > t) return true;
-    const e = q.air ? this.addUnit(q.k, 0, q.x, q.y) : this.scenUnit(q.k, q.x, q.y);
-    if (q.air && e) { const O = S.obj[Math.min(S.oi, S.obj.length - 1)]; this.cmdMove([e], O.x, O.y, true, false); }
-    if (e && q.you !== undefined) this.ev({k: 'scenYou', p: q.you, id: e.id});
-    return false;
-  });
-  // capture the current objective: attackers inside, no defenders
-  const O = S.obj[S.oi]; let att = 0, def = 0;
-  for (const e of this.ents.values()) {
-    if (e.b || e.hp <= 0 || e.air || e.d.cat === 'sea') continue;
-    if (Math.hypot(e.x - O.x, e.y - O.y) < 7) { if (e.o === 0) att++; else def++; }
-  }
-  S.att = att; S.def = def;
-  if (att && !def) S.prog = Math.min(100, S.prog + (4 + 3 * Math.min(4, att)) * .5);
-  else if (def && !att) S.prog = Math.max(0, S.prog - 3);
-  if (S.prog >= 100) {
-    this.ev({k: 'msg', p: 0, text: 'Objective captured: ' + O.n + '!', kind: 'gold'}); this.ev({k: 'scenCap', i: S.oi});
-    S.fwd = {x: O.x, y: O.y}; S.oi++; S.prog = 0; S.tickets += 15;
-    if (S.oi >= S.obj.length) { this.scenOver(true); return; }
-    this.ev({k: 'msg', p: 0, text: 'Next objective: ' + S.obj[S.oi].n + '. Reinforcements now come ashore at your forward position.', kind: 'info'});
-  }
-  // orders: attackers push the objective; defenders near it close in, the rest hold their posts
-  if (this.tick % 20 === 0) {
-    const O2 = S.obj[S.oi];
-    for (const e of this.ents.values()) {
-      if (e.b || e.pilot || e.hp <= 0 || e.d.cat === 'sea') continue;
-      if (e.o === 0) {
-        if ((e.tid && this.ents.get(e.tid)) || (e.goal && e.amove && e.scenOi === S.oi)) continue;
-        e.scenOi = S.oi; this.scenAttack(e, O2);
-      } else if (!e.tid && !e.goal && e.stance !== 'hold' && Math.hypot(e.x - O2.x, e.y - O2.y) < 24 && this.rnd() < .25) this.cmdMove([e], O2.x + (this.rnd() - .5) * 6, O2.y + (this.rnd() - .5) * 6, true, false);
-    }
-  }
-  // defender reinforcements march from their rear
-  if (t >= S.reinT && S.oi >= 1) {
-    S.reinT = t + B.rein;
-    const H = this.M.spawns[1], O2 = S.obj[S.oi];
-    for (let i = 0; i < 3; i++) for (let k = 0; k < 10; k++) { const x = H.x + (this.rnd() - .5) * 10, y = H.y + (this.rnd() - .5) * 6; if (this.landOk(x, y)) { const e = this.addUnit(i ? 'rifle' : 'mg', 1, x, y); this.cmdMove([e], O2.x, O2.y, true, false); break; } }
-  }
-  // out of men
-  if (S.tickets <= 0 && !S.queue.length) {
-    let alive = 0; for (const e of this.ents.values()) if (e.o === 0 && !e.b && e.d.cat === 'inf') alive++;
-    if (!alive) this.scenOver(false);
-  }
-};
-Sim.prototype.scenSpawn = function (pi, k) {
-  const S = this.scen; if (!S || this.over || !batClasses(S.B).includes(k)) return;
-  if (S.arc && k === 'a10' && S.arc === 'ground' && !(S.strike && S.strike[pi] > 0)) { this.notify(pi, 'Get 3 kills in one life to earn a strike plane', 'bad'); return; }
-  if (S.queue.some(q => q.you === pi) || (S.spawnT || 0) > this.t) return;
-  if (S.tickets <= 0) { this.notify(pi, 'No reinforcements left', 'bad'); return; }
-  S.tickets--; S.spawnT = this.t + 1;
-  if (S.tdm || S.arc) { S.queue.push({t: this.t + 1.5, k, x: 0, y: 0, you: pi}); return; }
-  if (S.fwd) S.queue.push({t: this.t + .5, k, x: S.fwd.x + (this.rnd() - .5) * 3, y: S.fwd.y + S.B.sea[1] * 3, you: pi});
-  else { let best = S.land[0]; for (const L of S.land) if (Math.abs(L.x - this.N / 2) < Math.abs(best.x - this.N / 2)) best = L; this.scenLanding(best, [k], pi); }
-};
-// ---------- scouting: scouts ride out, note every enemy group they see, and report when they get home ----------
-Sim.prototype.sendRecon = function (p, n, quiet, gx, gy) {
-  const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
-  let sent = 0;
-  for (let i = 0; i < n; i++) {
-    let s = [...this.ents.values()].find(e => e.o === p.i && e.k === 'scout' && !e.recon && !e.pilot && !e.inside && (!e.goal || e.zone));
-    if (!s) {
-      if (p.steel < 50) { if (!quiet) this.notify(p.i, 'Need 50 steel to send another scout', 'bad'); break; }
-      let pos = null; for (let t = 0; t < 16 && !pos; t++) { const a = t * .4, x = hq.x + Math.cos(a) * (hq.d.s / 2 + 1.5), y = hq.y + Math.sin(a) * (hq.d.s / 2 + 1.5); if (this.landOk(x, y)) pos = {x, y}; }
-      if (!pos) break;
-      p.steel -= 50; s = this.addUnit('scout', p.i, pos.x, pos.y);
-    }
-    // where to look: enemy capitals in turn, then wide sweeps in every direction
-    p.reconI = (p.reconI || 0) + 1;
-    const foes = this.players.filter(q => q.alive && !this.friendly(q.i, p.i)), k = p.reconI;
-    let tx, ty;
-    if (gx !== undefined) { const a = i * 2.1, r = i ? 5 : 0; tx = gx + Math.cos(a) * r; ty = gy + Math.sin(a) * r; } // where you pointed
-    else if (foes.length && k % 3 !== 0) { // look at an enemy capital from a safe distance, outside its guns
-      const f = foes[k % foes.length].spawn, a = Math.atan2(hq.y - f.y, hq.x - f.x) + (this.rnd() - .5) * 1.6; tx = f.x + Math.cos(a) * 25; ty = f.y + Math.sin(a) * 25; }
-    else { const a = k * 2.4, r = this.N * (.25 + this.rnd() * .2); tx = this.N / 2 + Math.cos(a) * r; ty = this.N / 2 + Math.sin(a) * r; }
-    tx = clamp(tx, 4, this.N - 5); ty = clamp(ty, 4, this.N - 5);
-    for (let r = 0; r < 40 && !this.landOk(tx, ty); r += 1.5) { const a = r * 1.7; tx = clamp(tx + Math.cos(a) * r * .3, 4, this.N - 5); ty = clamp(ty + Math.sin(a) * r * .3, 4, this.N - 5); } // never into the sea
-    this.clearOrders(s); s.zone = null; s.stance = 'hold';
-    s.recon = {home: {x: hq.x, y: hq.y}, tx, ty, phase: 'out', t0: this.t, seen: {}, aim: gx !== undefined, lim: gx !== undefined ? Math.hypot(tx - s.x, ty - s.y) / 4 + 25 : 75};
-    this.go(s, tx, ty); s.amove = false; sent++;
-  }
-  if (sent && !quiet) this.notify(p.i, sent + (sent > 1 ? ' scouts ride' : ' scout rides') + ' out. They report back when they return.', 'info', hq.x, hq.y);
-};
-Sim.prototype.stepRecon = function (e) {
-  const R = e.recon, p = this.players[e.o];
-  for (const t of this.ents.values()) {
-    if (this.friendly(t.o, e.o) || t.inside || (t.d.stealth && Math.hypot(t.x - e.x, t.y - e.y) > t.d.stealth)) continue;
-    if (Math.hypot(t.x - e.x, t.y - e.y) > e.d.vis) continue;
-    const key = t.o + ':' + Math.round(t.x / 10) + ',' + Math.round(t.y / 10);
-    const g = R.seen[key] || (R.seen[key] = {o: t.o, x: 0, y: 0, n: 0, ids: {}, kinds: {}, b: {}});
-    if (g.ids[t.id]) continue;
-    g.ids[t.id] = 1; g.x = (g.x * g.n + t.x) / (g.n + 1); g.y = (g.y * g.n + t.y) / (g.n + 1); g.n++;
-    if (t.b) g.b[t.d.n] = (g.b[t.d.n] || 0) + 1; else g.kinds[t.d.cat] = (g.kinds[t.d.cat] || 0) + 1;
-  }
-  const spottedBase = Object.values(R.seen).some(g => Object.keys(g.b).length >= 2);
-  if (R.phase === 'out' && (Math.hypot(R.tx - e.x, R.ty - e.y) < 4 || this.t - R.t0 > (R.lim || 75) || e.hp < e.hpm * .8 || !e.goal || (spottedBase && !R.aim))) { R.phase = 'back'; this.go(e, R.home.x, R.home.y); e.amove = false; }
-  else if (R.phase === 'back') {
-    if (!e.goal) this.go(e, R.home.x, R.home.y);
-    if (Math.hypot(R.home.x - e.x, R.home.y - e.y) < 11) {
-      const sight = Object.values(R.seen).map(g => ({o: g.o, x: Math.round(g.x), y: Math.round(g.y), n: g.n, kinds: g.kinds, b: g.b}));
-      const units = sight.reduce((a, g) => a + Object.values(g.kinds).reduce((x, y) => x + y, 0), 0), blds = sight.reduce((a, g) => a + Object.values(g.b).reduce((x, y) => x + y, 0), 0);
-      p.intel.unshift({t: Math.round(this.t), sight, units, blds, dir: Math.round(Math.atan2(R.ty - R.home.y, R.tx - R.home.x) * 57.3)});
-      if (p.intel.length > 10) p.intel.pop();
-      this.notify(e.o, sight.length ? `Scout report: ${units} enemy troops in ${sight.filter(g => Object.keys(g.kinds).length).length} groups${blds ? ', ' + blds + ' buildings' : ''}. See the War Room.` : 'Scout report: no enemies found that way.', sight.length ? 'gold' : 'info', e.x, e.y);
-      this.ev({k: 'intel', p: e.o});
-      e.recon = null; e.goal = null; e.stance = 'aggr';
-      if (p.autoRecon) e.reconNext = this.t + 12;
-    }
-  }
 };
 Sim.prototype.inZone = function (i, x, y) {
   const Z = this.battle.zones[i], rx = x - Z.cx, ry = y - Z.cy, u = rx * Z.ax + ry * Z.ay, v = -rx * Z.ay + ry * Z.ax;
@@ -2286,66 +1959,6 @@ Sim.prototype.addUnit = function (k, o, x, y) {
   this.joinSquad(e);
   this.ev({k: 'spawn', id: e.id});
   return e;
-};
-
-const SPY_WORDS = ['Pineapple', 'Thunderbird', 'Marmalade', 'Bluebell', 'Cobra', 'Teapot', 'Nightjar', 'Biscuit', 'Glacier', 'Lantern', 'Walrus', 'Saffron', 'Kingfisher', 'Sprocket', 'Tangerine', 'Badger'];
-// Each nation's guards question in their own way: a character, a greeting, and questions about their own culture
-const SPY_GUARDS = {
-  licases: {who: 'Corporal Spokes', hi: "Oi, hold up. Haven't seen you on the morning ride.", ok: 'Alright. Pedal on.', no: 'Not one of us! SPY!',
-    q: [['What do we ride into battle?', 'Road bikes', ['Horses', 'Scooters', 'Skateboards', 'Unicycles']], ['How many wheels on a proper war bike?', 'Two', ['Three', 'Four', 'One']], ['What colour is our camo?', 'Green', ['Desert tan', 'Navy blue', 'Orange']]]},
-  dhruvs: {who: 'Analyst Rao', hi: 'Halt. Your face does not match our records. Verify.', ok: 'Probability you are a spy: low. Proceed.', no: 'As calculated. A spy.',
-    q: [() => { const a = 6 + Math.floor(Math.random() * 7), b = 6 + Math.floor(Math.random() * 7), r = a * b; return ['Quick: what is ' + a + ' times ' + b + '?', '' + r, ['' + (r + a), '' + (r - b), '' + (r + 2), '' + (r - 1)]]; },
-        ['What do we never go anywhere without?', 'Our glasses', ['Our bikes', 'Our sunnies', 'Our knives']], () => { const a = 13 + Math.floor(Math.random() * 20), b = 14 + Math.floor(Math.random() * 30), r = a + b; return ['Fast: ' + a + ' plus ' + b + '?', '' + r, ['' + (r + 10), '' + (r - 1), '' + (r + 1), '' + (r - 10)]]; }]},
-  valentinos: {who: 'Sergente Rossi', hi: 'Ehi! Who are you? I never saw you at dinner.', ok: 'Bene, bene. Go, eat something.', no: 'Mamma mia... a SPY!',
-    q: [['What goes in a real carbonara?', 'Guanciale, egg and pecorino', ['Cream and ham', 'Ketchup and cheddar', 'Peas and bacon']], ['Where do we eat before a battle?', 'The Trattoria', ['The Mess Hall', 'The Canteen', 'The Drive-thru']], ['Pineapple on pizza?', 'Never', ['Always', 'Only on Sundays', 'With extra cheese']]]},
-  jethroes: {who: 'Sgt. Buck', hi: 'Hold it right there, partner.', ok: 'Alright, move along.', no: 'We got ourselves a SPY! Awooo!',
-    q: [['What do we turn into when it counts?', 'Alpha wolves', ['Grizzly bears', 'Eagles', 'Bats']], ['What do we do at the moon?', 'Howl', ['Salute', 'Sing', 'Wave']]]},
-  toms: {who: "Big Tom's bodyguard", hi: "Oi. Take off those shades... no, wait, put 'em back on. Who are you?", ok: 'Nice shades. Carry on.', no: 'Shame about your cover. SPY!',
-    q: [['What does every Tom wear, day and night?', 'Sunnies', ['Glasses', 'A top hat', 'A scarf']], ['What is the size of a Tom\'s arms?', 'Huge', ['Average', 'Small', 'Noodly']], ['Where do Toms like to fight?', 'The desert', ['The snow', 'The jungle', 'Underwater']]]},
-  charlies: {who: 'Engineer Byte', hi: 'Scanning... identity unconfirmed. Answer the challenge.', ok: 'Identity confirmed. Proceed.', no: 'Intruder detected. SPY.',
-    q: [['What colour is our flag?', "We can't tell, we're colourblind", ['Red and green', 'Blue', 'Gold']], ['Who flies our planes?', 'Our allies', ['We do', 'Nobody, we have none', 'Robots']], ['Why do we not fly our own jets?', 'No pilot licence', ['Afraid of heights', 'Too expensive', 'Planes are boring']]]},
-};
-function spyCover(v, o) {
-  const q = v.players[o], n = q.nat, ep = Math.floor((v.t || 0) / 240), pw = e => SPY_WORDS[(((v.seed || 1) * 31 + (o + 3) * 977 + e * 7919) >>> 0) % SPY_WORDS.length];
-  let old = pw(ep - 1); if (old === pw(ep)) old = pw(ep - 2);
-  return {name: n.name, key: n.key, leader: n.leader, cry: WAR_CRIES[n.key] || 'For ' + n.leader + '!', pw: pw(ep), oldPw: old, ep, color: n.color, player: q.name};
-}
-// Squads: infantry fight in platoons of 20 with a realistic mix; vehicles, ships and aircraft in sections of 5 of one type.
-const PLATOON = {rifle: 11, mg: 2, rocket: 2, grenadier: 2, sniper: 1, medic: 1, assault: 1}, PLATOON_N = 20, SECTION_N = 5;
-const squadKind = d => d.cat === 'inf' ? 'pl' : d.cat === 'veh' || d.cat === 'sea' || d.cat === 'air' || d.cat === 'heli' ? 'sec' : null;
-const slotOf = k => PLATOON[k] ? k : 'rifle';
-function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
-function squadName(e) { if (!e.sq) return ''; return e.d.cat === 'inf' ? ordinal(e.sqn) + (e.k === 'para' ? ' Airborne Platoon' : ' Platoon') : e.d.n + ' Section ' + e.sqn; }
-Sim.prototype.joinSquad = function (e) {
-  const d = e.d, kind = squadKind(d), p = this.players[e.o];
-  if (!kind || !p || e.k === 'worker' || e.k === 'scout' || e.k === 'spy' || e.k === 'xavier' || d.xav || !d.dmg && !d.heal && kind === 'pl') return;
-  const S = {};
-  for (const t of this.ents.values()) if (t.sq && t.o === e.o && t !== e && (kind === 'pl' ? t.d.cat === 'inf' && (t.k === 'para') === (e.k === 'para') : t.k === e.k)) {
-    const g = S[t.sq] || (S[t.sq] = {n: 0, sqn: t.sqn, c: {}, x: 0, y: 0}); g.n++; g.x += t.x; g.y += t.y; const sl = slotOf(t.k); g.c[sl] = (g.c[sl] || 0) + 1;
-  }
-  const cap = kind === 'pl' ? PLATOON_N : SECTION_N, sl = slotOf(e.k);
-  let best = null, bs = -1e9;
-  for (const id in S) {
-    const g = S[id]; if (g.n >= cap) continue;
-    let sc = g.n * 2 - Math.hypot(g.x / g.n - e.x, g.y / g.n - e.y) * .05; // fill the fullest squad first
-    if (kind === 'pl' && e.k !== 'para') sc += (g.c[sl] || 0) < PLATOON[sl] ? 100 : 0;    // and the one that still has a slot for this role
-    if (sc > bs) { bs = sc; best = +id; }
-  }
-  if (best === null) {
-    p.sqN = p.sqN || {}; const key = kind === 'pl' ? (e.k === 'para' ? 'para' : 'inf') : e.k;
-    best = this.nextSq = (this.nextSq || 0) + 1; e.sqn = p.sqN[key] = (p.sqN[key] || 0) + 1;
-  } else e.sqn = S[best].sqn;
-  e.sq = best;
-};
-// A squad fights together: when one member is hit, idle squadmates nearby move up to help.
-Sim.prototype.squadAlert = function (t) {
-  if (!t.sq || t.b) return;
-  this.sqT = this.sqT || {}; if (this.sqT[t.sq] > this.t) return; this.sqT[t.sq] = this.t + 3;
-  for (const m of this.ents.values()) {
-    if (m.sq !== t.sq || m === t || m.inside || m.recon || m.stance === 'hold' || m.goal || m.tid || m.task) continue;
-    if (Math.hypot(m.x - t.x, m.y - t.y) > 28) continue;
-    this.go(m, t.x + (this.rnd() - .5) * 3, t.y + (this.rnd() - .5) * 3); m.amove = true;
-  }
 };
 
 Sim.prototype.footprint = function (d, x, y, fn) {
@@ -2609,20 +2222,6 @@ Sim.prototype.cmdTrain = function (b, p, u, auto) {
   if (p.steel < c[0] || p.fuel < c[1]) { this.notify(p.i, 'Not enough resources', 'bad'); return; }
   p.steel -= c[0]; p.fuel -= c[1];
   b.q.push(auto ? {u, c, auto: 1} : {u, c});
-};
-Sim.prototype.autoPick = function (b, p) {
-  const T = b.d.trains.filter(k => k !== 'worker' && this.trainable(p, k) && !UNITS[k].hidden);
-  if (!T.length) return null;
-  if (b.autoK && T.includes(b.autoK)) return b.autoK;
-  if (!T.some(k => PLATOON[k])) return T[0];
-  // the fullest unfinished platoon (queued troops count too) and the role it is short of
-  const S = {}; for (const t of this.ents.values()) if (t.sq && t.o === p.i && t.d.cat === 'inf' && t.k !== 'para') { const g = S[t.sq] || (S[t.sq] = {n: 0, c: {}}); g.n++; const sl = slotOf(t.k); g.c[sl] = (g.c[sl] || 0) + 1; }
-  let g = null; for (const id in S) if (S[id].n < PLATOON_N && (!g || S[id].n > g.n)) g = S[id];
-  const c = Object.assign({}, g ? g.c : {}); for (const e of this.ents.values()) if (e.b && e.o === p.i && e.q) for (const it of e.q) if (it.u && UNITS[it.u].cat === 'inf' && it.u !== 'worker' && it.u !== 'scout' && it.u !== 'spy' && it.u !== 'para') { const sl = slotOf(it.u); c[sl] = (c[sl] || 0) + 1; }
-  let best = null, bn = -1;
-  for (const k in PLATOON) if (T.includes(k)) { const need = PLATOON[k] - (c[k] || 0); if (need > bn) { bn = need; best = k; } }
-  if (bn <= 0) return T.includes('rifle') ? 'rifle' : T[0]; // specialist slots full or still locked: riflemen fill the platoon
-  return best || T[0];
 };
 Sim.prototype.cancelQ = function (b, p, i) {
   const it = b.q[i];
@@ -3261,45 +2860,6 @@ Sim.prototype.step = function () {
   this.stepNukes();
 };
 
-// Auto economy (for relaxed players): keep workers coming, idle workers mining, and housing ahead of the population cap.
-Sim.prototype.stepDeputy = function (p) {
-  if (!p.autoEco) this.stepAutoEco(p);
-  let trained = 0;
-  for (const b of this.ents.values()) {
-    if (trained >= 1) break;                                // one order per ten seconds: slower than a player
-    if (b.o !== p.i || !b.b || b.bp < 1 || !b.d.trains || b.q.length || b.d.trains.every(u => u === 'worker')) continue;
-    const k = this.autoPick(b, p); if (!k) continue;
-    const c = this.costOf(p, UNITS[k], k);
-    if (p.steel >= c[0] + 120 && p.fuel >= c[1] + 20 && p.pop + UNITS[k].pop <= p.popCap) { this.cmdTrain(b, p, k, true); trained++; }
-  }
-  if (this.tick % 300 === 147 && p.steel > 700) for (const b of this.ents.values()) if (b.o === p.i && b.b && b.d.research && b.bp >= 1 && !b.q.length) {
-    const k = p.nat.tr.research || 1; let best = null, bc = 1e9;
-    for (const u in UPGRADES) { const q = UPGRADES[u]; if (p.ups[u] || p.ups['_' + u] || (q.req && !p.ups[q.req]) || (q.only && !q.only.includes(p.nat.key))) continue; const c = [q.cost[0] * k, q.cost[1] * k]; if (c[0] + 300 < p.steel && c[1] + 40 < p.fuel && c[0] < bc) { bc = c[0]; best = u; } }
-    if (best) this.cmdResearch(b, p, best);
-    break;
-  }
-};
-// Housing on autopilot: when you are close to the population cap, the nearest workers put up a new block
-Sim.prototype.stepAutoHouse = function (p) {
-  const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
-  for (const e of this.ents.values()) if (e.o === p.i && e.k === 'housing' && e.bp < 1) return; // one at a time
-  if (p.pop + 5 >= p.popCap && p.steel >= 140) {
-    for (let t = 0; t < 30; t++) { const a = this.rnd() * 6.283, r = 11 + this.rnd() * 10, x = Math.round(hq.x + Math.cos(a) * r), y = Math.round(hq.y + Math.sin(a) * r); if (this.canPlace('housing', x, y, p.i)) { this.cmdBuild([], p, 'housing', x, y); this.notify(p.i, 'Workers are building more Housing', 'info', x, y); break; } }
-  }
-};
-Sim.prototype.stepAutoEco = function (p) {
-  const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
-  let wk = 0, idle = [], housingUp = false;
-  for (const e of this.ents.values()) if (e.o === p.i) {
-    if (e.k === 'worker') { wk++; if (!e.task && !e.goal && !e.pilot && !e.inside) idle.push(e); }
-    if (e.k === 'housing' && e.bp < 1) housingUp = true;
-  }
-  for (const w of idle) { const n = this.nearestNode(w, 'steel'); if (n) w.task = {type: 'gather', node: n.id}; }
-  const queued = hq.q.filter(q => q.u === 'worker').length;
-  if (wk + queued < 12 && queued < 2 && p.steel >= 120 && p.pop + 1 <= p.popCap) this.cmdTrain(hq, p, 'worker');
-  this.stepAutoHouse(p);
-};
-
 Sim.prototype.digAt = function (x, y, o, amt, dir) {
   const c = digCells(this.M, this.N, x, y, amt || .22, o);
   if (!c.length) return false;
@@ -3554,98 +3114,6 @@ Sim.prototype.spawnFrom = function (b, k, p) {
   return u;
 };
 
-// ---------- spies: wear the enemy uniform, watch, report; questioned now and then, and shot if the story does not hold ----------
-// Armour attached to a platoon keeps close to it and fights alongside it
-Sim.prototype.stepEscort = function (e) {
-  let n = 0, x = 0, y = 0, fight = null;
-  for (const t of this.ents.values()) if (t.sq === e.att && t.o === e.o && !t.inside) { n++; x += t.x; y += t.y; if (t.tid && !fight) fight = t.tid; }
-  if (!n) { e.att = 0; return; }
-  x /= n; y /= n;
-  const a = e.id * 2.4, r = 3.5 + (e.id % 3), px = clamp(x + Math.cos(a) * r, 2, this.N - 3), py = clamp(y + Math.sin(a) * r, 2, this.N - 3);
-  if (fight && !e.tid) { const t = this.ents.get(fight); if (t && Math.hypot(t.x - e.x, t.y - e.y) < e.d.rng + 6) e.tid = fight; }
-  if (e.tid) return;
-  if (Math.hypot(px - e.x, py - e.y) > 5 && (!e.goal || Math.hypot(e.goal.x - px, e.goal.y - py) > 4)) { this.go(e, px, py); e.amove = true; }
-};
-// A paratrooper deployed by the player rides a C-130 from home to the drop zone; the plane turns for home afterwards
-Sim.prototype.ferryPara = function (u, hq, pi) {
-  const dx = u.x - hq.x, dy = u.y - hq.y, L = Math.hypot(dx, dy) || 1, far = L < 20;
-  const tx = far ? clamp(hq.x + dx / L * 30, 4, this.N - 5) : u.x, ty = far ? clamp(hq.y + dy / L * 30, 4, this.N - 5) : u.y;
-  const sx = clamp(tx - dx / L * 70, 2, this.N - 3), sy = clamp(ty - dy / L * 70, 2, this.N - 3);
-  const T = this.addUnit('transport', pi, sx, sy); this.players[pi].pop -= T.d.pop;
-  T.h = Math.atan2(ty - sy, tx - sx); T.z = Math.max(hAt(this.M, sx, sy), 0) + 26; T.sp = T.d.spd;
-  T.ferry = {x: tx, y: ty, ox: clamp(tx + dx / L * 60, 1, this.N - 2), oy: clamp(ty + dy / L * 60, 1, this.N - 2), t0: this.t}; T.cargo = [u.id]; T.stance = 'hold'; T.sq = 0; T.altO = 30;
-  this.go(T, tx, ty);
-  u.inside = T.id; u.chute = 0; u.x = T.x; u.y = T.y;
-};
-Sim.prototype.stepFerry = function (T) {
-  const F = T.ferry;
-  if (!F.near && Math.hypot(F.x - T.x, F.y - T.y) < 4) { F.near = this.t; this.go(T, F.ox, F.oy); } // over the zone: a few seconds of green light, then everyone still aboard goes
-  if (!F.drop && (F.near && this.t - F.near > 3 || this.t - F.t0 > 50)) { F.drop = 1; if (T.cargo && T.cargo.length) this.unloadT(T); this.go(T, F.ox, F.oy); }
-  if (F.drop && (Math.hypot(F.ox - T.x, F.oy - T.y) < 4 || this.t - F.t0 > 70)) { this.ents.delete(T.id); this.ev({k: 'dead', id: T.id, x: T.x, y: T.y, z: T.z, kk: T.k, o: T.o, air: 1, quiet: 1}); return true; }
-  if (!T.goal) this.go(T, F.near ? F.ox : F.x, F.near ? F.oy : F.y);
-  T.tid = 0;
-};
-Sim.prototype.blowCover = function (e) {
-  if (e.disg === undefined || e.disg === null) return;
-  e.disg = null; e.coverT = this.t + 20; e.inter = null;
-  this.notify(e.o, 'Cover blown! The enemy will shoot your spy now (it changes back in 20s if it lives)', 'bad', e.x, e.y);
-};
-Sim.prototype.stepSpy = function (e) {
-  const p = this.players[e.o];
-  if (e.exec) {
-    if (this.t >= e.exec && e.disg !== null) { e.disg = null; for (const id of e.squadF || []) { const f = this.ents.get(id); if (f) { f.tid = e.id; f.stance = 'aggr'; } } }
-    if (this.t >= e.exec + 1.3) { const by = e.execBy; e.exec = 0; this.hurt(e, 1e5, by); }
-    return;
-  }
-  if (e.inter) { if (this.t - e.inter.t > 25) this.answerSpy(e, false); return; } // no answer is a wrong answer
-  if ((e.disg === undefined || e.disg === null) && this.t > (e.coverT || 0)) { // put on the uniform of the nearest enemy
-    let best = null, bd = 1e9;
-    for (const q of this.players) if (q.alive && q.spawn && q.i >= 0 && !this.friendly(q.i, e.o)) { const dd = Math.hypot(q.spawn.x - e.x, q.spawn.y - e.y); if (dd < bd) { bd = dd; best = q; } }
-    if (best) { e.disg = best.i; e.spyT = this.t; }
-  }
-  if (e.disg === undefined || e.disg === null) return;
-  const foe = e.disg, R = e.d.vis * 1.6;
-  let near = null, base = false;
-  for (const t of this.ents.values()) {
-    if (t.o !== foe) continue;
-    const dd = Math.hypot(t.x - e.x, t.y - e.y);
-    if (dd < R) t.revealed = Math.max(t.revealed || 0, this.t + 1.6);
-    if (t.b && dd < 24) base = true;
-    if (!t.b && t.d.cat === 'inf' && !t.pilot && dd < 4.5 && (!near || dd < near.dd)) near = {t, dd};
-  }
-  // reports home from inside their base
-  if (base && this.t - (e.repT || 0) > 30) {
-    e.repT = this.t; const q = this.players[foe];
-    const sight = {}, units = {}, blds = {};
-    for (const t of this.ents.values()) if (t.o === foe && Math.hypot(t.x - e.x, t.y - e.y) < 32) { if (t.b) blds[t.d.n] = (blds[t.d.n] || 0) + 1; else units[t.d.cat] = (units[t.d.cat] || 0) + 1; }
-    const nU = Object.values(units).reduce((a, b) => a + b, 0), nB = Object.values(blds).reduce((a, b) => a + b, 0);
-    p.intel.unshift({t: Math.round(this.t), sight: [{o: foe, x: Math.round(e.x), y: Math.round(e.y), n: nU + nB, kinds: units, b: blds}], units: nU, blds: nB, dir: 0, spy: 1}); if (p.intel.length > 10) p.intel.pop();
-    const res = Object.keys(q.ups).filter(u => u[0] === '_').map(u => UPGRADES[u.slice(1)] && UPGRADES[u.slice(1)].n).filter(Boolean);
-    this.notify(e.o, `Spy report from ${q.name}: ${nU} troops and ${nB} buildings nearby, about ${Math.round(q.steel / 50) * 50} steel in their treasury${res.length ? ', researching ' + res.join(', ') : ''}.`, 'gold', e.x, e.y);
-    this.ev({k: 'intel', p: e.o});
-  }
-  // a guard gets suspicious
-  if (near && this.t - (e.spyT || 0) > 12 && this.t > (e.interCd || 0) && this.rnd() < (e.pilot ? .07 + (e.moving ? .04 : 0) : .02)) {
-    e.susp = (e.susp || 0) + 1; e.interCd = this.t + Math.max(25, 70 - e.susp * 15); // every questioning makes them more suspicious
-    if (e.pilot) { const g = near.t; this.clearOrders(g); g.h = Math.atan2(e.y - g.y, e.x - g.x); g.guardT = this.t + 30; e.inter = {by: g.id, t: this.t}; this.ev({k: 'interrogate', id: e.id, by: g.id, p: e.o, foe, n: e.susp >= 2 ? 2 : 1}); }
-    else if (this.rnd() < .45) { e.inter = {by: near.t.id, t: this.t}; this.answerSpy(e, false); }
-  }
-};
-Sim.prototype.answerSpy = function (e, ok) {
-  const I = e.inter; e.inter = null; if (!I) return;
-  const g = this.ents.get(I.by); if (g) g.guardT = 0;
-  if (ok) { e.spyT = this.t; this.ev({k: 'spyok', id: e.id, p: e.o}); return; }
-  // caught: the guards gather round, and that is that
-  const foe = e.disg; e.exec = this.t + 3.4; e.execBy = foe; e.squadF = [];
-  for (const t of this.ents.values()) if (t.o === foe && !t.b && t.d.cat === 'inf' && t.d.dmg && !t.pilot && Math.hypot(t.x - e.x, t.y - e.y) < 22 && e.squadF.length < 6) {
-    const a = e.squadF.length * 1.05 + 2.2, x = e.x + Math.cos(a) * 3.2, y = e.y + Math.sin(a) * 3.2;
-    this.clearOrders(t); this.go(t, x, y); t.stance = 'hold'; e.squadF.push(t.id);
-  }
-  if (g && !e.squadF.includes(g.id)) e.squadF.push(g.id);
-  this.ev({k: 'spycaught', id: e.id, p: e.o, by: I.by, x: e.x, y: e.y});
-  this.notify(e.o, 'Your spy was found out and is being executed', 'bad', e.x, e.y);
-  if (this.players[foe]) this.notify(foe, 'An enemy spy was caught in our ranks', 'good', e.x, e.y);
-};
 Sim.prototype.stepUnit = function (e) {
   const d = e.d, p = this.players[e.o];
   if (e.xav) this.stepXav(e);
@@ -4259,6 +3727,574 @@ Sim.prototype.pilotSpecial = function (c, pi) {
   else if (k === 'jethroes') { if (a.d.cat === 'inf' && a.k !== 'wolf') { const hp = a.hp / a.hpm; this.toWolf(a, 14); a.hpm *= PILOT_HP; a.hp = a.hpm; a.wolf.frac = hp; } }
   else if (k === 'toms') { if (a.d.cat !== 'inf') { p.specT = this.t + 1; return; } a.knifeT = this.t + KNIFE_T + .5; }
   this.ev({k: 'special', p: pi, id: a.id, n: k});
+};
+
+// ======================== FEATURE SECTIONS (each one only touches its own feature) ========================
+
+// ====================================================================================
+// Neutral nation: the Xaviers (healers who wander the map)
+// ====================================================================================
+// A couple of Xaviers wander every war: invulnerable, unarmed, and they heal anyone nearby on any side.
+Sim.prototype.addXaviers = function () {
+  this.players[-1] = xavPlayer();
+  const r = mulberry(this.seed * 17 + 3), N = this.N, n = 2 + (r() < .5 ? 1 : 0);
+  for (let i = 0, tries = 0; i < n && tries < 600; tries++) {
+    const x = N * (.22 + r() * .56), y = N * (.22 + r() * .56);
+    if (this.landOk(x, y)) { const e = this.addUnit('xavier', -1, x, y); e.xav = 1; e.wr = mulberry(e.id * 7 + 1); i++; }
+  }
+};
+Sim.prototype.stepXav = function (e) {
+  e.hp = e.hpm;
+  if (this.tick % 10 === e.id % 10) this.near(e.x, e.y, 8, t => {
+    if (t === e || t.b || t.xav || t.hp >= t.hpm) return;
+    t.hp = Math.min(t.hpm, t.hp + (t.d.cat === 'inf' ? 14 : 7)); this.ev({k: 'heal', a: e.id, t: t.id});
+  });
+  if (!e.wr) e.wr = mulberry(e.id * 7 + 1);
+  if (!e.goal && (e.wanderT || 0) <= this.t) { // stroll to a nearby spot, preferring places where people are hurt
+    e.wanderT = this.t + 3 + e.wr() * 5;
+    let hx = 0, hy = 0, hn = 0; this.near(e.x, e.y, 22, t => { if (!t.b && !t.xav && t.hp < t.hpm * .8) { hx += t.x; hy += t.y; hn++; } });
+    const a = e.wr() * 6.28, d = 3 + e.wr() * 9, tx = hn ? hx / hn : e.x + Math.cos(a) * d, ty = hn ? hy / hn : e.y + Math.sin(a) * d;
+    if (this.landOk(tx, ty)) this.go(e, tx, ty);
+  }
+};
+
+// ====================================================================================
+// Scouting: scouts ride out and report back
+// ====================================================================================
+// ---------- scouting: scouts ride out, note every enemy group they see, and report when they get home ----------
+Sim.prototype.sendRecon = function (p, n, quiet, gx, gy) {
+  const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
+  let sent = 0;
+  for (let i = 0; i < n; i++) {
+    let s = [...this.ents.values()].find(e => e.o === p.i && e.k === 'scout' && !e.recon && !e.pilot && !e.inside && (!e.goal || e.zone));
+    if (!s) {
+      if (p.steel < 50) { if (!quiet) this.notify(p.i, 'Need 50 steel to send another scout', 'bad'); break; }
+      let pos = null; for (let t = 0; t < 16 && !pos; t++) { const a = t * .4, x = hq.x + Math.cos(a) * (hq.d.s / 2 + 1.5), y = hq.y + Math.sin(a) * (hq.d.s / 2 + 1.5); if (this.landOk(x, y)) pos = {x, y}; }
+      if (!pos) break;
+      p.steel -= 50; s = this.addUnit('scout', p.i, pos.x, pos.y);
+    }
+    // where to look: enemy capitals in turn, then wide sweeps in every direction
+    p.reconI = (p.reconI || 0) + 1;
+    const foes = this.players.filter(q => q.alive && !this.friendly(q.i, p.i)), k = p.reconI;
+    let tx, ty;
+    if (gx !== undefined) { const a = i * 2.1, r = i ? 5 : 0; tx = gx + Math.cos(a) * r; ty = gy + Math.sin(a) * r; } // where you pointed
+    else if (foes.length && k % 3 !== 0) { // look at an enemy capital from a safe distance, outside its guns
+      const f = foes[k % foes.length].spawn, a = Math.atan2(hq.y - f.y, hq.x - f.x) + (this.rnd() - .5) * 1.6; tx = f.x + Math.cos(a) * 25; ty = f.y + Math.sin(a) * 25; }
+    else { const a = k * 2.4, r = this.N * (.25 + this.rnd() * .2); tx = this.N / 2 + Math.cos(a) * r; ty = this.N / 2 + Math.sin(a) * r; }
+    tx = clamp(tx, 4, this.N - 5); ty = clamp(ty, 4, this.N - 5);
+    for (let r = 0; r < 40 && !this.landOk(tx, ty); r += 1.5) { const a = r * 1.7; tx = clamp(tx + Math.cos(a) * r * .3, 4, this.N - 5); ty = clamp(ty + Math.sin(a) * r * .3, 4, this.N - 5); } // never into the sea
+    this.clearOrders(s); s.zone = null; s.stance = 'hold';
+    s.recon = {home: {x: hq.x, y: hq.y}, tx, ty, phase: 'out', t0: this.t, seen: {}, aim: gx !== undefined, lim: gx !== undefined ? Math.hypot(tx - s.x, ty - s.y) / 4 + 25 : 75};
+    this.go(s, tx, ty); s.amove = false; sent++;
+  }
+  if (sent && !quiet) this.notify(p.i, sent + (sent > 1 ? ' scouts ride' : ' scout rides') + ' out. They report back when they return.', 'info', hq.x, hq.y);
+};
+Sim.prototype.stepRecon = function (e) {
+  const R = e.recon, p = this.players[e.o];
+  for (const t of this.ents.values()) {
+    if (this.friendly(t.o, e.o) || t.inside || (t.d.stealth && Math.hypot(t.x - e.x, t.y - e.y) > t.d.stealth)) continue;
+    if (Math.hypot(t.x - e.x, t.y - e.y) > e.d.vis) continue;
+    const key = t.o + ':' + Math.round(t.x / 10) + ',' + Math.round(t.y / 10);
+    const g = R.seen[key] || (R.seen[key] = {o: t.o, x: 0, y: 0, n: 0, ids: {}, kinds: {}, b: {}});
+    if (g.ids[t.id]) continue;
+    g.ids[t.id] = 1; g.x = (g.x * g.n + t.x) / (g.n + 1); g.y = (g.y * g.n + t.y) / (g.n + 1); g.n++;
+    if (t.b) g.b[t.d.n] = (g.b[t.d.n] || 0) + 1; else g.kinds[t.d.cat] = (g.kinds[t.d.cat] || 0) + 1;
+  }
+  const spottedBase = Object.values(R.seen).some(g => Object.keys(g.b).length >= 2);
+  if (R.phase === 'out' && (Math.hypot(R.tx - e.x, R.ty - e.y) < 4 || this.t - R.t0 > (R.lim || 75) || e.hp < e.hpm * .8 || !e.goal || (spottedBase && !R.aim))) { R.phase = 'back'; this.go(e, R.home.x, R.home.y); e.amove = false; }
+  else if (R.phase === 'back') {
+    if (!e.goal) this.go(e, R.home.x, R.home.y);
+    if (Math.hypot(R.home.x - e.x, R.home.y - e.y) < 11) {
+      const sight = Object.values(R.seen).map(g => ({o: g.o, x: Math.round(g.x), y: Math.round(g.y), n: g.n, kinds: g.kinds, b: g.b}));
+      const units = sight.reduce((a, g) => a + Object.values(g.kinds).reduce((x, y) => x + y, 0), 0), blds = sight.reduce((a, g) => a + Object.values(g.b).reduce((x, y) => x + y, 0), 0);
+      p.intel.unshift({t: Math.round(this.t), sight, units, blds, dir: Math.round(Math.atan2(R.ty - R.home.y, R.tx - R.home.x) * 57.3)});
+      if (p.intel.length > 10) p.intel.pop();
+      this.notify(e.o, sight.length ? `Scout report: ${units} enemy troops in ${sight.filter(g => Object.keys(g.kinds).length).length} groups${blds ? ', ' + blds + ' buildings' : ''}. See the War Room.` : 'Scout report: no enemies found that way.', sight.length ? 'gold' : 'info', e.x, e.y);
+      this.ev({k: 'intel', p: e.o});
+      e.recon = null; e.goal = null; e.stance = 'aggr';
+      if (p.autoRecon) e.reconNext = this.t + 12;
+    }
+  }
+};
+
+// ====================================================================================
+// Squads: platoons of 20, vehicle sections of 5, escorts and auto-train
+// ====================================================================================
+// Squads: infantry fight in platoons of 20 with a realistic mix; vehicles, ships and aircraft in sections of 5 of one type.
+const PLATOON = {rifle: 11, mg: 2, rocket: 2, grenadier: 2, sniper: 1, medic: 1, assault: 1}, PLATOON_N = 20, SECTION_N = 5;
+const squadKind = d => d.cat === 'inf' ? 'pl' : d.cat === 'veh' || d.cat === 'sea' || d.cat === 'air' || d.cat === 'heli' ? 'sec' : null;
+const slotOf = k => PLATOON[k] ? k : 'rifle';
+function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+function squadName(e) { if (!e.sq) return ''; return e.d.cat === 'inf' ? ordinal(e.sqn) + (e.k === 'para' ? ' Airborne Platoon' : ' Platoon') : e.d.n + ' Section ' + e.sqn; }
+Sim.prototype.joinSquad = function (e) {
+  const d = e.d, kind = squadKind(d), p = this.players[e.o];
+  if (!kind || !p || e.k === 'worker' || e.k === 'scout' || e.k === 'spy' || e.k === 'xavier' || d.xav || !d.dmg && !d.heal && kind === 'pl') return;
+  const S = {};
+  for (const t of this.ents.values()) if (t.sq && t.o === e.o && t !== e && (kind === 'pl' ? t.d.cat === 'inf' && (t.k === 'para') === (e.k === 'para') : t.k === e.k)) {
+    const g = S[t.sq] || (S[t.sq] = {n: 0, sqn: t.sqn, c: {}, x: 0, y: 0}); g.n++; g.x += t.x; g.y += t.y; const sl = slotOf(t.k); g.c[sl] = (g.c[sl] || 0) + 1;
+  }
+  const cap = kind === 'pl' ? PLATOON_N : SECTION_N, sl = slotOf(e.k);
+  let best = null, bs = -1e9;
+  for (const id in S) {
+    const g = S[id]; if (g.n >= cap) continue;
+    let sc = g.n * 2 - Math.hypot(g.x / g.n - e.x, g.y / g.n - e.y) * .05; // fill the fullest squad first
+    if (kind === 'pl' && e.k !== 'para') sc += (g.c[sl] || 0) < PLATOON[sl] ? 100 : 0;    // and the one that still has a slot for this role
+    if (sc > bs) { bs = sc; best = +id; }
+  }
+  if (best === null) {
+    p.sqN = p.sqN || {}; const key = kind === 'pl' ? (e.k === 'para' ? 'para' : 'inf') : e.k;
+    best = this.nextSq = (this.nextSq || 0) + 1; e.sqn = p.sqN[key] = (p.sqN[key] || 0) + 1;
+  } else e.sqn = S[best].sqn;
+  e.sq = best;
+};
+// A squad fights together: when one member is hit, idle squadmates nearby move up to help.
+Sim.prototype.squadAlert = function (t) {
+  if (!t.sq || t.b) return;
+  this.sqT = this.sqT || {}; if (this.sqT[t.sq] > this.t) return; this.sqT[t.sq] = this.t + 3;
+  for (const m of this.ents.values()) {
+    if (m.sq !== t.sq || m === t || m.inside || m.recon || m.stance === 'hold' || m.goal || m.tid || m.task) continue;
+    if (Math.hypot(m.x - t.x, m.y - t.y) > 28) continue;
+    this.go(m, t.x + (this.rnd() - .5) * 3, t.y + (this.rnd() - .5) * 3); m.amove = true;
+  }
+};
+Sim.prototype.autoPick = function (b, p) {
+  const T = b.d.trains.filter(k => k !== 'worker' && this.trainable(p, k) && !UNITS[k].hidden);
+  if (!T.length) return null;
+  if (b.autoK && T.includes(b.autoK)) return b.autoK;
+  if (!T.some(k => PLATOON[k])) return T[0];
+  // the fullest unfinished platoon (queued troops count too) and the role it is short of
+  const S = {}; for (const t of this.ents.values()) if (t.sq && t.o === p.i && t.d.cat === 'inf' && t.k !== 'para') { const g = S[t.sq] || (S[t.sq] = {n: 0, c: {}}); g.n++; const sl = slotOf(t.k); g.c[sl] = (g.c[sl] || 0) + 1; }
+  let g = null; for (const id in S) if (S[id].n < PLATOON_N && (!g || S[id].n > g.n)) g = S[id];
+  const c = Object.assign({}, g ? g.c : {}); for (const e of this.ents.values()) if (e.b && e.o === p.i && e.q) for (const it of e.q) if (it.u && UNITS[it.u].cat === 'inf' && it.u !== 'worker' && it.u !== 'scout' && it.u !== 'spy' && it.u !== 'para') { const sl = slotOf(it.u); c[sl] = (c[sl] || 0) + 1; }
+  let best = null, bn = -1;
+  for (const k in PLATOON) if (T.includes(k)) { const need = PLATOON[k] - (c[k] || 0); if (need > bn) { bn = need; best = k; } }
+  if (bn <= 0) return T.includes('rifle') ? 'rifle' : T[0]; // specialist slots full or still locked: riflemen fill the platoon
+  return best || T[0];
+};
+// ---------- spies: wear the enemy uniform, watch, report; questioned now and then, and shot if the story does not hold ----------
+// Armour attached to a platoon keeps close to it and fights alongside it
+Sim.prototype.stepEscort = function (e) {
+  let n = 0, x = 0, y = 0, fight = null;
+  for (const t of this.ents.values()) if (t.sq === e.att && t.o === e.o && !t.inside) { n++; x += t.x; y += t.y; if (t.tid && !fight) fight = t.tid; }
+  if (!n) { e.att = 0; return; }
+  x /= n; y /= n;
+  const a = e.id * 2.4, r = 3.5 + (e.id % 3), px = clamp(x + Math.cos(a) * r, 2, this.N - 3), py = clamp(y + Math.sin(a) * r, 2, this.N - 3);
+  if (fight && !e.tid) { const t = this.ents.get(fight); if (t && Math.hypot(t.x - e.x, t.y - e.y) < e.d.rng + 6) e.tid = fight; }
+  if (e.tid) return;
+  if (Math.hypot(px - e.x, py - e.y) > 5 && (!e.goal || Math.hypot(e.goal.x - px, e.goal.y - py) > 4)) { this.go(e, px, py); e.amove = true; }
+};
+
+// ====================================================================================
+// Deputy commander: auto economy, auto housing, running the base while you fight
+// ====================================================================================
+// Auto economy (for relaxed players): keep workers coming, idle workers mining, and housing ahead of the population cap.
+Sim.prototype.stepDeputy = function (p) {
+  if (!p.autoEco) this.stepAutoEco(p);
+  let trained = 0;
+  for (const b of this.ents.values()) {
+    if (trained >= 1) break;                                // one order per ten seconds: slower than a player
+    if (b.o !== p.i || !b.b || b.bp < 1 || !b.d.trains || b.q.length || b.d.trains.every(u => u === 'worker')) continue;
+    const k = this.autoPick(b, p); if (!k) continue;
+    const c = this.costOf(p, UNITS[k], k);
+    if (p.steel >= c[0] + 120 && p.fuel >= c[1] + 20 && p.pop + UNITS[k].pop <= p.popCap) { this.cmdTrain(b, p, k, true); trained++; }
+  }
+  if (this.tick % 300 === 147 && p.steel > 700) for (const b of this.ents.values()) if (b.o === p.i && b.b && b.d.research && b.bp >= 1 && !b.q.length) {
+    const k = p.nat.tr.research || 1; let best = null, bc = 1e9;
+    for (const u in UPGRADES) { const q = UPGRADES[u]; if (p.ups[u] || p.ups['_' + u] || (q.req && !p.ups[q.req]) || (q.only && !q.only.includes(p.nat.key))) continue; const c = [q.cost[0] * k, q.cost[1] * k]; if (c[0] + 300 < p.steel && c[1] + 40 < p.fuel && c[0] < bc) { bc = c[0]; best = u; } }
+    if (best) this.cmdResearch(b, p, best);
+    break;
+  }
+};
+// Housing on autopilot: when you are close to the population cap, the nearest workers put up a new block
+Sim.prototype.stepAutoHouse = function (p) {
+  const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
+  for (const e of this.ents.values()) if (e.o === p.i && e.k === 'housing' && e.bp < 1) return; // one at a time
+  if (p.pop + 5 >= p.popCap && p.steel >= 140) {
+    for (let t = 0; t < 30; t++) { const a = this.rnd() * 6.283, r = 11 + this.rnd() * 10, x = Math.round(hq.x + Math.cos(a) * r), y = Math.round(hq.y + Math.sin(a) * r); if (this.canPlace('housing', x, y, p.i)) { this.cmdBuild([], p, 'housing', x, y); this.notify(p.i, 'Workers are building more Housing', 'info', x, y); break; } }
+  }
+};
+Sim.prototype.stepAutoEco = function (p) {
+  const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
+  let wk = 0, idle = [], housingUp = false;
+  for (const e of this.ents.values()) if (e.o === p.i) {
+    if (e.k === 'worker') { wk++; if (!e.task && !e.goal && !e.pilot && !e.inside) idle.push(e); }
+    if (e.k === 'housing' && e.bp < 1) housingUp = true;
+  }
+  for (const w of idle) { const n = this.nearestNode(w, 'steel'); if (n) w.task = {type: 'gather', node: n.id}; }
+  const queued = hq.q.filter(q => q.u === 'worker').length;
+  if (wk + queued < 12 && queued < 2 && p.steel >= 120 && p.pop + 1 <= p.popCap) this.cmdTrain(hq, p, 'worker');
+  this.stepAutoHouse(p);
+};
+
+// ====================================================================================
+// Paratroopers: C-130 ferry to the drop zone
+// ====================================================================================
+// A paratrooper deployed by the player rides a C-130 from home to the drop zone; the plane turns for home afterwards
+Sim.prototype.ferryPara = function (u, hq, pi) {
+  const dx = u.x - hq.x, dy = u.y - hq.y, L = Math.hypot(dx, dy) || 1, far = L < 20;
+  const tx = far ? clamp(hq.x + dx / L * 30, 4, this.N - 5) : u.x, ty = far ? clamp(hq.y + dy / L * 30, 4, this.N - 5) : u.y;
+  const sx = clamp(tx - dx / L * 70, 2, this.N - 3), sy = clamp(ty - dy / L * 70, 2, this.N - 3);
+  const T = this.addUnit('transport', pi, sx, sy); this.players[pi].pop -= T.d.pop;
+  T.h = Math.atan2(ty - sy, tx - sx); T.z = Math.max(hAt(this.M, sx, sy), 0) + 26; T.sp = T.d.spd;
+  T.ferry = {x: tx, y: ty, ox: clamp(tx + dx / L * 60, 1, this.N - 2), oy: clamp(ty + dy / L * 60, 1, this.N - 2), t0: this.t}; T.cargo = [u.id]; T.stance = 'hold'; T.sq = 0; T.altO = 30;
+  this.go(T, tx, ty);
+  u.inside = T.id; u.chute = 0; u.x = T.x; u.y = T.y;
+};
+Sim.prototype.stepFerry = function (T) {
+  const F = T.ferry;
+  if (!F.near && Math.hypot(F.x - T.x, F.y - T.y) < 4) { F.near = this.t; this.go(T, F.ox, F.oy); } // over the zone: a few seconds of green light, then everyone still aboard goes
+  if (!F.drop && (F.near && this.t - F.near > 3 || this.t - F.t0 > 50)) { F.drop = 1; if (T.cargo && T.cargo.length) this.unloadT(T); this.go(T, F.ox, F.oy); }
+  if (F.drop && (Math.hypot(F.ox - T.x, F.oy - T.y) < 4 || this.t - F.t0 > 70)) { this.ents.delete(T.id); this.ev({k: 'dead', id: T.id, x: T.x, y: T.y, z: T.z, kk: T.k, o: T.o, air: 1, quiet: 1}); return true; }
+  if (!T.goal) this.go(T, F.near ? F.ox : F.x, F.near ? F.oy : F.y);
+  T.tid = 0;
+};
+
+// ====================================================================================
+// Spies: disguise, intel reports, questioning and execution
+// ====================================================================================
+const SPY_WORDS = ['Pineapple', 'Thunderbird', 'Marmalade', 'Bluebell', 'Cobra', 'Teapot', 'Nightjar', 'Biscuit', 'Glacier', 'Lantern', 'Walrus', 'Saffron', 'Kingfisher', 'Sprocket', 'Tangerine', 'Badger'];
+// Each nation's guards question in their own way: a character, a greeting, and questions about their own culture
+const SPY_GUARDS = {
+  licases: {who: 'Corporal Spokes', hi: "Oi, hold up. Haven't seen you on the morning ride.", ok: 'Alright. Pedal on.', no: 'Not one of us! SPY!',
+    q: [['What do we ride into battle?', 'Road bikes', ['Horses', 'Scooters', 'Skateboards', 'Unicycles']], ['How many wheels on a proper war bike?', 'Two', ['Three', 'Four', 'One']], ['What colour is our camo?', 'Green', ['Desert tan', 'Navy blue', 'Orange']]]},
+  dhruvs: {who: 'Analyst Rao', hi: 'Halt. Your face does not match our records. Verify.', ok: 'Probability you are a spy: low. Proceed.', no: 'As calculated. A spy.',
+    q: [() => { const a = 6 + Math.floor(Math.random() * 7), b = 6 + Math.floor(Math.random() * 7), r = a * b; return ['Quick: what is ' + a + ' times ' + b + '?', '' + r, ['' + (r + a), '' + (r - b), '' + (r + 2), '' + (r - 1)]]; },
+        ['What do we never go anywhere without?', 'Our glasses', ['Our bikes', 'Our sunnies', 'Our knives']], () => { const a = 13 + Math.floor(Math.random() * 20), b = 14 + Math.floor(Math.random() * 30), r = a + b; return ['Fast: ' + a + ' plus ' + b + '?', '' + r, ['' + (r + 10), '' + (r - 1), '' + (r + 1), '' + (r - 10)]]; }]},
+  valentinos: {who: 'Sergente Rossi', hi: 'Ehi! Who are you? I never saw you at dinner.', ok: 'Bene, bene. Go, eat something.', no: 'Mamma mia... a SPY!',
+    q: [['What goes in a real carbonara?', 'Guanciale, egg and pecorino', ['Cream and ham', 'Ketchup and cheddar', 'Peas and bacon']], ['Where do we eat before a battle?', 'The Trattoria', ['The Mess Hall', 'The Canteen', 'The Drive-thru']], ['Pineapple on pizza?', 'Never', ['Always', 'Only on Sundays', 'With extra cheese']]]},
+  jethroes: {who: 'Sgt. Buck', hi: 'Hold it right there, partner.', ok: 'Alright, move along.', no: 'We got ourselves a SPY! Awooo!',
+    q: [['What do we turn into when it counts?', 'Alpha wolves', ['Grizzly bears', 'Eagles', 'Bats']], ['What do we do at the moon?', 'Howl', ['Salute', 'Sing', 'Wave']]]},
+  toms: {who: "Big Tom's bodyguard", hi: "Oi. Take off those shades... no, wait, put 'em back on. Who are you?", ok: 'Nice shades. Carry on.', no: 'Shame about your cover. SPY!',
+    q: [['What does every Tom wear, day and night?', 'Sunnies', ['Glasses', 'A top hat', 'A scarf']], ['What is the size of a Tom\'s arms?', 'Huge', ['Average', 'Small', 'Noodly']], ['Where do Toms like to fight?', 'The desert', ['The snow', 'The jungle', 'Underwater']]]},
+  charlies: {who: 'Engineer Byte', hi: 'Scanning... identity unconfirmed. Answer the challenge.', ok: 'Identity confirmed. Proceed.', no: 'Intruder detected. SPY.',
+    q: [['What colour is our flag?', "We can't tell, we're colourblind", ['Red and green', 'Blue', 'Gold']], ['Who flies our planes?', 'Our allies', ['We do', 'Nobody, we have none', 'Robots']], ['Why do we not fly our own jets?', 'No pilot licence', ['Afraid of heights', 'Too expensive', 'Planes are boring']]]},
+};
+function spyCover(v, o) {
+  const q = v.players[o], n = q.nat, ep = Math.floor((v.t || 0) / 240), pw = e => SPY_WORDS[(((v.seed || 1) * 31 + (o + 3) * 977 + e * 7919) >>> 0) % SPY_WORDS.length];
+  let old = pw(ep - 1); if (old === pw(ep)) old = pw(ep - 2);
+  return {name: n.name, key: n.key, leader: n.leader, cry: WAR_CRIES[n.key] || 'For ' + n.leader + '!', pw: pw(ep), oldPw: old, ep, color: n.color, player: q.name};
+}
+Sim.prototype.blowCover = function (e) {
+  if (e.disg === undefined || e.disg === null) return;
+  e.disg = null; e.coverT = this.t + 20; e.inter = null;
+  this.notify(e.o, 'Cover blown! The enemy will shoot your spy now (it changes back in 20s if it lives)', 'bad', e.x, e.y);
+};
+Sim.prototype.stepSpy = function (e) {
+  const p = this.players[e.o];
+  if (e.exec) {
+    if (this.t >= e.exec && e.disg !== null) { e.disg = null; for (const id of e.squadF || []) { const f = this.ents.get(id); if (f) { f.tid = e.id; f.stance = 'aggr'; } } }
+    if (this.t >= e.exec + 1.3) { const by = e.execBy; e.exec = 0; this.hurt(e, 1e5, by); }
+    return;
+  }
+  if (e.inter) { if (this.t - e.inter.t > 25) this.answerSpy(e, false); return; } // no answer is a wrong answer
+  if ((e.disg === undefined || e.disg === null) && this.t > (e.coverT || 0)) { // put on the uniform of the nearest enemy
+    let best = null, bd = 1e9;
+    for (const q of this.players) if (q.alive && q.spawn && q.i >= 0 && !this.friendly(q.i, e.o)) { const dd = Math.hypot(q.spawn.x - e.x, q.spawn.y - e.y); if (dd < bd) { bd = dd; best = q; } }
+    if (best) { e.disg = best.i; e.spyT = this.t; }
+  }
+  if (e.disg === undefined || e.disg === null) return;
+  const foe = e.disg, R = e.d.vis * 1.6;
+  let near = null, base = false;
+  for (const t of this.ents.values()) {
+    if (t.o !== foe) continue;
+    const dd = Math.hypot(t.x - e.x, t.y - e.y);
+    if (dd < R) t.revealed = Math.max(t.revealed || 0, this.t + 1.6);
+    if (t.b && dd < 24) base = true;
+    if (!t.b && t.d.cat === 'inf' && !t.pilot && dd < 4.5 && (!near || dd < near.dd)) near = {t, dd};
+  }
+  // reports home from inside their base
+  if (base && this.t - (e.repT || 0) > 30) {
+    e.repT = this.t; const q = this.players[foe];
+    const sight = {}, units = {}, blds = {};
+    for (const t of this.ents.values()) if (t.o === foe && Math.hypot(t.x - e.x, t.y - e.y) < 32) { if (t.b) blds[t.d.n] = (blds[t.d.n] || 0) + 1; else units[t.d.cat] = (units[t.d.cat] || 0) + 1; }
+    const nU = Object.values(units).reduce((a, b) => a + b, 0), nB = Object.values(blds).reduce((a, b) => a + b, 0);
+    p.intel.unshift({t: Math.round(this.t), sight: [{o: foe, x: Math.round(e.x), y: Math.round(e.y), n: nU + nB, kinds: units, b: blds}], units: nU, blds: nB, dir: 0, spy: 1}); if (p.intel.length > 10) p.intel.pop();
+    const res = Object.keys(q.ups).filter(u => u[0] === '_').map(u => UPGRADES[u.slice(1)] && UPGRADES[u.slice(1)].n).filter(Boolean);
+    this.notify(e.o, `Spy report from ${q.name}: ${nU} troops and ${nB} buildings nearby, about ${Math.round(q.steel / 50) * 50} steel in their treasury${res.length ? ', researching ' + res.join(', ') : ''}.`, 'gold', e.x, e.y);
+    this.ev({k: 'intel', p: e.o});
+  }
+  // a guard gets suspicious
+  if (near && this.t - (e.spyT || 0) > 12 && this.t > (e.interCd || 0) && this.rnd() < (e.pilot ? .07 + (e.moving ? .04 : 0) : .02)) {
+    e.susp = (e.susp || 0) + 1; e.interCd = this.t + Math.max(25, 70 - e.susp * 15); // every questioning makes them more suspicious
+    if (e.pilot) { const g = near.t; this.clearOrders(g); g.h = Math.atan2(e.y - g.y, e.x - g.x); g.guardT = this.t + 30; e.inter = {by: g.id, t: this.t}; this.ev({k: 'interrogate', id: e.id, by: g.id, p: e.o, foe, n: e.susp >= 2 ? 2 : 1}); }
+    else if (this.rnd() < .45) { e.inter = {by: near.t.id, t: this.t}; this.answerSpy(e, false); }
+  }
+};
+Sim.prototype.answerSpy = function (e, ok) {
+  const I = e.inter; e.inter = null; if (!I) return;
+  const g = this.ents.get(I.by); if (g) g.guardT = 0;
+  if (ok) { e.spyT = this.t; this.ev({k: 'spyok', id: e.id, p: e.o}); return; }
+  // caught: the guards gather round, and that is that
+  const foe = e.disg; e.exec = this.t + 3.4; e.execBy = foe; e.squadF = [];
+  for (const t of this.ents.values()) if (t.o === foe && !t.b && t.d.cat === 'inf' && t.d.dmg && !t.pilot && Math.hypot(t.x - e.x, t.y - e.y) < 22 && e.squadF.length < 6) {
+    const a = e.squadF.length * 1.05 + 2.2, x = e.x + Math.cos(a) * 3.2, y = e.y + Math.sin(a) * 3.2;
+    this.clearOrders(t); this.go(t, x, y); t.stance = 'hold'; e.squadF.push(t.id);
+  }
+  if (g && !e.squadF.includes(g.id)) e.squadF.push(g.id);
+  this.ev({k: 'spycaught', id: e.id, p: e.o, by: I.by, x: e.x, y: e.y});
+  this.notify(e.o, 'Your spy was found out and is being executed', 'bad', e.x, e.y);
+  if (this.players[foe]) this.notify(foe, 'An enemy spy was caught in our ranks', 'good', e.x, e.y);
+};
+
+// ====================================================================================
+// Mode: FPS battles (beach landings and team deathmatch)
+// ====================================================================================
+// ---------- FPS battles ----------
+Sim.prototype.setupScen = function (B) {
+  const N = this.N, P = (u, v) => ({x: u * N, y: v * N});
+  for (const p of this.players) { p.steel = 0; p.fuel = 0; p.popCap = 99999; }
+  this.players[0].reveal = 1e9;
+  if (B.arc) return this.arcSetup(B);
+  if (B.tdm) {
+    const H = this.M.spawns;
+    this.scen = {B, tdm: 1, oi: 0, prog: 0, tickets: B.tickets, nextWave: 1e9, waves: 0, queue: [], obj: [], land: [], fwd: {x: H[0].x, y: H[0].y}, reinT: 1e9, att: 0, def: 0, spawnI: 0};
+    return;
+  }
+  this.scen = {B, oi: 0, prog: 0, tickets: B.tickets, nextWave: 1, waves: 0, queue: [], obj: B.obj.map(o => Object.assign({}, o, P(o.u, o.v))), land: B.land.map(l => P(l[0], l[1])), fwd: null, reinT: B.rein, att: 0, def: 0};
+  const face = Math.atan2(B.sea[1], B.sea[0]);
+  const unit = (k, x, y, hold) => {
+    for (let t = 0; t < 24; t++) {
+      const px = x + (t ? (this.rnd() - .5) * t * .7 : 0), py = y + (t ? (this.rnd() - .5) * t * .7 : 0);
+      if (this.landOk(px, py)) { const e = this.addUnit(k, 1, px, py); e.h = face; if (hold) e.stance = 'hold'; return e; }
+    }
+  };
+  const bld = (k, x, y) => {
+    const d = BUILDINGS[k];
+    for (let t = 0; t < 16; t++) {
+      const px = Math.round(x + (t ? (this.rnd() - .5) * t : 0)), py = Math.round(y + (t ? (this.rnd() - .5) * t : 0));
+      let ok = true; this.footprint(d, px, py, (i, j) => { const q = j * N + i; if (i < 1 || j < 1 || i >= N - 1 || j >= N - 1 || this.M.water[q] || this.M.occ[q] || this.M.block[q]) ok = false; });
+      if (ok) return this.addBuilding(k, 1, px, py, true);
+    }
+  };
+  for (const D of B.def) {
+    const o = P(D[1], D[2]), n = D[3] || 1, r = D[4] || 0;
+    for (let i = 0; i < n; i++) { const a = i / n * 6.283 + .4, x = o.x + Math.cos(a) * r, y = o.y + Math.sin(a) * r * .6; if (BUILDINGS[D[0]]) bld(D[0], x, y); else unit(D[0], x, y, D[5]); }
+  }
+  for (const f of B.fleet || []) { const o = P(f[1], f[2]), e = this.addUnit(f[0], 0, o.x, o.y); e.h = face + Math.PI; e.stance = 'hold'; }
+};
+// Put an attacker ashore: walk the point inland from the sea until it is dry.
+Sim.prototype.scenAttack = function (e, O) {
+  const ox = O.x + (this.rnd() - .5) * 8, oy = O.y + (this.rnd() - .5) * 6;
+  this.cmdMove([e], ox, oy, true, false);
+  const far = Math.hypot(e.x - O.x, e.y - O.y);
+  if (far > 30 && e.id % 3 === 0 && e.d.cat === 'inf' && !this.scen.tdm) {
+    const dx = (O.x - e.x) / far, dy = (O.y - e.y) / far, sg = (e.id % 2 ? 1 : -1) * Math.min(28, far * .55), N2 = this.N;
+    const wx = clamp(e.x + dx * far * .55 - dy * sg, 3, N2 - 4), wy = clamp(e.y + dy * far * .55 + dx * sg, 3, N2 - 4);
+    if (this.landOk(wx, wy)) { this.cmdMove([e], wx, wy, true, false); e.queue = [{x: ox, y: oy, a: true}]; }
+  }
+};
+Sim.prototype.scenUnit = function (k, x, y) {
+  const S = this.scen, sx = S.B.sea[0], sy = S.B.sea[1], ud = UNITS[k];
+  if (ud.cat !== 'air' && ud.cat !== 'heli') for (let t = 0; t < 40 && !this.landOk(x, y); t++) { x -= sx * .7; y -= sy * .7; }
+  const e = this.addUnit(k, 0, x, y); e.h = Math.atan2(-sy, -sx);
+  const O = S.obj[Math.min(S.oi, S.obj.length - 1)];
+  this.scenAttack(e, O); e.scenOi = S.oi;
+  return e;
+};
+Sim.prototype.scenLanding = function (pt, list, you) {
+  const S = this.scen, sx = S.B.sea[0], sy = S.B.sea[1], d = 6;
+  if (!S.B.noBoat) this.ev({k: 'lcvp', x0: pt.x + sx * 24, y0: pt.y + sy * 24, x1: pt.x + sx * 1.5, y1: pt.y + sy * 1.5, d, o: 0});
+  list.forEach((k, i) => S.queue.push({t: this.t + d + i * .25, k, x: pt.x + ((i % 3) - 1) * .9, y: pt.y + sy * (i / 3 | 0) * .6, you: i === 0 ? you : undefined}));
+};
+Sim.prototype.scenOver = function (win) {
+  const S = this.scen, w = win ? 0 : 1;
+  this.players[1 - w].alive = false; S.done = 1;
+  this.over = {winner: w, team: this.players[w].team, wins: [w], t: this.t};
+  this.ev({k: 'over', winner: w, team: this.over.team, wins: [w]});
+};
+Sim.prototype.tdmStep = function () {
+  const S = this.scen, B = S.B, H = this.M.spawns;
+  const k = [this.players[0].kills, this.players[1].kills];
+  if (k[0] >= B.tdm || k[1] >= B.tdm) { this.scenOver(k[0] >= B.tdm); return; }
+  const n = [0, 0];
+  for (const e of this.ents.values()) if (!e.b && e.d.cat === 'inf' && e.o < 2 && !e.inside && !e.pilot) n[e.o]++;
+  for (const o of [0, 1]) {
+    const want = B.team + o; // you plus B.team bots against B.team + 1 bots
+    for (let i = 0; i < 2 && n[o] < want; i++) {
+      const sp = H[o], kk = B.comp[(S.spawnI++) % B.comp.length];
+      for (let tr = 0; tr < 12; tr++) { const x = sp.x + (this.rnd() - .5) * 9, y = sp.y + (this.rnd() - .5) * 9; if (this.landOk(x, y)) { const e = this.addUnit(kk, o, x, y); e.h = Math.atan2(H[1 - o].y - y, H[1 - o].x - x); n[o]++; break; } }
+    }
+  }
+  S.queue = S.queue.filter(q => {
+    if (q.t > this.t) return true;
+    const sp = H[0]; let e = null;
+    for (let tr = 0; tr < 12 && !e; tr++) { const x = sp.x + (this.rnd() - .5) * 6, y = sp.y + (this.rnd() - .5) * 6; if (this.landOk(x, y)) e = this.addUnit(q.k, 0, x, y); }
+    if (e) this.ev({k: 'scenYou', p: q.you, id: e.id});
+    return false;
+  });
+  if (this.tick % 20 === 0) for (const e of this.ents.values()) {
+    if (e.b || e.pilot || e.o > 1 || e.d.cat !== 'inf' || e.inside) continue;
+    if ((e.tid && this.ents.get(e.tid)) || e.goal) continue;
+    // push across the map through a random point in the middle, so the fight spreads over the whole arena
+    const en = H[1 - e.o], mx = this.N / 2 + (this.rnd() - .5) * this.N * .45, my = this.N / 2 + (this.rnd() - .5) * this.N * .45;
+    const far = Math.hypot(e.x - en.x, e.y - en.y) > this.N * .35;
+    this.cmdMove([e], far ? mx : en.x + (this.rnd() - .5) * 10, far ? my : en.y + (this.rnd() - .5) * 10, true, false);
+  }
+};
+Sim.prototype.scenStep = function () {
+  const S = this.scen, B = S.B, t = this.t;
+  if (this.over) return;
+  if (S.arc) return this.arcStep();
+  if (S.tdm) return this.tdmStep();
+  // landing waves
+  if (t >= S.nextWave && S.tickets > 0) {
+    S.nextWave = t + B.wave; S.waves++;
+    const n = Math.min(B.waveN, S.tickets); S.tickets -= n;
+    const list = []; for (let i = 0; i < n; i++) list.push(B.comp[(i + S.waves * 3) % B.comp.length]);
+    for (let b = 0; b * 5 < list.length; b++) this.scenLanding(S.land[(b + S.waves) % S.land.length], list.slice(b * 5, b * 5 + 5));
+    if (B.air && S.waves % 3 === 0) for (let i = 0; i < 2; i++) { const L = S.land[i % S.land.length]; S.queue.push({t: t + 3, k: B.air, x: L.x + i * 4, y: L.y + B.sea[1] * 30, air: 1}); }
+    this.ev({k: 'msg', p: 0, text: 'Wave ' + S.waves + ' is landing!', kind: 'info'});
+  }
+  S.queue = S.queue.filter(q => {
+    if (q.t > t) return true;
+    const e = q.air ? this.addUnit(q.k, 0, q.x, q.y) : this.scenUnit(q.k, q.x, q.y);
+    if (q.air && e) { const O = S.obj[Math.min(S.oi, S.obj.length - 1)]; this.cmdMove([e], O.x, O.y, true, false); }
+    if (e && q.you !== undefined) this.ev({k: 'scenYou', p: q.you, id: e.id});
+    return false;
+  });
+  // capture the current objective: attackers inside, no defenders
+  const O = S.obj[S.oi]; let att = 0, def = 0;
+  for (const e of this.ents.values()) {
+    if (e.b || e.hp <= 0 || e.air || e.d.cat === 'sea') continue;
+    if (Math.hypot(e.x - O.x, e.y - O.y) < 7) { if (e.o === 0) att++; else def++; }
+  }
+  S.att = att; S.def = def;
+  if (att && !def) S.prog = Math.min(100, S.prog + (4 + 3 * Math.min(4, att)) * .5);
+  else if (def && !att) S.prog = Math.max(0, S.prog - 3);
+  if (S.prog >= 100) {
+    this.ev({k: 'msg', p: 0, text: 'Objective captured: ' + O.n + '!', kind: 'gold'}); this.ev({k: 'scenCap', i: S.oi});
+    S.fwd = {x: O.x, y: O.y}; S.oi++; S.prog = 0; S.tickets += 15;
+    if (S.oi >= S.obj.length) { this.scenOver(true); return; }
+    this.ev({k: 'msg', p: 0, text: 'Next objective: ' + S.obj[S.oi].n + '. Reinforcements now come ashore at your forward position.', kind: 'info'});
+  }
+  // orders: attackers push the objective; defenders near it close in, the rest hold their posts
+  if (this.tick % 20 === 0) {
+    const O2 = S.obj[S.oi];
+    for (const e of this.ents.values()) {
+      if (e.b || e.pilot || e.hp <= 0 || e.d.cat === 'sea') continue;
+      if (e.o === 0) {
+        if ((e.tid && this.ents.get(e.tid)) || (e.goal && e.amove && e.scenOi === S.oi)) continue;
+        e.scenOi = S.oi; this.scenAttack(e, O2);
+      } else if (!e.tid && !e.goal && e.stance !== 'hold' && Math.hypot(e.x - O2.x, e.y - O2.y) < 24 && this.rnd() < .25) this.cmdMove([e], O2.x + (this.rnd() - .5) * 6, O2.y + (this.rnd() - .5) * 6, true, false);
+    }
+  }
+  // defender reinforcements march from their rear
+  if (t >= S.reinT && S.oi >= 1) {
+    S.reinT = t + B.rein;
+    const H = this.M.spawns[1], O2 = S.obj[S.oi];
+    for (let i = 0; i < 3; i++) for (let k = 0; k < 10; k++) { const x = H.x + (this.rnd() - .5) * 10, y = H.y + (this.rnd() - .5) * 6; if (this.landOk(x, y)) { const e = this.addUnit(i ? 'rifle' : 'mg', 1, x, y); this.cmdMove([e], O2.x, O2.y, true, false); break; } }
+  }
+  // out of men
+  if (S.tickets <= 0 && !S.queue.length) {
+    let alive = 0; for (const e of this.ents.values()) if (e.o === 0 && !e.b && e.d.cat === 'inf') alive++;
+    if (!alive) this.scenOver(false);
+  }
+};
+Sim.prototype.scenSpawn = function (pi, k) {
+  const S = this.scen; if (!S || this.over || !batClasses(S.B).includes(k)) return;
+  if (S.arc && k === 'a10' && S.arc === 'ground' && !(S.strike && S.strike[pi] > 0)) { this.notify(pi, 'Get 3 kills in one life to earn a strike plane', 'bad'); return; }
+  if (S.queue.some(q => q.you === pi) || (S.spawnT || 0) > this.t) return;
+  if (S.tickets <= 0) { this.notify(pi, 'No reinforcements left', 'bad'); return; }
+  S.tickets--; S.spawnT = this.t + 1;
+  if (S.tdm || S.arc) { S.queue.push({t: this.t + 1.5, k, x: 0, y: 0, you: pi}); return; }
+  if (S.fwd) S.queue.push({t: this.t + .5, k, x: S.fwd.x + (this.rnd() - .5) * 3, y: S.fwd.y + S.B.sea[1] * 3, you: pi});
+  else { let best = S.land[0]; for (const L of S.land) if (Math.abs(L.x - this.N / 2) < Math.abs(best.x - this.N / 2)) best = L; this.scenLanding(best, [k], pi); }
+};
+
+// ====================================================================================
+// Mode: arcade Air Battle and Tank Battle (tickets, capture points, bases, airfields)
+// ====================================================================================
+Sim.prototype.arcSetup = function (B) {
+  const H = this.M.spawns, N = this.N, air = B.arc === 'air';
+  for (const p of this.players) p.reveal = 1e9; // arcade: every enemy is marked
+  const S = this.scen = {B, arc: B.arc, tdm: 0, oi: 0, prog: 0, tickets: 1e9, nextWave: 1e9, waves: 0, queue: [], obj: [], land: [], fwd: {x: H[0].x, y: H[0].y}, reinT: 1e9, att: 0, def: 0, spawnI: 0, tix: [B.tix, B.tix], caps: [], gt: [[], []], strike: {}, streak: {}};
+  const mx = (H[0].x + H[1].x) / 2, my = (H[0].y + H[1].y) / 2, ax = H[1].x - H[0].x, ay = H[1].y - H[0].y, L = Math.hypot(ax, ay) || 1, px = -ay / L, py = ax / L;
+  const land = (x, y) => { for (let t = 0; t < 60; t++) { const a = t * 2.4, r = t * .6, qx = clamp(x + Math.cos(a) * r, 5, N - 6), qy = clamp(y + Math.sin(a) * r, 5, N - 6); if (this.landOk(qx, qy)) return {x: qx, y: qy}; } return {x, y}; };
+  if (!air) ['A', 'B', 'C'].forEach((n, i) => { const o = (i - 1) * N * .26, q = land(mx + px * o, my + py * o); S.caps.push({n, x: q.x, y: q.y, r: 8, own: -1, prog: 0}); });
+  else for (const o of [0, 1]) { // ground targets: an armour column, trucks and AA on each side
+    const bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45;
+    ['tank', 'tank', 'tank', 'truck', 'truck', 'truck', 'sam', 'ifv', 'tank', 'truck'].forEach((k, i) => { const q = land(bx + px * (i - 4.5) * 3.2, by + py * (i - 4.5) * 3.2); const e = this.addUnit(k, o, q.x, q.y); e.gt = 1; e.stance = 'hold'; e.h = Math.atan2(-ay * (o ? -1 : 1), -ax * (o ? -1 : 1)); e.sq = 0; S.gt[o].push(k); });
+    // bases for the bombers to level, and a home airfield: a low pass over it repairs and rearms you
+    const bb = {x: H[o].x + (mx - H[o].x) * .25, y: H[o].y + (my - H[o].y) * .25};
+    for (const sd of [-1, 0, 1]) { const q = land(bb.x + px * sd * 13, bb.y + py * sd * 13); const b = this.addBuilding('bunker', o, Math.round(q.x), Math.round(q.y), true); if (b) { b.base = 1; b.hp = b.hpm = 2600; } }
+    const af = land(H[o].x, H[o].y); const A = this.addBuilding('airfield', o, Math.round(af.x), Math.round(af.y), true); if (A) { A.hp = A.hpm = 1e6; A.field = 1; S.field = S.field || []; S.field[o] = {x: A.x, y: A.y}; }
+  }
+};
+Sim.prototype.arcLoss = function (t, by) {
+  const S = this.scen, o = t.o; if (o !== 0 && o !== 1) return;
+  const air = S.arc === 'air', cost = t.base ? 120 : air ? (t.gt ? 12 : t.air ? 30 : 8) : (t.air ? 12 : 16);
+  if (t.base) this.ev({k: 'msg', p: 0, text: (o === 0 ? 'Our base was destroyed' : 'Enemy base destroyed') + ': −120 tickets', kind: o === 0 ? 'bad' : 'good', x: t.x, y: t.y});
+  S.tix[o] = Math.max(0, S.tix[o] - cost);
+  if (t.pilot) { S.streak[o + ':' + (t.pilot - 1)] = 0; }
+  const killer = by === 0 || by === 1 ? by : null;
+  if (killer !== null) for (const e of this.ents.values()) if (e.pilot && e.o === killer && Math.hypot(e.x - t.x, e.y - t.y) < 60) { // credit the player nearby with a streak
+    const key = killer + ':' + (e.pilot - 1); S.streak[key] = (S.streak[key] || 0) + 1;
+    if (!air && S.streak[key] === 3) { S.strike[e.pilot - 1] = (S.strike[e.pilot - 1] || 0) + 1; this.notify(e.pilot - 1, '3 kills! Strike plane earned: pick the A-10 next time you spawn', 'gold'); }
+    break;
+  }
+};
+Sim.prototype.arcStep = function () {
+  const S = this.scen, B = S.B, H = this.M.spawns, N = this.N, air = S.arc === 'air';
+  if (S.tix[0] <= 0 || S.tix[1] <= 0) { this.scenOver(S.tix[1] <= 0); return; }
+  // capture points: only ground vehicles count; more of yours inside moves the bar your way
+  if (!air && this.tick % 5 === 0) {
+    for (const C of S.caps) {
+      const n = [0, 0]; for (const e of this.ents.values()) if (!e.b && !e.air && (e.o === 0 || e.o === 1) && Math.hypot(e.x - C.x, e.y - C.y) < C.r) n[e.o]++;
+      C.cnt = n; const d = n[0] - n[1];
+      if (d && !(n[0] && n[1])) { C.prog = clamp(C.prog + Math.sign(d) * Math.min(3, Math.abs(d)) * .035, -1, 1); if (Math.abs(C.prog) >= 1 && C.own !== (d > 0 ? 0 : 1)) { C.own = d > 0 ? 0 : 1; this.ev({k: 'msg', p: 0, text: (C.own === 0 ? 'We captured ' : 'The enemy captured ') + 'point ' + C.n, kind: C.own === 0 ? 'good' : 'bad', x: C.x, y: C.y}); } else if (C.own !== -1 && Math.sign(C.prog) !== (C.own === 0 ? 1 : -1)) C.own = -1; }
+    }
+    if (this.tick % 10 === 0) { const a = S.caps.filter(C => C.own === 0).length, b = S.caps.filter(C => C.own === 1).length; if (a > b) S.tix[1] = Math.max(0, S.tix[1] - (a - b) * 1.1); if (b > a) S.tix[0] = Math.max(0, S.tix[0] - (b - a) * 1.1); }
+  }
+  if (this.tick % 5 === 0) for (const e of this.ents.values()) {
+    if (e.b || e.gt || (e.o !== 0 && e.o !== 1) || e.hp >= e.hpm) continue;
+    if (!air && !e.air && !e.moving && this.t - (e.hurtT || -99) > 6) { e.hp = Math.min(e.hpm, e.hp + e.hpm * .025); e.repairing = this.t; } // field repair: stop out of the fight and the crew patch the tank up
+    if (air && e.air && S.field && S.field[e.o]) { const F = S.field[e.o]; if (Math.hypot(e.x - F.x, e.y - F.y) < 10 && e.z - Math.max(0, hAt(this.M, e.x, e.y)) < 7) { e.hp = Math.min(e.hpm, e.hp + e.hpm * .08); e.repairing = this.t; if (e.pilot && (!e.rearmT || this.t - e.rearmT > 2)) { e.rearmT = this.t; this.ev({k: 'rearm', id: e.id, p: e.pilot - 1}); } } }
+  }
+  if (!air && this.tick % 10 === 0) { // WT-style strike aircraft: a side with kill streaks calls in an attacker now and then
+    S.airT = S.airT || [90, 120];
+    for (const o of [0, 1]) if (this.t > S.airT[o]) { S.airT[o] = this.t + 100 + this.rnd() * 40; if (![...this.ents.values()].some(e => e.o === o && e.air && !e.pilot)) { const e = this.arcSpawn(o, this.rnd() < .5 ? 'a10' : 'fa18'); if (e) { e.strike = 1; this.ev({k: 'msg', p: 0, text: o === 0 ? 'Friendly strike aircraft inbound' : 'ENEMY AIRCRAFT INBOUND: SPAA to the front!', kind: o === 0 ? 'good' : 'bad', x: e.x, y: e.y}); } } }
+  }
+  // keep each side's team topped up (you are one of team 0)
+  const isFighter = e => !e.b && !e.gt && (air ? e.air : !e.air && e.d.cat === 'veh') && !e.inside;
+  const n = [0, 0]; for (const e of this.ents.values()) if (isFighter(e) && !e.pilot && e.o < 2) n[e.o]++;
+  for (const o of [0, 1]) {
+    const want = B.team + o;
+    S.spT = S.spT || [0, 0];
+    if (n[o] < want && this.t >= S.spT[o]) { S.spT[o] = this.t + 1.2;
+      const kk = B.comp[(S.spawnI++) % B.comp.length], e = this.arcSpawn(o, kk); if (e) n[o]++;
+    }
+  }
+  // air: ground targets come back in waves
+  if (air && this.tick % 600 === 300) for (const o of [0, 1]) {
+    const have = [...this.ents.values()].filter(e => e.gt && e.o === o).length;
+    if (have < 5) { const mx = (H[0].x + H[1].x) / 2, my = (H[0].y + H[1].y) / 2, bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45; for (let i = 0; i < 4; i++) { const x = bx + (this.rnd() - .5) * 14, y = by + (this.rnd() - .5) * 14; if (this.landOk(x, y)) { const e = this.addUnit(['tank', 'truck', 'sam', 'truck'][i], o, x, y); e.gt = 1; e.stance = 'hold'; e.sq = 0; } } }
+  }
+  S.queue = S.queue.filter(q => {
+    if (q.t > this.t) return true;
+    const e = this.arcSpawn(0, q.k);
+    if (e) { this.ev({k: 'scenYou', p: q.you, id: e.id}); if (q.k === 'a10' && !air) S.strike[q.you] = Math.max(0, (S.strike[q.you] || 0) - 1); }
+    return false;
+  });
+  // bots: planes hunt across the map, tanks drive for the nearest point they do not hold
+  if (this.tick % 20 === 0) for (const e of this.ents.values()) {
+    if (e.b || e.pilot || e.o > 1 || e.o < 0 || e.gt || e.inside) continue;
+    if ((e.tid && this.ents.get(e.tid)) || e.goal) continue;
+    if (air && (e.k === 'bomber' || e.k === 'a10') || e.strike) { let best = null, bd = 1e9; for (const t of this.ents.values()) if (t.o === 1 - e.o && (t.base || t.gt || (!air && !t.air && !t.b))) { const d = Math.hypot(t.x - e.x, t.y - e.y) - (t.base ? 30 : 0); if (d < bd) { bd = d; best = t; } } if (best) { this.cmdMove([e], best.x, best.y, true, false); continue; } }
+    if (air || e.air) { const en = H[1 - e.o], f = .3 + this.rnd() * .6; this.cmdMove([e], clamp(H[e.o].x + (en.x - H[e.o].x) * f + (this.rnd() - .5) * N * .5, 4, N - 5), clamp(H[e.o].y + (en.y - H[e.o].y) * f + (this.rnd() - .5) * N * .5, 4, N - 5), true, false); continue; }
+    let best = null, bd = 1e9; for (const C of S.caps) { if (C.own === e.o && Math.abs(C.prog) >= 1 && this.rnd() < .8) continue; const d = Math.hypot(C.x - e.x, C.y - e.y) + this.rnd() * 20; if (d < bd) { bd = d; best = C; } }
+    if (!best) best = S.caps[Math.floor(this.rnd() * S.caps.length)];
+    if (best) this.cmdMove([e], best.x + (this.rnd() - .5) * 6, best.y + (this.rnd() - .5) * 6, true, false);
+  }
+};
+Sim.prototype.arcSpawn = function (o, k) {
+  const H = this.M.spawns, sp = H[o], en = H[1 - o], d = UNITS[k], N = this.N, h = Math.atan2(en.y - sp.y, en.x - sp.x);
+  if (d.cat === 'air' || d.cat === 'heli') { // planes spawn in the air, already flying toward the fight
+    const x = clamp(sp.x - Math.cos(h) * 6 + (this.rnd() - .5) * 16, 3, N - 4), y = clamp(sp.y - Math.sin(h) * 6 + (this.rnd() - .5) * 16, 3, N - 4);
+    const e = this.addUnit(k, o, x, y); e.h = h; e.z = Math.max(hAt(this.M, x, y), 0) + 18 + this.rnd() * 6; e.sp = d.spd; e.sq = 0;
+    return e;
+  }
+  for (let tr = 0; tr < 20; tr++) { const x = sp.x + (this.rnd() - .5) * 12, y = sp.y + (this.rnd() - .5) * 12; if (this.landOk(x, y)) { const e = this.addUnit(k, o, x, y); e.h = h; e.sq = 0; return e; } }
+  return null;
 };
 </script>
 
@@ -8175,7 +8211,7 @@ Game.prototype.issue = function (c) {
 // Shots: hitscan weapons are resolved on this client against what you see (instant feedback) and the host checks them;
 // projectiles (rockets, shells, bombs, missiles, grenades) are simulated by the host.
 
-const BIND_DEFAULTS = {fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', walk: 'KeyB', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP', chaff: 'KeyZ'};
+const BIND_DEFAULTS = {vlock: 'KeyL', fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', walk: 'KeyB', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP', chaff: 'KeyZ'};
 const Settings = {
   view: 'fp', sens: 1, invert: false, assist: false, autofire: false, flightAssist: true, gritty: true, blobs: true,
   binds: Object.assign({}, BIND_DEFAULTS),
@@ -8195,7 +8231,7 @@ const Settings = {
 Settings.load();
 Settings.blobs = true; // the troops are always blob guys
 
-const BIND_LABELS = {fire: 'Fire', alt: 'Secondary weapon', ads: 'Aim / scope (toggle)', reload: 'Reload / aircraft: 3rd weapon', jump: 'Jump / climb', sprint: 'Sprint / descend', view: 'First / third person', exit: 'Back to command', free: 'Free cursor', cycle: 'Cycle lock target', special: 'National special ability', walk: "Ships: leave / sit in captain's chair", fwd: 'Forward / throttle up', back: 'Back / throttle down', left: 'Left / roll left', right: 'Right / roll right', chooser: 'Unit chooser', chaff: 'Aircraft: chaff (beats missiles)'};
+const BIND_LABELS = {vlock: 'Planes: lock view on target', fire: 'Fire', alt: 'Secondary weapon', ads: 'Aim / scope (toggle)', reload: 'Reload / aircraft: 3rd weapon', jump: 'Jump / climb', sprint: 'Sprint / descend', view: 'First / third person', exit: 'Back to command', free: 'Free cursor', cycle: 'Cycle lock target', special: 'National special ability', walk: "Ships: leave / sit in captain's chair", fwd: 'Forward / throttle up', back: 'Back / throttle down', left: 'Left / roll left', right: 'Right / roll right', chooser: 'Unit chooser', chaff: 'Aircraft: chaff (beats missiles)'};
 
 const _v3 = new THREE.Vector3(), _v3b = new THREE.Vector3();
 const Direct = {
@@ -8364,6 +8400,7 @@ const Direct = {
     if (c === B.chaff) { this.chaff(); return true; }
     if (c === 'KeyJ' && this.strikeBank > 0) { const P = this.aimPt; if (!P) { this.msg('Aim at the ground to call artillery', 1.5); return true; } this.strikeBank--; if (this.ui.g.sim && this.ui.g.sim.scen && this.ui.g.sim.scen.arc) this.artT = performance.now() + 60000; this.ui.g.issue({c: 'streak', id: this.id, x: P.x, y: P.y, big: this.bigStrike ? 1 : 0}); this.bigStrike = false; return true; }
     if (c === B.cycle) { this.cycleLock(); return true; }
+    if (c === (B.vlock || 'KeyL') && this.mode === 'plane') { this.toggleViewLock(); return true; }
     if (c === B.special) { this.special(); return true; }
     if (c === 'KeyH') { document.getElementById('dhelp').classList.toggle('mini'); return true; }
     if (c === 'KeyY' && this.mode === 'soldier' && this.e.k !== 'wolf') { // shovel: click to dig the ground in front of you, bit by bit
@@ -8661,6 +8698,17 @@ const Direct = {
     // thrust, drag (parasitic + induced + post-stall) and gravity trade speed and height. Mouse-aim is an autopilot on top.
     const k = this.keys, B = Settings.binds, d = e.d, p = this.pose, vc = d.spd, G = 9, aS = .3, LM = 1.7 * (d.turn || 1.6) * vc, FL = FlightScratch;
     this.camYaw += this.lookX; this.camPitch = clamp(this.camPitch - this.lookY, -1.3, 1.3);
+    if (this.vLock) { // view locked on a target: the camera (and so the mouse-aim autopilot) tracks it, leading it a little
+      const T = this.ui.g.view.ents.get(this.vLock);
+      if (!T || T.hp <= 0) { this.vLock = 0; this.msg('Target lost', 1.2); }
+      else {
+        const tx = T.rx === undefined ? T.x : T.rx, ty = T.ryy === undefined ? T.y : T.ryy, tz = T.rz === undefined ? T.z : T.rz, D = Math.hypot(tx - p.x, ty - p.y, tz - p.z);
+        if (D > 260) { this.vLock = 0; this.msg('Target out of range', 1.2); }
+        else { const ld = D / (vc * 4), th = T.ry === undefined ? T.h : T.ry, sp = T.sp || T.d.spd || 0, lx = tx + Math.cos(th) * sp * ld, ly = ty + Math.sin(th) * sp * ld;
+          const wy = Math.atan2(ly - p.y, lx - p.x), wp = Math.atan2(tz - p.z, Math.hypot(lx - p.x, ly - p.y)), kk = Math.min(1, (1 / 60) * 10);
+          this.camYaw += angDiff(this.camYaw, wy) * kk; this.camPitch += (clamp(wp, -1.3, 1.3) - this.camPitch) * kk; }
+      }
+    }
     if (this.fq === undefined || this.fqId !== e.id) {
       this.fqId = e.id; this.fq = new THREE.Quaternion().setFromEuler(FL.e.set(-p.r, -p.p, p.h, 'ZYX')); this.rr = 0; this.stX = 0; this.stY = 0;
       this.fV = new THREE.Vector3(1, 0, 0).applyQuaternion(this.fq).multiplyScalar(this.speed || vc);
@@ -8684,7 +8732,13 @@ const Direct = {
       this.stX *= 1 - Math.min(1, dt * 1.5); this.stY *= 1 - Math.min(1, dt * 1.5);
       aCmd = -this.stY * aS * 1.4; rollCmd = this.stX * 3.4;
     } else {
-      A.set(Math.cos(this.camYaw) * Math.cos(this.camPitch), Math.sin(this.camYaw) * Math.cos(this.camPitch), Math.sin(this.camPitch));
+      // instructor (arcade-style): never lets you fly into the ground or stall; the camera stays where you look
+      let aimP = this.camPitch; const agl = p.z - ground, slow = Math.max(V.length(), .1) / vc;
+      if (Settings.flightAssist) {
+        if (agl < 12) aimP = Math.max(aimP, -.04 + (12 - agl) * .025);
+        if (slow < .55) { aimP = Math.min(aimP, .08); this.throttle = 1; this.instrT = performance.now(); }
+      }
+      A.set(Math.cos(this.camYaw) * Math.cos(aimP), Math.sin(this.camYaw) * Math.cos(aimP), Math.sin(aimP));
       const aF = A.dot(F), aL = A.dot(L), aU = A.dot(U), lat = Math.hypot(aL, aU), w = clamp(lat * 5, 0, 1);
       const fwd = aF > .2; // target ahead: roll at most 90 degrees and pitch up or down; behind: roll lift toward it (loop / split-S)
       rollCmd = -clamp(Math.atan2(aL, fwd ? Math.abs(aU) : aU) * 3.5, -3.2, 3.2) * w; rollCmd -= (this.rollR || 0) * 2.5 * (1 - w); // aligned: wings back to level
@@ -8850,6 +8904,20 @@ const Direct = {
   },
 
   // ---------- weapons ----------
+  // War Thunder style target view: L locks the camera onto the enemy plane nearest your crosshair; mouse-aim then chases it
+  // ---------- planes: War Thunder style view lock ----------
+  toggleViewLock() {
+    if (this.vLock) { this.vLock = 0; this.msg('View lock off', 1); return; }
+    const v = this.ui.g.view, me = this.ui.g.me; let best = null, ba = 1e9;
+    for (const t of v.ents.values()) {
+      if (!t.air || t.id === this.id || v.friendly(t.o, me) || t.o < 0) continue;
+      if (!(this.ui.g.R.isVisible(t.x, t.y) || (t.revealed || 0) > v.t || (v.players[me].reveal || 0) > v.t)) continue;
+      const a = this.angTo(t); if (a.dd > 220) continue;
+      const sc = a.ang + a.dd / 600; if (sc < ba) { ba = sc; best = t; }
+    }
+    if (!best) { this.msg('No enemy aircraft to lock: put one near your crosshair', 1.5); Sfx.bad(); return; }
+    this.vLock = best.id; this.msg('VIEW LOCKED: ' + best.d.n + '  (L to release)', 1.8); Sfx.ui();
+  },
   cycleLock() {
     const v = this.g.view, me = this.g.me, list = [];
     const W = this.W.find(s => s.w.t === 'msl'); if (!W) return;
@@ -9289,6 +9357,11 @@ const Direct = {
         c.restore();
       }
     }
+    if (this.vLock && this.mode === 'plane') { // bracket on the plane the view is locked to
+      const T = this.ui.g.view.ents.get(this.vLock), sp = T && this.toScreen(T.rx === undefined ? T.x : T.rx, T.ryy === undefined ? T.y : T.ryy, T.rz === undefined ? T.z : T.rz);
+      if (sp) { const r = 18; c.save(); c.strokeStyle = '#ff5a4a'; c.lineWidth = 2; for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { c.beginPath(); c.moveTo(sp.x + sx * r, sp.y + sy * (r - 7)); c.lineTo(sp.x + sx * r, sp.y + sy * r); c.lineTo(sp.x + sx * (r - 7), sp.y + sy * r); c.stroke(); } c.fillStyle = '#ff8a7a'; c.font = '700 11px system-ui'; c.textAlign = 'center'; c.fillText('VIEW LOCK · ' + T.d.n, sp.x, sp.y - r - 6); c.restore(); }
+    }
+    if (this.instrT && performance.now() - this.instrT < 600 && this.mode === 'plane') { c.save(); c.textAlign = 'center'; c.font = '800 13px system-ui'; c.fillStyle = '#ffd23a'; c.fillText('INSTRUCTOR: recovering speed', cx, cy + 120); c.restore(); }
     if (this.pullUp && this.mode === 'plane' && Math.floor(performance.now() / 250) % 2) { c.textAlign = 'center'; c.font = '900 26px system-ui'; c.fillStyle = '#ff3b30'; c.fillText('PULL UP', cx, cy - 70); Sfx.beep(1100); }
     c.restore();
   },
@@ -10516,6 +10589,7 @@ const UI = {
       const d = b.dataset; this.g.issue({c: 'diplo', a: d.a, to: +d.to, kind: d.k, gs: +d.gs, gf: +d.gf, ws: +d.ws, wf: +d.wf, id: +d.id}); Sfx.ui();
     });
   },
+  // ---------- squads: the Platoons & sections list ----------
   updateSqBar() {
     const v = this.g.view, me = this.g.me, Q = new Map(), el = $('sqBar'); if (!el) return;
     for (const e of v.ents.values()) {
@@ -11477,6 +11551,7 @@ const UI = {
   closeDeploy() { $('deploy').classList.add('hidden'); },
 
   // ---------- direct control screens ----------
+  // ---------- spies: cover card and the questioning / execution cutscene overlay ----------
   spyCard(C) {
     let el = $('spyCard'); if (!el) { el = document.createElement('div'); el.id = 'spyCard'; document.body.appendChild(el); }
     clearTimeout(this.spyCardT);
@@ -11499,6 +11574,7 @@ const UI = {
   },
   cutLine(t) { const el = $('cut'); if (el && !el.classList.contains('hidden')) el.querySelector('.say').innerHTML = `<p class="big">${t}</p>`; },
   cutTimer(left) { const i = document.querySelector('#cut .tm i'); if (i) i.style.width = (left / 9 * 100) + '%'; },
+  // ---------- deputy: what happened while you were fighting in person ----------
   awaySnap() {
     const v = this.g.view, me = this.g.me, P = v.players[me]; if (!P) return;
     const ids = new Set(); for (const e of v.ents.values()) if (e.o === me) ids.add(e.id);
@@ -11534,7 +11610,7 @@ const UI = {
       soldier: `${K('fwd')}${K('left')}${K('back')}${K('right')} move · mouse aims (no click needed) · ${K('fire')} or click fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} aim · ${K('reload')} reload · ${K('jump')} jump · ${K('sprint')} sprint`,
       vehicle: `${K('fwd')}${K('back')} drive · ${K('left')}${K('right')} turn hull · mouse aims turret · ${K('fire')} fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} ${D.e.k === 'arty' ? 'direct/indirect fire' : 'zoom'}`,
       ship: `${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} steer · mouse aims · ${K('fire')} fire${w2 ? ' · ' + K('alt') + ' ' + w2 : ''} · ${K('walk')} leave the chair and walk`,
-      plane: `mouse or arrows steer · ${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} roll · ${K('fire')} guns · ${K('alt')} ${w2} · ${D.W[2] ? K('reload') + ' ' + D.W[2].w.n + ' · ' : ''}${K('chaff')} chaff · ${K('cycle')} next target`,
+      plane: `mouse or arrows steer · ${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} roll · ${K('fire')} guns · ${K('alt')} ${w2} · ${D.W[2] ? K('reload') + ' ' + D.W[2].w.n + ' · ' : ''}${K('chaff')} chaff · ${K('cycle')} next target · ${K('vlock')} lock view`,
       heli: `${K('fwd')}${K('left')}${K('back')}${K('right')} fly · ${K('up')} up · ${K('down')} down · mouse aims · ${K('fire')} guns · ${K('alt')} ${w2}`,
       fpv: `mouse steers · ${K('fwd')} boost · ${K('back')} brake · ${K('up')}${K('down')} climb/sink · dive into the target · ${K('fire')} detonate`,
     };
