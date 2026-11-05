@@ -169,6 +169,7 @@ body.bigmap #selpanel{visibility:hidden}
 .mini{position:relative;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:4px;cursor:pointer;padding:0;border:1px solid transparent}
 .mini img{width:100%;height:100%;object-fit:contain;display:block}
 .mini i{position:absolute;left:2px;right:2px;bottom:1px;height:3px;background:#39d06f}
+.sqrow .multi{overflow:visible;flex:none;gap:2px}.sqrow .mini{width:27px;height:27px}.sqrow .mini i{height:2px}
 #awaySum{position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:60;min-width:300px;max-width:min(520px,92vw);padding:14px 18px;background:rgba(12,18,24,.94);border:1px solid #ffd97a66;border-radius:10px;color:#e8eef2;font:14px system-ui;box-shadow:0 10px 40px #0008;cursor:pointer}
 #awaySum h3{margin:0 0 8px;color:#ffd97a;font-size:16px}#awaySum h3 small{color:#9fb0bb;font-weight:500;margin-left:6px}#awaySum ul{margin:0;padding-left:18px;line-height:1.6}#awaySum p{margin:8px 0 0;color:#9fb0bb;font-size:12px}
 #spyCard{position:fixed;right:18px;top:90px;z-index:55;width:290px;padding:12px 14px;background:rgba(10,14,18,.93);border:2px solid #888;border-radius:10px;color:#e8eef2;font:13px system-ui}
@@ -180,6 +181,7 @@ body.cutscene #direct,body.cutscene #spyCard,body.cutscene #freePanel,body.cutsc
 #cut .say p.big{text-align:center;font-size:30px;font-weight:800;letter-spacing:.05em}
 #cut .opts{display:flex;flex-direction:column;gap:6px}#cut .opts button{background:rgba(10,14,18,.85);color:#fff;border:1px solid #ffffff44;border-radius:8px;padding:9px 12px;font:15px system-ui;cursor:pointer;text-align:left}#cut .opts button:hover{border-color:#ffd97a}#cut .opts kbd{color:#ffd97a;margin-right:6px}
 #cut .tm{height:3px;background:#ffffff22;margin-top:10px}#cut .tm i{display:block;height:100%;width:100%;background:#ff5a4a}
+.sqrows{flex:1;min-width:0;overflow-y:auto;max-height:170px;display:flex;flex-direction:column;gap:5px;scrollbar-width:thin}.sqrow{border-left:2px solid #ffd97a55;padding-left:7px}.sqrow+.sqrow{border-top:1px solid #ffffff12;padding-top:4px}.sqhd{display:flex;align-items:center;gap:8px;font:600 11px system-ui;color:#ffd97a;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}.sqhd span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sqhd b{color:#c9d4da;font-weight:700}.sqsel{padding:2px 8px;font:700 10px system-ui;border-radius:5px;background:#ffd97a22;border:1px solid #ffd97a66;color:#ffd97a;cursor:pointer}.sqsel:hover{background:#ffd97a44}
 .sqname{font:600 11px system-ui;color:#ffd97a;letter-spacing:.04em;text-transform:uppercase;margin:0 0 4px}
 .queue{display:flex;gap:4px;margin-top:5px;align-items:center}
 .qit{position:relative;width:38px;height:38px;padding:0;background:rgba(255,255,255,.06)}
@@ -2283,6 +2285,7 @@ Sim.prototype.issue = function (c, pi) {
       const depth = c.deep ? DIG_MAX : TRENCH_D + .2;
       wk.forEach((w, k) => { this.clearOrders(w); w.task = {type: 'dig2', cells, i: Math.floor(k * cells.length / wk.length), depth}; });
       break; }
+    case 'autohouse': p.autoHouse = !!c.on; this.notify(p.i, 'Auto housing ' + (p.autoHouse ? 'ON: workers build Housing before you hit the population cap' : 'OFF'), 'info'); break;
     case 'autoeco': p.autoEco = !!c.on; this.notify(p.i, 'Auto economy ' + (p.autoEco ? 'ON: workers, mining and housing are handled for you' : 'OFF'), 'info'); break;
     case 'assist': { const t = this.ents.get(c.t); if (t && t.b && t.o === pi) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'build', id: t.id}; } break; }
     case 'road': this.cmdRoad(mine, p, c.x1, c.y1, c.x2, c.y2); break;
@@ -3066,7 +3069,7 @@ Sim.prototype.step = function () {
     if (this.tick % 10 === 0) this.income(p);
   }
   if (this.tick % 10 === 3) this.stepMorale();
-  if (this.tick % 50 === 21) for (const p of this.players) if (p.alive && p.autoEco && !this.battle && !this.scen) this.stepAutoEco(p);
+  if (this.tick % 50 === 21) for (const p of this.players) if (p.alive && !this.battle && !this.scen) { if (p.autoEco) this.stepAutoEco(p); else if (p.autoHouse && !p.bot) this.stepAutoHouse(p); }
   if (this.tick % 100 === 47 && !this.battle && !this.scen) { // your deputy runs the base (a bit slower than you would) while you fight on the ground
     const away = {}; for (const e of this.ents.values()) if (e.pilot) away[e.pilot - 1] = 1;
     for (const p of this.players) if (p.alive && !p.bot && away[p.i]) this.stepDeputy(p);
@@ -3111,6 +3114,14 @@ Sim.prototype.stepDeputy = function (p) {
     break;
   }
 };
+// Housing on autopilot: when you are close to the population cap, the nearest workers put up a new block
+Sim.prototype.stepAutoHouse = function (p) {
+  const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
+  for (const e of this.ents.values()) if (e.o === p.i && e.k === 'housing' && e.bp < 1) return; // one at a time
+  if (p.pop + 5 >= p.popCap && p.steel >= 140) {
+    for (let t = 0; t < 30; t++) { const a = this.rnd() * 6.283, r = 11 + this.rnd() * 10, x = Math.round(hq.x + Math.cos(a) * r), y = Math.round(hq.y + Math.sin(a) * r); if (this.canPlace('housing', x, y, p.i)) { this.cmdBuild([], p, 'housing', x, y); this.notify(p.i, 'Workers are building more Housing', 'info', x, y); break; } }
+  }
+};
 Sim.prototype.stepAutoEco = function (p) {
   const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
   let wk = 0, idle = [], housingUp = false;
@@ -3121,9 +3132,7 @@ Sim.prototype.stepAutoEco = function (p) {
   for (const w of idle) { const n = this.nearestNode(w, 'steel'); if (n) w.task = {type: 'gather', node: n.id}; }
   const queued = hq.q.filter(q => q.u === 'worker').length;
   if (wk + queued < 12 && queued < 2 && p.steel >= 120 && p.pop + 1 <= p.popCap) this.cmdTrain(hq, p, 'worker');
-  if (!housingUp && p.pop + 5 >= p.popCap && p.steel >= 140) {
-    for (let t = 0; t < 30; t++) { const a = this.rnd() * 6.283, r = 11 + this.rnd() * 10, x = Math.round(hq.x + Math.cos(a) * r), y = Math.round(hq.y + Math.sin(a) * r); if (this.canPlace('housing', x, y, p.i)) { this.cmdBuild([], p, 'housing', x, y); break; } }
-  }
+  this.stepAutoHouse(p);
 };
 
 Sim.prototype.digAt = function (x, y, o, amt, dir) {
@@ -4447,7 +4456,7 @@ function encodeSnap(sim, sendSlow) {
   }
   const msg = {snap: 1, t: sim.t, buf: out.buffer, meta};
   if (sendSlow) {
-    msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, techAll: p.techAll || 0, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, autoRecon: p.autoRecon, autoEco: p.autoEco, ecoK: p.ecoK}));
+    msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, techAll: p.techAll || 0, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, autoRecon: p.autoRecon, autoEco: p.autoEco, autoHouse: p.autoHouse, ecoK: p.ecoK}));
     msg.bs = [];
     for (const e of sim.ents.values()) if (e.b) msg.bs.push({id: e.id, bp: e.bp, q: e.q, prog: e.prog, rally: e.rally, au: e.auto ? 1 : 0, ak: e.autoK || null, cdn: e.nukeCD, g: e.garrison ? e.garrison.length : 0, hd: e.hard || 0});
     msg.nodes = sim.M.nodes.map(n => [n.amt | 0, n.taken || 0]);
@@ -10889,6 +10898,8 @@ const UI = {
         S.push({hk: 'I', name: 'Dig trench', gl: '⌇', desc: 'Workers dig a trench between two points, shovelful by shovelful. Infantry in it take 55% less damage.', act: () => this.setMode({t: 'digline'}, 'Click where the trench starts')});
         S.push({hk: 'O', name: 'Dig tunnel', gl: '⛫', desc: 'Workers dig a deep, timber-roofed tunnel. Troops inside are hidden from the enemy unless they come right up close: dig toward the enemy for sneak attacks.', act: () => this.setMode({t: 'digline', deep: 1}, 'Click where the tunnel starts')});
         S.push({hk: 'X', name: 'Road', gl: '⛙', desc: 'Lay a road between two points (2 steel per tile). Units move 50% faster on roads.', act: () => this.setMode({t: 'road'}, 'Click the start of the road')});
+        const ah = p.autoHouse || p.autoEco;
+        S.push({hk: '', name: ah ? 'Auto housing: ON' : 'Auto housing: OFF', gl: '⌂', active: ah, desc: p.autoEco ? 'Auto economy is on, so housing is already handled. Turn auto economy off (at the Capital) to control this on its own.' : 'Workers build a new Housing block by themselves whenever you are close to the population cap (140 steel each). Turn it off to choose where housing goes.', act: () => { if (!p.autoEco) G.issue({c: 'autohouse', on: !p.autoHouse}); setTimeout(() => this.refreshHud(true), 150); }});
         if (!autoB) S.push({hk: 'C', name: 'Stop', gl: '■', desc: 'Stop what they are doing.', act: () => G.issue({c: 'stop', ids})});
         return S;
       }
@@ -11054,8 +11065,21 @@ const UI = {
       const nat = P.nation;
       if (this.spKey !== sig) {
         this.spKey = sig;
-        const sqs = [...new Set(es.map(e => e.sq ? squadName(e) : ''))].filter(Boolean), sqH = sqs.length && sqs.length <= 3 ? `<div class="sqname">${sqs.join(' · ')} · ${es.length} ${es.length === 1 ? 'unit' : 'units'}</div>` : '';
-        sp.innerHTML = '<div style="flex:1;min-width:0">' + sqH + '<div class="multi">' + es.slice(0, 60).map(e => `<button class="mini" data-id="${e.id}"><img src="${Thumbs.get(e.k, nat)}" alt=""><i style="width:${e.hp / e.hpm * 100}%"></i></button>`).join('') + '</div></div>';
+        // one row per platoon or section (escort armour sits in its platoon's row), then everything else
+        const rows = new Map(), mini = e => `<button class="mini" data-id="${e.id}"><img src="${Thumbs.get(e.k, nat)}" alt=""><i style="width:${e.hp / e.hpm * 100}%"></i></button>`;
+        for (const e of es) {
+          const key = e.att && es.some(u => u.sq === e.att && u.d.cat === 'inf') ? e.att : e.sq || 'x' + (e.b ? 'b' : e.d.cat);
+          const r = rows.get(key) || {key, list: [], lead: null}; r.list.push(e); if (e.sq === key && (!r.lead || e.d.cat === 'inf')) r.lead = e; rows.set(key, r);
+        }
+        const R = [...rows.values()].sort((a, b) => (!!b.lead - !!a.lead) || (a.lead && b.lead ? (b.lead.d.cat === 'inf') - (a.lead.d.cat === 'inf') || (a.lead.k === 'para') - (b.lead.k === 'para') || a.lead.k.localeCompare(b.lead.k) || a.lead.sqn - b.lead.sqn : 0));
+        const catN = {inf: 'Other troops', veh: 'Other vehicles', air: 'Aircraft', heli: 'Helicopters', sea: 'Ships', drone: 'Drones', b: 'Buildings'};
+        let shown = 0;
+        sp.innerHTML = '<div class="sqrows">' + R.map(r => {
+          const nm = r.lead ? squadName(r.lead) : catN[String(r.key).slice(1)] || 'Others', inf = r.list.filter(e => e.d.cat === 'inf').length, arm = r.list.length - inf;
+          const icons = r.list.slice(0, Math.max(0, 70 - shown)); shown += icons.length;
+          return `<div class="sqrow"><div class="sqhd"><button class="sqsel" data-k="${r.key}" title="Select only this group (Shift: remove it)">Select</button><span>${nm}</span><b>${r.lead && r.lead.d.cat === 'inf' ? inf + '/' + PLATOON_N + (arm ? ' + ' + arm + ' armour' : '') : r.list.length}</b></div><div class="multi">${icons.map(mini).join('')}</div></div>`;
+        }).join('') + '</div>';
+        sp.querySelectorAll('.sqsel').forEach(b => b.onclick = ev => { const r = rows.get(isNaN(+b.dataset.k) ? b.dataset.k : +b.dataset.k); if (!r) return; if (ev.shiftKey) for (const e of r.list) this.sel.delete(e.id); else { this.sel.clear(); for (const e of r.list) this.sel.add(e.id); } Sfx.ui(); this.refreshHud(true); });
         sp.querySelectorAll('.mini').forEach(b => b.onclick = ev => { const id = +b.dataset.id; if (ev.shiftKey) this.sel.delete(id); else { this.sel.clear(); this.sel.add(id); } this.refreshHud(true); });
       } else sp.querySelectorAll('.mini').forEach(b => { const e = v.ents.get(+b.dataset.id); if (e) b.lastChild.style.width = (e.hp / e.hpm * 100) + '%'; });
     }
