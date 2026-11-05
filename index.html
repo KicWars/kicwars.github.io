@@ -83,10 +83,22 @@ body.camp #powers,body.camp #bDeploy,body.camp #cards,body.direct-mode #campHud{
 @keyframes alin{from{transform:translateX(-14px);opacity:0}}
 #nukeBanner{position:absolute;top:58px;left:50%;transform:translateX(-50%);padding:10px 26px;background:rgba(150,10,5,.9);border:2px solid #ffb0a0;border-radius:6px;font-size:20px;font-weight:800;letter-spacing:.05em;animation:blink .7s infinite alternate;z-index:12}
 @keyframes blink{to{background:rgba(70,5,0,.9)}}
+#diplo{position:absolute;left:50%;top:56px;transform:translateX(-50%);width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 330px);overflow:auto;background:rgba(6,10,14,.92);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;font-size:13px;pointer-events:auto;z-index:5}
+#diplo h3{margin:0 0 6px;display:flex;justify-content:space-between;align-items:center}#diplo .dp{border-top:1px solid rgba(255,255,255,.1);padding:8px 0}
+#diplo .dn{display:flex;align-items:center;gap:8px;font-weight:700}#diplo .dn i{width:10px;height:10px;border-radius:50%;display:inline-block}
+#diplo .st{margin-left:auto;font-size:11px;padding:2px 7px;border-radius:9px;background:#5a1a16;color:#ffb3a8}#diplo .st.truce{background:#4d4214;color:#ffe48a}#diplo .st.ally{background:#164d2a;color:#9dffbf}
+#diplo .row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}#diplo .row button{font-size:11px;padding:4px 8px}#diplo .meta{font-size:11px;opacity:.7;margin-top:3px}
+#diplo button.bad{border-color:var(--red);color:#ffb3a8}
+#diplo .offer{background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.4);border-radius:6px;padding:6px 8px;margin-top:6px}
 #objectives{position:absolute;right:12px;top:48px;width:260px;background:rgba(6,10,14,.72);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;font-size:13px}
 #objectives h4{margin:0 0 5px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 .obj{padding:2px 0;color:#d6dee3}.obj.done{color:var(--acc);text-decoration:line-through;opacity:.7}.obj.cur{font-weight:600;color:#fff}
-#powers{position:absolute;right:10px;bottom:300px;display:flex;flex-direction:column;gap:4px}
+#powers{display:none!important;position:absolute;right:10px;bottom:300px;display:flex;flex-direction:column;gap:4px}
+.selbar{position:absolute;right:10px;bottom:300px;display:flex;flex-direction:column;gap:4px;pointer-events:auto}
+.selbar button{width:150px;display:flex;justify-content:space-between;align-items:center;padding:5px 9px;background:rgba(6,10,14,.8);font-size:12px;text-align:left}
+.selbar button b{color:#ffd97a;font-weight:800}.selbar button kbd{opacity:.55;font-size:10px}
+body.camp #selBar,body.direct-mode #selBar{display:none}
+@media (max-width:1000px){.selbar{bottom:225px}.selbar button{width:118px;font-size:11px}}
 .pw{position:relative;width:176px;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 9px;background:rgba(6,10,14,.8);font-size:12px;overflow:hidden;text-align:left}
 .pw.natp{border-color:#ffd60a}
 .pw .cd{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.13)}
@@ -96,6 +108,10 @@ body.camp #powers,body.camp #bDeploy,body.camp #cards,body.direct-mode #campHud{
 #bottom{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:flex-end;gap:8px;padding:8px;pointer-events:none}
 #mmwrap{padding:3px;background:rgba(6,10,14,.85);border:1px solid var(--bd);border-radius:8px;line-height:0;flex:none}
 #mm{width:220px;height:220px;border-radius:5px;cursor:crosshair}
+#mmwrap{position:relative}#mmBig{position:absolute;right:6px;top:6px;line-height:1;padding:2px 6px;font-size:13px;background:rgba(6,10,14,.75)}
+body.bigmap #selpanel{visibility:hidden}
+#mmwrap.big{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;padding:8px;box-shadow:0 10px 60px rgba(0,0,0,.7)}
+#mmwrap.big #mm{width:min(80vh,92vw)!important;height:min(80vh,92vw)!important}
 #selpanel{flex:1;min-height:112px;max-height:190px;overflow:hidden;padding:9px 12px;background:var(--bg);border:1px solid var(--bd);border-radius:8px;display:flex;gap:12px}
 #selpanel .big-pic{width:92px;height:92px;flex:none;background:rgba(255,255,255,.05);border-radius:8px;object-fit:contain}
 #selpanel h3{margin:0;font-size:16px}
@@ -249,6 +265,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
           </details>
         </div>
         <h3>Battlefield</h3>
+        <label title="Every map has highways linking the capitals and a rich plateau, the Crown, in the middle">Map <select id="optMap"><option value="r">Random</option><option value="0" selected>Island</option><option value="1">Continent</option><option value="2">Archipelago (lots of sea)</option><option value="3">Highlands (mountain passes)</option></select></label>
         <label>Island size <select id="optSize"><option value="96">Small</option><option value="128" selected>Medium</option><option value="160">Large</option></select></label>
         <label>Graphics <select id="optQ"><option value="auto" selected>Auto (adapts to your computer)</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
         <label title="Every unit from every nation, free, from the Deploy screen. Applies to human players only.">All units unlocked and free <input type="checkbox" id="optAll"></label>
@@ -265,7 +282,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
   <div id="top">
     <div id="natBadge"></div>
     <div class="res" title="Steel: workers mine it. Pays for almost everything."><i class="ic steel"></i><b id="rSteel">0</b></div>
-    <div class="res" title="Fuel: from oil derricks. Pays for machines and commander powers."><i class="ic fuel"></i><b id="rFuel">0</b></div>
+    <div class="res" title="Fuel: from oil derricks. Pays for machines."><i class="ic fuel"></i><b id="rFuel">0</b></div>
     <div class="res" title="Population used / cap. Build Housing for more."><i class="ic pop"></i><b id="rPop">0</b></div>
     <div class="res"><i class="ic clock"></i><b id="rTime">0:00</b></div>
     <div id="scores"></div>
@@ -277,8 +294,16 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
   <div id="nukeBanner" class="hidden"></div>
   <div id="objectives" class="hidden"></div>
   <div id="powers"></div>
+  <div id="diplo" class="hidden"></div>
+  <div id="selBar" class="selbar">
+    <button data-g="workers" title="Select every worker [F1]">⛏ Workers <b>0</b><kbd>F1</kbd></button>
+    <button data-g="ground" title="Select all ground troops and vehicles [F2]">⚔ Ground <b>0</b><kbd>F2</kbd></button>
+    <button data-g="air" title="Select all aircraft and drones [F3]">✈ Air <b>0</b><kbd>F3</kbd></button>
+    <button data-g="sea" title="Select all ships and submarines [F4]">⚓ Naval <b>0</b><kbd>F4</kbd></button>
+    <button id="bDiplo" title="Negotiate ceasefires, alliances and trades [F6]">🤝 Diplomacy<kbd>F6</kbd></button>
+  </div>
   <div id="bottom">
-    <div id="mmwrap"><canvas id="mm" width="220" height="220"></canvas></div>
+    <div id="mmwrap"><canvas id="mm" width="220" height="220"></canvas><button id="mmBig" title="Big tactical map [Tab]">⤢</button></div>
     <div id="selpanel"></div>
     <div id="cards"></div>
   </div>
@@ -848,6 +873,15 @@ const PWPN = {
 const PILOT_HP = 1.35;
 
 // National special ability when you play a unit yourself (key G). cd seconds.
+// Auto patrol: a human player's troops walk a beat around the last place they were sent.
+const PATROL_R = 7, PATROL_CATS = {inf: 1, veh: 1, sea: 1};
+// Commander quick-select groups (F1-F4)
+const SEL_GROUPS = {
+  workers: e => e.k === 'worker',
+  ground: e => e.k !== 'worker' && (e.d.cat === 'inf' || e.d.cat === 'veh') && !e.d.nukeT,
+  air: e => e.d.cat === 'air' || e.d.cat === 'drone',
+  sea: e => e.d.cat === 'sea',
+};
 // Campaign: budget battles. Spend a budget on troops, place them in your zone, then watch them fight a fixed enemy army.
 const CAMP_UNITS = ['rifle', 'scout', 'assault', 'medic', 'rocket', 'sniper', 'mg', 'grenadier', 'ifv', 'tank', 'arty', 'mlrs', 'gunship'];
 const campCost = k => UNITS[k].cost[0] + UNITS[k].cost[1];
@@ -912,13 +946,16 @@ function rankField(f, n) {
   return out;
 }
 
+// Map styles ride along in the seed (seed / 1e7), so every client rebuilds the same world from it.
+const MAP_TYPES = ['Island', 'Continent', 'Archipelago', 'Highlands'];
+const mapType = seed => Math.floor(seed / 1e7) % MAP_TYPES.length;
 function genMap(N, seed, nPlayers) {
-  const rnd = mulberry(seed * 7919 + 13), nz = makeNoise(rnd), nz2 = makeNoise(rnd), nz3 = makeNoise(rnd);
+  const rnd = mulberry(seed * 7919 + 13), nz = makeNoise(rnd), nz2 = makeNoise(rnd), nz3 = makeNoise(rnd), MT = mapType(seed);
   const A = N * N, hr = new Float32Array(A), te = new Float32Array(A), mo = new Float32Array(A);
   const sc = 1 / 26, cx = N / 2, cy = N / 2;
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     const i = y * N + x, ridge = 1 - Math.abs(2 * nz(x * sc * 1.6 + 50, y * sc * 1.6 + 50, 4) - 1);
-    hr[i] = nz(x * sc, y * sc, 5) * .75 + Math.max(0, ridge - .62) * 1.3;
+    hr[i] = nz(x * sc, y * sc, 5) * .75 + Math.max(0, ridge - (MT === 3 ? .45 : .62)) * (MT === 3 ? 2.8 : 1.3);
     te[i] = nz2(x * sc * .55, y * sc * .55, 3);
     mo[i] = nz3(x * sc * .8, y * sc * .8, 3);
   }
@@ -934,14 +971,18 @@ function genMap(N, seed, nPlayers) {
   const h = new Float32Array(A), bio = new Uint8Array(A), tree = new Uint8Array(A), water = new Uint8Array(A), block = new Uint8Array(A);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     const i = y * N + x, dx = (x - cx) / (N / 2), dy = (y - cy) / (N / 2);
-    const coast = nz(x * sc * .7 + 200, y * sc * .7, 4) * .42 + .66;
-    const edge = Math.hypot(dx, dy) / coast;
+    const coast = nz(x * sc * .7 + 200, y * sc * .7, 4) * .42 + (MT === 1 ? .9 : .66);
+    const edge = (MT === 1 ? Math.max(Math.abs(dx), Math.abs(dy)) * .85 + Math.hypot(dx, dy) * .15 : Math.hypot(dx, dy)) / coast;
     let e = hq[i];
-    e = Math.pow(e, 1.5) * HMAX * .95 + .75;
+    e = Math.pow(e, MT === 3 ? 1.25 : 1.5) * HMAX * .95 + .75;
     // an edge falloff makes an island surrounded by navigable sea
     const fall = Math.min(1, Math.max(0, (edge - .74) / .28));
     e = e * (1 - fall * fall) - fall * 3.4;
-    if (hq[i] < .05) e = Math.min(e, -.4);                   // inland lakes
+    if (MT === 2) { // archipelago: channels of sea cut the land into islands
+      const ch = Math.abs(nz3(x * sc * .9 + 400, y * sc * .9 + 100, 3) - .5);
+      if (ch < .06) e = Math.min(e, -1.2 + ch * 10);
+    }
+    if (hq[i] < (MT === 1 ? .025 : .05)) e = Math.min(e, -.4);                   // inland lakes
     h[i] = e;
   }
   // flatten capitals into plateaus
@@ -970,7 +1011,7 @@ function genMap(N, seed, nPlayers) {
     else bio[i] = BIO.GRASS;
     if (h[i] < 0) water[i] = 1;
     const sl = Math.max(Math.abs(hAtCell(x + 1, y) - hAtCell(x - 1, y)), Math.abs(hAtCell(x, y + 1) - hAtCell(x, y - 1))) / 2;
-    if (h[i] >= 0 && (sl > 1.25 || L > .78)) block[i] = 1;
+    if (h[i] >= 0 && (sl > (MT === 3 ? 1.6 : 1.85) || L > .86)) block[i] = 1;
     const fq = nz2(x * sc * 2.4 + 90, y * sc * 2.4 + 20, 3);
     if (h[i] > .35 && L < .6 && sl < .8) {
       if (bio[i] === BIO.GRASS && fq > .54) tree[i] = 1 + (rnd() * 3 | 0);
@@ -985,6 +1026,51 @@ function genMap(N, seed, nPlayers) {
     const i = y * N + x;
     tree[i] = 0; block[i] = 0; if (h[i] < .3) h[i] = .6; water[i] = 0;
   }
+
+  // The Crown: a flat, open plateau in the middle with rich deposits, worth fighting over
+  const road = new Uint8Array(A), occ = new Int32Array(A);
+  {
+    const base = Math.max(1.4, Math.min(4, h[(cy | 0) * N + (cx | 0)])), R = 8, R2 = 14;
+    for (let y = Math.max(0, (cy - R2) | 0); y < Math.min(N, cy + R2); y++) for (let x = Math.max(0, (cx - R2) | 0); x < Math.min(N, cx + R2); x++) {
+      const d = Math.hypot(x - cx, y - cy), i = y * N + x;
+      if (d < R) { h[i] = base; tree[i] = 0; block[i] = 0; water[i] = 0; }
+      else if (d < R2) { const q = (d - R) / (R2 - R), w = q * q * (3 - 2 * q); h[i] = base * (1 - w) + h[i] * w; if (h[i] >= 0) water[i] = 0; if (d < R + 2) block[i] = 0; }
+    }
+  }
+  // Highways: every capital is linked to the Crown and to its neighbours by a road that crosses water on causeways,
+  // so armies can always reach each other, and they move faster along it.
+  const roadPath = (ax, ay, bx, by) => {
+    const dd = new Float64Array(A).fill(1e9), from = new Int32Array(A).fill(-1), H = [], push = (c, v) => { H.push([v, c]); let k = H.length - 1; while (k > 0) { const pk = (k - 1) >> 1; if (H[pk][0] <= H[k][0]) break; [H[pk], H[k]] = [H[k], H[pk]]; k = pk; } };
+    const pop = () => { const t = H[0], l = H.pop(); if (H.length) { H[0] = l; let k = 0; for (;;) { const a = 2 * k + 1, b = a + 1; let m = k; if (a < H.length && H[a][0] < H[m][0]) m = a; if (b < H.length && H[b][0] < H[m][0]) m = b; if (m === k) break; [H[m], H[k]] = [H[k], H[m]]; k = m; } } return t; };
+    const s0 = ay * N + ax, goal = by * N + bx; dd[s0] = 0; push(s0, 0);
+    while (H.length) {
+      const [v, c] = pop(); if (v > dd[c]) continue; if (c === goal) break;
+      const x = c % N, y = (c / N) | 0;
+      for (let k = 0; k < 8; k++) {
+        const ox = [1, -1, 0, 0, 1, 1, -1, -1][k], oy = [0, 0, 1, -1, 1, -1, 1, -1][k], nx = x + ox, ny = y + oy;
+        if (nx < 3 || ny < 3 || nx >= N - 3 || ny >= N - 3) continue;
+        const n = ny * N + nx, step = k < 4 ? 1 : 1.414, hh = h[n];
+        const cost = step * (1 + Math.abs(hh - h[c]) * 6 + (hh < 0 ? 5 - Math.max(-2.5, hh) : 0) + (block[n] ? 4 : 0) + (road[n] ? -.6 : 0) + (tree[n] ? .3 : 0));
+        if (v + cost < dd[n]) { dd[n] = v + cost; from[n] = c; push(n, v + cost); }
+      }
+    }
+    let c = goal; const cells = [];
+    while (c >= 0 && c !== s0 && cells.length < A) { cells.push(c); c = from[c]; }
+    for (const q of cells) {
+      const x = q % N, y = (q / N) | 0;
+      for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { // a 3-wide cleared lane, raised over water
+        const n = (y + j) * N + x + i;
+        if (h[n] < .45) h[n] = i === 0 && j === 0 ? .55 : Math.max(h[n], .45);
+        water[n] = 0; block[n] = 0; tree[n] = 0;
+      }
+      road[q] = 1;
+    }
+  };
+  const ord = spawns.map((s, i) => ({s, a: Math.atan2(s.y - cy, s.x - cx)})).sort((p, q) => p.a - q.a);
+  for (const s of spawns) roadPath(s.x, s.y, cx | 0, cy | 0);
+  if (spawns.length > 2) for (let i = 0; i < ord.length; i++) { const a = ord[i].s, b = ord[(i + 1) % ord.length].s; roadPath(a.x, a.y, b.x, b.y); }
+  // keep roads off the capital squares themselves
+  for (const s of spawns) for (let y = s.y - 8; y <= s.y + 8; y++) for (let x = s.x - 8; x <= s.x + 8; x++) if (x >= 0 && y >= 0 && x < N && y < N) road[y * N + x] = 0;
 
   // resource nodes
   const nodes = [];
@@ -1003,19 +1089,21 @@ function genMap(N, seed, nPlayers) {
   };
   for (const s of spawns) {
     const a = Math.atan2(s.y - cy, s.x - cx);
-    place('steel', s.x + Math.cos(a + 1.2) * 12, s.y + Math.sin(a + 1.2) * 12, 3000);
-    place('steel', s.x + Math.cos(a - 1.2) * 12, s.y + Math.sin(a - 1.2) * 12, 3000);
+    place('steel', s.x + Math.cos(a + 1.2) * 12, s.y + Math.sin(a + 1.2) * 12, 5000);
+    place('steel', s.x + Math.cos(a - 1.2) * 12, s.y + Math.sin(a - 1.2) * 12, 5000);
+    place('steel', s.x + Math.cos(a + 3.14) * 11, s.y + Math.sin(a + 3.14) * 11, 4000);
     place('oil', s.x + Math.cos(a) * 13, s.y + Math.sin(a) * 13, 0);
-    place('steel', s.x + Math.cos(a + 2.6) * 24, s.y + Math.sin(a + 2.6) * 24, 4000);
+    place('steel', s.x + Math.cos(a + 2.6) * 24, s.y + Math.sin(a + 2.6) * 24, 6000);
     place('oil', s.x + Math.cos(a + .8) * 28, s.y + Math.sin(a + .8) * 28, 0);
   }
+  // the Crown's riches
+  place('steel', cx + 4, cy + 3, 10000); place('steel', cx - 4, cy - 3, 10000); place('oil', cx - 3, cy + 5, 0);
   for (let i = 0; i < 4 + nPlayers; i++) {
-    const a = rnd() * 6.283, r = rnd() * N * .2;
+    const a = rnd() * 6.283, r = N * .12 + rnd() * N * .14;
     place(i % 2 ? 'oil' : 'steel', cx + Math.cos(a) * r, cy + Math.sin(a) * r, 6000);
   }
-  for (const n of nodes) for (let y = n.y - 1; y <= n.y + 1; y++) for (let x = n.x - 1; x <= n.x + 1; x++) tree[y * N + x] = 0;
+  for (const n of nodes) for (let y = n.y - 1; y <= n.y + 1; y++) for (let x = n.x - 1; x <= n.x + 1; x++) { tree[y * N + x] = 0; road[y * N + x] = 0; }
 
-  const road = new Uint8Array(A), occ = new Int32Array(A);
   return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes};
 }
 
@@ -1183,8 +1271,8 @@ function Sim(opts) {
   this.players = opts.players.map((p, i) => {
     const nat = NATIONS[p.nation];
     return {i, name: p.name || nat.name, nation: p.nation, nat, team: p.team === undefined ? i : p.team, bot: p.bot || null, open: !!p.open,
-      steel: 400, fuel: 100, pop: 0, popCap: 15, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0,
-      buffs: {}, reveal: 0, spawn: this.M.spawns[i]};
+      steel: 650, fuel: 150, pop: 0, popCap: 15, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0,
+      buffs: {}, reveal: 0, spawn: this.M.spawns[i], rel: {}, relT: {}, offers: [], mood: {}, str: 0};
   });
   if (opts.battle) this.setupBattle(opts.battle); else for (const p of this.players) this.setupPlayer(p);
 }
@@ -1398,7 +1486,8 @@ Sim.prototype.issue = function (c, pi) {
     case 'move': this.cmdMove(mine, c.x, c.y, !!c.a, !!c.q); break;
     case 'patrol': for (const e of mine) if (!e.b) { const from = {x: e.x, y: e.y}; this.clearOrders(e); e.patrol = [from, {x: c.x, y: c.y}]; e.pi = 1; this.go(e, c.x, c.y); e.amove = true; } break;
     case 'attack': { const t = this.ents.get(c.t); if (t) for (const e of mine) if (!e.b) { this.clearOrders(e); e.force = t.id; e.tid = t.id; } break; }
-    case 'stop': for (const e of mine) if (!e.b) { this.clearOrders(e); if (e.air) e.hold = {x: e.x, y: e.y}; } break;
+    case 'stop': for (const e of mine) if (!e.b) { this.clearOrders(e); if (e.air) e.hold = {x: e.x, y: e.y}; if (e.zone) e.zone = {x: e.x, y: e.y, r: 0}; } break;
+    case 'zone': for (const e of mine) if (!e.b && PATROL_CATS[e.d.cat] && e.k !== 'worker') { this.clearOrders(e); e.zone = {x: clamp(c.x + (this.rnd() - .5) * 3, 2, this.N - 3), y: clamp(c.y + (this.rnd() - .5) * 3, 2, this.N - 3), r: clamp(c.r || PATROL_R, 3, 20)}; e.zoneT = 0; } break;
     case 'stance': for (const e of mine) e.stance = c.s; break;
     case 'gather': { const n = this.M.nodes[c.n]; if (n) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'gather', node: n.id}; } break; }
     case 'build': this.cmdBuild(mine, p, c.b, c.x, c.y, !!c.q); break;
@@ -1410,7 +1499,8 @@ Sim.prototype.issue = function (c, pi) {
     case 'cancel': { const b = this.ents.get(c.b); if (b && b.o === pi && b.q[c.i]) this.cancelQ(b, p, c.i); break; }
     case 'rally': { const b = this.ents.get(c.b); if (b && b.o === pi) b.rally = {x: c.x, y: c.y}; break; }
     case 'research': { const b = this.ents.get(c.b); if (b && b.o === pi && b.d.research) this.cmdResearch(b, p, c.u); break; }
-    case 'power': this.usePower(p, c.p, c.x, c.y); break;
+    case 'power': break; // commander powers were removed
+    case 'diplo': this.cmdDiplo(c, pi); break;
     case 'nuke': { const e = this.ents.get(c.id); if (e && e.o === pi && e.nukeReady) this.launchNuke(e, c.x, c.y); break; }
     case 'garrison': { const b = this.ents.get(c.t); if (b && b.o === pi && b.d.garrison) for (const e of mine) if (e.d.cat === 'inf') { this.clearOrders(e); e.task = {type: 'garrison', id: b.id}; } break; }
     case 'unload': { const b = this.ents.get(c.b); if (b && b.o === pi) this.unload(b); break; }
@@ -1473,6 +1563,7 @@ Sim.prototype.cmdMove = function (es, x, y, atk, queue) {
     const row = Math.floor(i / cols), col = i % cols, sp = Math.max(1.1, e.d.r * 2.6);
     const ox = (col - (cols - 1) / 2) * sp, oy = -row * sp;
     const gx = clamp(x + Math.cos(a) * oy - Math.sin(a) * ox, 1, this.N - 2), gy = clamp(y + Math.sin(a) * oy + Math.cos(a) * ox, 1, this.N - 2);
+    if (!this.players[e.o].bot && !this.battle && e.k !== 'worker' && PATROL_CATS[e.d.cat]) { e.zone = {x: gx, y: gy, r: PATROL_R}; e.zoneT = this.t + 3; }
     if (queue && (e.goal || e.queue)) { (e.queue = e.queue || []).push({x: gx, y: gy, fx: x, fy: y, a: atk}); return; }
     this.clearOrders(e);
     this.go(e, gx, gy, x, y);
@@ -1683,7 +1774,7 @@ Sim.prototype.near = function (x, y, r, fn) {
   }
 };
 
-Sim.prototype.friendly = function (a, b) { return this.players[a].team === this.players[b].team; };
+Sim.prototype.friendly = function (a, b) { const p = this.players[a]; return p.team === this.players[b].team || !!(p.rel && p.rel[b]); };
 
 Sim.prototype.inSmoke = function (e) {
   for (const s of this.smokes) if (Math.hypot(e.x - s.x, e.y - s.y) < s.r) return true;
@@ -1748,6 +1839,7 @@ Sim.prototype.hurt = function (t, dmg, by) {
   t.srcX = undefined;
   if (by !== null && by !== undefined) {
     t.lastBy = by;
+    const vp = this.players[t.o]; if (vp && by !== t.o && vp.mood) vp.mood[by] = Math.min(3, (vp.mood[by] || 0) + dmg / (t.b ? 3000 : 1500));
     if (!t.alerted || this.t - t.alerted > 15) {
       t.alerted = this.t;
       if (t.b || t.d.cat !== 'drone') this.ev({k: 'attacked', p: t.o, x: t.x, y: t.y, b: t.b ? 1 : 0});
@@ -1773,15 +1865,17 @@ Sim.prototype.kill = function (t, by) {
     if (t.k === 'hq') this.playerOut(t.o, by);
   } else {
     p.pop -= t.d.pop; p.losses++;
-    this.ev({k: 'dead', id: t.id, x: t.x, y: t.y, z: t.z, kk: t.k, o: t.o, air: t.air ? 1 : 0});
+    this.ev({k: 'dead', id: t.id, x: t.x, y: t.y, z: t.z, kk: t.k, o: t.o, air: t.air ? 1 : 0, by: by === null || by === undefined ? -1 : by});
     if (t.force) t.force = 0;
   }
   if (by !== null && by !== undefined && this.players[by]) this.players[by].kills++;
 };
 
 Sim.prototype.creditKill = function (a, t) {
-  if (t.hp > 0 || !a || a.b) return;
+  if (t.hp > 0 || !a || a.b || t.credited) return;
+  t.credited = 1;
   a.kills++;
+  if (a.pilot) this.ev({k: 'downed', p: a.o, kk: t.k, to: t.o, air: t.air ? 1 : 0, b: t.b ? 1 : 0, x: t.x, y: t.y});
   if (a.kills === 3 || a.kills === 6) {
     a.vet = a.kills === 3 ? 1 : 2;
     if (a.vet === 2) a.hero = HERO_NAMES[a.id % HERO_NAMES.length];
@@ -1795,11 +1889,145 @@ Sim.prototype.playerOut = function (i, by) {
   p.alive = false;
   for (const e of [...this.ents.values()]) if (e.o === i) { if (e.b) { e.hp = 1; this.kill(e, null); } else this.kill(e, null); }
   this.ev({k: 'out', p: i, by: by === undefined ? -1 : by, name: p.name});
-  const teams = new Set(this.players.filter(q => q.alive).map(q => q.team));
-  if (teams.size <= 1) {
-    const w = this.players.find(q => q.alive);
-    this.over = {winner: w ? w.i : -1, team: w ? w.team : -1, t: this.t};
-    this.ev({k: 'over', winner: this.over.winner, team: this.over.team});
+  for (const q of this.players) { delete q.rel[i]; delete p.rel[q.i]; q.offers = q.offers.filter(o => o.from !== i); }
+  this.checkOver();
+};
+
+// The war ends when every survivor is on the same team or allied with all the others.
+Sim.prototype.checkOver = function () {
+  if (this.over) return;
+  const al = this.players.filter(q => q.alive);
+  for (const a of al) for (const b of al) if (a.i < b.i && a.team !== b.team && a.rel[b.i] !== 'ally') return;
+  const w = al[0];
+  this.over = {winner: w ? w.i : -1, team: w ? w.team : -1, wins: al.map(q => q.i), t: this.t};
+  this.ev({k: 'over', winner: this.over.winner, team: this.over.team, wins: this.over.wins});
+};
+
+// ---------- diplomacy ----------
+const TRUCE_T = 240, DIPLO_CD = 25;
+Sim.prototype.armyValue = function (i) {
+  let v = 0;
+  for (const e of this.ents.values()) if (e.o === i && !e.b && e.k !== 'worker') v += e.d.cost[0] + e.d.cost[1];
+  else if (e.o === i && e.b && e.d.dmg) v += 150;
+  return v;
+};
+Sim.prototype.setRel = function (a, b, r, quiet) {
+  const A = this.players[a], B = this.players[b];
+  if (r) { A.rel[b] = B.rel[a] = r; A.relT[b] = B.relT[a] = r === 'truce' ? this.t + TRUCE_T : 0; }
+  else { delete A.rel[b]; delete B.rel[a]; delete A.relT[b]; delete B.relT[a]; }
+  A.offers = A.offers.filter(o => o.from !== b); B.offers = B.offers.filter(o => o.from !== a);
+  // units stop shooting at new friends
+  if (r) for (const e of this.ents.values()) if ((e.o === a || e.o === b) && e.tid) { const t = this.ents.get(e.tid); if (t && this.friendly(e.o, t.o)) { e.tid = 0; e.force = 0; } }
+  if (!quiet) {
+    const txt = r === 'ally' ? `${A.name} and ${B.name} are now allies` : r === 'truce' ? `${A.name} and ${B.name} agreed a ceasefire (${TRUCE_T / 60 | 0} min)` : `${A.name} declared war on ${B.name}!`;
+    for (const q of this.players) this.notify(q.i, txt, r ? 'gold' : 'bad');
+  }
+  this.ev({k: 'diplo', a, b, r: r || 'war'});
+  if (r === 'ally') this.checkOver();
+};
+// How a bot feels about a deal from player `from`. Positive = yes.
+Sim.prototype.botJudge = function (bi, from, kind, give, want) {
+  const B = this.players[bi], F = this.players[from];
+  const mine = this.armyValue(bi) + 200, theirs = this.armyValue(from) + 200, ratio = theirs / mine;
+  const mood = B.mood[from] || 0, gift = (give[0] || 0) + (give[1] || 0) * 1.2, ask = (want[0] || 0) + (want[1] || 0) * 1.2;
+  // a common, stronger enemy brings people together
+  let lead = 0;
+  for (const q of this.players) if (q.alive && q.i !== bi && q.i !== from && !this.friendly(q.i, bi)) lead = Math.max(lead, (this.armyValue(q.i) + 200) / mine);
+  if (kind === 'truce') return -.15 + (ratio > 1.3 ? .35 : ratio > .8 ? .15 : -.1) + gift / 350 - mood * .5 + (lead > 1.2 ? .25 : 0) + (this.t < 150 ? .2 : 0);
+  if (kind === 'ally' && !this.players.some(q => q.alive && q.i !== bi && q.i !== from && !this.friendly(q.i, bi) && !this.friendly(q.i, from))) return -1; // no common enemy left: an alliance would just end the war
+  if (kind === 'ally') return (B.rel[from] === 'truce' ? .1 : -.35) + (ratio > .6 ? .15 : -.2) + gift / 400 - mood * .7 + (lead > 1 ? .35 : 0);
+  if (kind === 'tribute') return ratio > 2.2 && B.steel >= ask ? .2 + (ratio - 2.2) * .2 - mood * .3 : -1;
+  if (kind === 'trade') return (B.steel >= (want[0] || 0) && B.fuel >= (want[1] || 0)) ? gift - ask * .9 >= 0 ? .5 : -.2 : -1;
+  return -1;
+};
+Sim.prototype.applyDeal = function (from, to, kind, give, want) {
+  const F = this.players[from], T = this.players[to];
+  give = give || [0, 0]; want = want || [0, 0];
+  if (F.steel < give[0] || F.fuel < give[1] || T.steel < want[0] || T.fuel < want[1]) { this.notify(from, 'The deal fell through: someone cannot pay', 'bad'); return false; }
+  F.steel -= give[0]; F.fuel -= give[1]; T.steel += give[0]; T.fuel += give[1];
+  T.steel -= want[0]; T.fuel -= want[1]; F.steel += want[0]; F.fuel += want[1];
+  if (kind === 'truce' || kind === 'tribute') this.setRel(from, to, 'truce');
+  else if (kind === 'ally') this.setRel(from, to, 'ally');
+  else if (kind === 'trade') { this.notify(from, 'Trade with ' + T.name + ' done', 'good'); this.notify(to, 'Trade with ' + F.name + ' done', 'good'); }
+  T.mood[from] = Math.max(0, (T.mood[from] || 0) - (give[0] + give[1]) / 400);
+  return true;
+};
+Sim.prototype.cmdDiplo = function (c, pi) {
+  const P = this.players[pi], to = c.to | 0, T = this.players[to];
+  if (!T || !T.alive || to === pi || T.team === P.team) return;
+  const give = [Math.max(0, c.gs | 0), Math.max(0, c.gf | 0)], want = [Math.max(0, c.ws | 0), Math.max(0, c.wf | 0)];
+  if (c.a === 'war') {
+    if (!P.rel[to]) return;
+    this.setRel(pi, to, null);
+    for (const q of this.players) if (q.i !== pi && q.rel[pi] === 'ally') q.mood[pi] = (q.mood[pi] || 0) + .4; // nobody likes a backstabber
+    T.mood[pi] = (T.mood[pi] || 0) + 1;
+    return;
+  }
+  if (c.a === 'gift') {
+    if (P.steel < give[0] || P.fuel < give[1]) return;
+    P.steel -= give[0]; P.fuel -= give[1]; T.steel += give[0]; T.fuel += give[1];
+    T.mood[pi] = Math.max(0, (T.mood[pi] || 0) - (give[0] + give[1]) / 300);
+    this.notify(pi, 'Gift sent to ' + T.name, 'good'); this.notify(to, P.name + ' sent you ' + (give[0] ? give[0] + ' steel ' : '') + (give[1] ? give[1] + ' fuel' : ''), 'gold');
+    return;
+  }
+  if (c.a === 'accept' || c.a === 'decline') {
+    const o = P.offers.find(q => q.from === to && q.id === c.id);
+    if (!o) return;
+    P.offers = P.offers.filter(q => q !== o);
+    if (c.a === 'accept') this.applyDeal(to, pi, o.kind, o.give, o.want);
+    else this.notify(to, P.name + ' declined your offer', 'bad');
+    return;
+  }
+  if (c.a !== 'propose') return;
+  const kind = c.kind;
+  if (!['truce', 'ally', 'tribute', 'trade'].includes(kind)) return;
+  if (kind === 'ally' && P.rel[to] === 'ally') return;
+  if (kind === 'truce' && P.rel[to] === 'ally') return;
+  if ((P.cds['dip' + to] || 0) > this.t) { this.notify(pi, T.name + ' will not hear another offer yet', 'bad'); return; }
+  P.cds['dip' + to] = this.t + DIPLO_CD;
+  if (P.steel < give[0] || P.fuel < give[1]) { this.notify(pi, 'You cannot afford that offer', 'bad'); return; }
+  if (T.bot) {
+    const score = this.botJudge(to, pi, kind, give, want) + (this.rnd() - .5) * .3;
+    if (score > 0) { this.applyDeal(pi, to, kind, give, want); if (kind === 'tribute') this.notify(pi, T.name + ' pays tribute to avoid war', 'gold'); }
+    else this.notify(pi, T.name + ' rejects: ' + (kind === 'ally' && score < -.9 ? '"Only one of us can rule this island."' : kind === 'tribute' ? '"You are not that scary."' : kind === 'trade' ? '"Not at that price."' : (T.mood[pi] || 0) > .6 ? '"We remember what you did."' : '"Make it worth our while."'), 'bad');
+  } else {
+    T.offers.push({id: ((this.t * 10) | 0) + pi, from: pi, kind, give, want, t: this.t});
+    if (T.offers.length > 6) T.offers.shift();
+    this.notify(to, P.name + ' proposes a ' + ({truce: 'ceasefire', ally: 'alliance', tribute: 'tribute demand', trade: 'trade'})[kind] + ': open Diplomacy (F6)', 'gold');
+    this.notify(pi, 'Offer sent to ' + T.name, 'info');
+  }
+};
+// Once a second: ceasefires run out, grudges fade, bots make their own offers.
+Sim.prototype.stepDiplo = function () {
+  for (const p of this.players) {
+    if (!p.alive) continue;
+    for (const j in p.relT) if (p.relT[j] && p.relT[j] <= this.t && p.rel[j] === 'truce' && +j > p.i) {
+      this.setRel(p.i, +j, null, true);
+      this.notify(p.i, 'Ceasefire with ' + this.players[j].name + ' has ended', 'bad'); this.notify(+j, 'Ceasefire with ' + p.name + ' has ended', 'bad');
+    }
+    for (const j in p.mood) p.mood[j] = Math.max(0, p.mood[j] * .995 - .001);
+    p.offers = p.offers.filter(o => this.t - o.t < 60);
+  }
+  if (this.tick % 50) return;
+  for (const p of this.players) p.str = this.armyValue(p.i);
+  // bots: when losing to someone, sue for peace; gang up against a runaway leader
+  for (const B of this.players) {
+    if (!B.alive || !B.bot || this.rnd() > .25) continue;
+    const mine = B.str + 200;
+    for (const q of this.players) {
+      if (!q.alive || q.i === B.i || this.friendly(q.i, B.i) || (B.cds['dip' + q.i] || 0) > this.t) continue;
+      const ratio = (q.str + 200) / mine, hurt = (B.mood[q.i] || 0);
+      if (q.bot) {
+        // bot-bot: weaker bots sometimes pair up against the strongest player
+        let lead = 0; for (const r of this.players) if (r.alive && r.i !== B.i && r.i !== q.i) lead = Math.max(lead, r.str);
+        if (lead > (B.str + q.str) * 1.3 && this.rnd() < .12 && this.t > 300) { B.cds['dip' + q.i] = this.t + 120; this.setRel(B.i, q.i, 'truce'); }
+      } else if (ratio > 1.8 && hurt > .3 && this.t > 240 && !q.offers.some(o => o.from === B.i)) {
+        B.cds['dip' + q.i] = this.t + 150;
+        const gs = Math.min(B.steel | 0, 100 + (this.rnd() * 3 | 0) * 50);
+        q.offers.push({id: ((this.t * 10) | 0) + B.i, from: B.i, kind: 'truce', give: [gs, 0], want: [0, 0], t: this.t});
+        this.notify(q.i, B.name + ' begs for a ceasefire and offers ' + gs + ' steel: open Diplomacy (F6)', 'gold');
+      }
+    }
   }
 };
 
@@ -1818,6 +2046,7 @@ Sim.prototype.splash = function (x, y, r, dmg, o, ty, src) {
     const dd = Math.max(0, Math.hypot(b.x - x, b.y - y) - b.d.s / 2);
     if (dd > r || b.d.mine) continue;
     this.hurt(b, dmg * vs.bld * (1 - dd / r * .5), o);
+    if (src && b.hp <= 0) this.creditKill(src, b);
   }
 };
 
@@ -1935,6 +2164,7 @@ Sim.prototype.step = function () {
     if (!p.alive) continue;
     if (this.tick % 10 === 0) this.income(p);
   }
+  if (this.tick % 10 === 0) this.stepDiplo();
   // sudden death: after 30 minutes every capital slowly crumbles, so no war drags on forever
   if (this.t > 1800 && this.tick % 10 === 0) {
     if (!this.sudden) { this.sudden = 1; for (const p of this.players) this.notify(p.i, 'Sudden death: every capital is crumbling. Finish the war!', 'bad'); }
@@ -1953,7 +2183,7 @@ Sim.prototype.step = function () {
 };
 
 Sim.prototype.income = function (p) {
-  p.steel += 1.5 * (p.nat.tr.income || 1);   // tax from the capital
+  p.steel += 3 * (p.nat.tr.income || 1);   // tax from the capital
 };
 
 Sim.prototype.stepShots = function () {
@@ -2100,6 +2330,7 @@ Sim.prototype.spawnFrom = function (b, k, p) {
     for (let t = 0; t < 12; t++) { const px = tx + (this.rnd() - .5) * 5, py = ty + (this.rnd() - .5) * 5, q = Math.round(py) * this.N + Math.round(px); if (q >= 0 && q < this.N * this.N && passable(this.M, 0, q)) { x = px; y = py; break; } }
   }
   const u = this.addUnit(k, p.i, x, y);
+  if (!p.bot && k !== 'worker' && PATROL_CATS[ud.cat]) { const zx = b.rally ? b.rally.x : x + Math.cos(a) * 6, zy = b.rally ? b.rally.y : y + Math.sin(a) * 6; u.zone = {x: clamp(zx, 2, this.N - 3), y: clamp(zy, 2, this.N - 3), r: PATROL_R}; }
   if (ud.para) { u.chute = 16; u.z += u.chute; this.ev({k: 'para', id: u.id}); p.built++; this.ev({k: 'trained', p: p.i, u: k, id: u.id}); return; }
   if (ud.cat === 'sea') { // point the bow at the longest stretch of open water
     let bestR = -1;
@@ -2224,8 +2455,17 @@ Sim.prototype.stepGround = function (e, p) {
       moving = true;
     }
   } else if (!e.task) {
-    // idle units gently un-stack
+    // idle units gently un-stack, and soldiers with a patrol zone walk its beat
     this.separate(e, 0, 0, p);
+    const Z = e.zone;
+    if (Z && Z.r > 0 && !e.pilot && !e.chute && e.stance !== 'hold' && (e.zoneT || 0) <= this.t) {
+      e.zoneT = this.t + 5 + this.rnd() * 7;
+      const N = this.N, dom = d.cat === 'sea' ? 1 : 0;
+      for (let t = 0; t < 8; t++) {
+        const a = this.rnd() * 6.283, r = Z.r * Math.sqrt(this.rnd()), px = clamp(Z.x + Math.cos(a) * r, 2, N - 3), py = clamp(Z.y + Math.sin(a) * r, 2, N - 3);
+        if (passable(this.M, dom, Math.round(py) * N + Math.round(px))) { this.go(e, px, py); e.amove = true; break; }
+      }
+    }
   }
   e.moving = moving || !!e.walking;
   e.walking = false;
@@ -2311,8 +2551,8 @@ Sim.prototype.stepTask = function (e, p) {
     const q = Math.hypot(n.x - e.x, n.y - e.y);
     if (q < 1.8) {
       T.tt = (T.tt || 0) + DT; e.st = 3;
-      const cap = p.ups.logistics ? 15 : 10;
-      if (T.tt >= 2.5) { T.tt = 0; const g = Math.min(n.amt, cap); n.amt -= g; e.carry = g; T.back = true; }
+      const cap = p.ups.logistics ? 22 : 15;
+      if (T.tt >= 2) { T.tt = 0; const g = Math.min(n.amt, cap); n.amt -= g; e.carry = g; T.back = true; }
       e.h += angDiff(e.h, Math.atan2(n.y - e.y, n.x - e.x)) * .3;
     } else this.moveAlong(e, n.x, n.y, 0, p, n.x, n.y);
   } else if (T.type === 'build') {
@@ -2658,9 +2898,9 @@ Sim.prototype.pilotSpecial = function (c, pi) {
 
 <script>// Bot commanders. They issue the same commands a human can and get no cheats. easy | normal | hard.
 const BOT_CFG = {
-  easy:   {think: 3, workers: 8, wave: 16, waveGrow: 3, maxBuild: 7, power: .15, nuke: 0, air: .12, drones: .1},
-  normal: {think: 1.5, workers: 12, wave: 16, waveGrow: 4, maxBuild: 12, power: .5, nuke: .4, air: .25, drones: .2},
-  hard:   {think: .8, workers: 16, wave: 18, waveGrow: 5, maxBuild: 18, power: 1, nuke: 1, air: .3, drones: .25},
+  easy:   {think: 3, workers: 8, wave: 16, waveGrow: 3, maxBuild: 7, power: 0, nuke: 0, air: .05, maxAir: 1, drones: .05, start: 600},
+  normal: {think: 1.5, workers: 12, wave: 16, waveGrow: 4, maxBuild: 12, power: 0, nuke: 0, air: .1, maxAir: 3, drones: .1, start: 420},
+  hard:   {think: .8, workers: 16, wave: 18, waveGrow: 5, maxBuild: 18, power: 0, nuke: .5, air: .16, maxAir: 5, drones: .15, start: 300},
 };
 
 function Bot(sim, pi, level) {
@@ -2691,7 +2931,6 @@ Bot.prototype.update = function () {
   this.train();
   this.research();
   this.military();
-  this.powers();
   this.drones();
   this.nukes();
 };
@@ -2760,7 +2999,7 @@ Bot.prototype.buildOrder = function () {
   for (const k of order) {
     const want = order.filter(o => o === k).length;
     if (n(k) >= want) continue;
-    if (k === 'silo' && (!this.cfg.nuke || s.t < 420 || p.nat.key === 'toms')) continue;
+    if (k === 'silo' && (!this.cfg.nuke || s.t < 900 || p.nat.key === 'toms')) continue;
     if (k === 'yard' && !(p.nat.key === 'toms' && this.cfg.nuke)) continue;
     const d = BUILDINGS[k];
     if (d.req && !n(d.req)) continue;
@@ -2789,8 +3028,10 @@ Bot.prototype.train = function () {
     if (!b.d.trains || b.k === 'hq' || b.bp < 1 || b.q.length >= 2) continue;
     let u = null;
     const r = this.rnd();
+    const I = this.scout();
     if (b.k === 'barracks') {
       if (!c.scout && s.t > 15) u = 'scout';
+      else if (I.veh > 4 && (c.rocket || 0) < I.veh * 1.2 && r < .5) u = 'rocket';
       else if ((c.medic || 0) < 2 && (c.rifle || 0) > 6) u = 'medic';
       else if (r < .45) u = 'rifle';
       else if (r < .68) u = 'rocket';
@@ -2798,10 +3039,11 @@ Bot.prototype.train = function () {
       else if (r < .85) u = r < .815 ? 'mg' : 'grenadier';
       else if (r < .92) u = 'para';
       else u = 'sniper';
-    } else if (b.k === 'factory') u = r < .45 ? 'tank' : r < .7 ? 'ifv' : r < .8 ? 'arty' : r < .9 ? 'mlrs' : 'sam';
-    else if (b.k === 'dronebay') { if (r < this.cfg.drones * 2) u = r < this.cfg.drones * 1.5 ? 'fpv' : 'hunter'; }
+    } else if (b.k === 'factory') u = I.air > 2 && (c.sam || 0) < Math.min(4, I.air / 2) && r < .6 ? 'sam' : r < .45 ? 'tank' : r < .7 ? 'ifv' : r < .8 ? 'arty' : r < .9 ? 'mlrs' : 'sam';
+    else if (b.k === 'dronebay') { if (s.t > this.cfg.start && r < this.cfg.drones * 2) u = r < this.cfg.drones * 1.5 ? 'fpv' : 'hunter'; }
     else if (b.k === 'airfield') {
-      if (r < this.cfg.air * 2) {
+      const nAir = this.mine.army.filter(e => e.d.cat === 'air').length;
+      if (nAir < this.cfg.maxAir && s.t > this.cfg.start && r < this.cfg.air * 2) {
         const opts = (p.nat.key === 'toms' ? ['f16', 'f15', 'f35', 'gunship'] : ['fighter', 'interceptor', 'bomber', 'gunship']).concat(['a10', 'fa18', 'typhoon']);
         u = opts[(r / (this.cfg.air * 2) * opts.length) | 0];
       }
@@ -2825,9 +3067,26 @@ Bot.prototype.research = function () {
 
 Bot.prototype.enemyHQ = function () {
   const s = this.s, p = this.p;
+  // stick with a target for a while, so waves don't zig-zag across the map
+  if (this.foe && s.ents.has(this.foe.id) && !s.friendly(this.foe.o, this.pi) && s.t < this.foeT) return this.foe;
   let best = null, bd = 1e9;
-  for (const e of s.ents.values()) if (e.k === 'hq' && !s.friendly(e.o, this.pi)) { const d = dist(e, p.spawn) + (this.rnd() * 20); if (d < bd) { bd = d; best = e; } }
+  for (const e of s.ents.values()) if (e.k === 'hq' && !s.friendly(e.o, this.pi)) {
+    const q = s.players[e.o], str = q.str || 0, grudge = (p.mood && p.mood[e.o]) || 0;
+    // closer, weaker and hated targets first
+    const d = dist(e, p.spawn) + str / 40 - grudge * 25 + this.rnd() * 15;
+    if (d < bd) { bd = d; best = e; }
+  }
+  this.foe = best; this.foeT = s.t + 120;
   return best;
+};
+
+// What the enemy fields shapes what we build: lots of air means AA, lots of armour means rockets and tanks.
+Bot.prototype.scout = function () {
+  const s = this.s; if (this.intelT && s.t < this.intelT) return this.intel;
+  const I = {air: 0, veh: 0, inf: 0};
+  for (const e of s.ents.values()) if (!e.b && !s.friendly(e.o, this.pi) && I[e.d.cat] !== undefined) I[e.d.cat]++;
+  this.intel = I; this.intelT = s.t + 15;
+  return I;
 };
 
 Bot.prototype.military = function () {
@@ -2841,6 +3100,24 @@ Bot.prototype.military = function () {
     this.defend = s.t;
     return;
   }
+  // Allies: help defend a friend's capital
+  for (const q of s.players) {
+    if (!q.alive || q.i === this.pi || p.rel[q.i] !== 'ally' || this.rnd() > .2) continue;
+    let foe = null, n = 0;
+    s.near(q.spawn.x, q.spawn.y, 22, t => { if (!s.friendly(t.o, this.pi) && !t.b) { n++; foe = foe || t; } });
+    if (foe && n >= 4) {
+      const ids = army.filter(u => !u.goal && !u.force && u.k !== 'scout').slice(0, 8).map(u => u.id);
+      if (ids.length >= 3) { this.cmd({c: 'move', ids, x: foe.x, y: foe.y, a: 1}); return; }
+    }
+  }
+  // A broken wave falls back home to regroup instead of trickling in to die
+  if (this.wave && s.t - this.wave.t > 20) {
+    const alive = this.wave.ids.filter(id => s.ents.has(id));
+    if (alive.length < this.wave.n * .35 && alive.length) {
+      this.cmd({c: 'move', ids: alive, x: p.spawn.x, y: p.spawn.y});
+      this.wave = null; this.foeT = 0;
+    } else if (!alive.length) this.wave = null;
+  }
   // Scouting
   for (const u of army) if (u.k === 'scout' && !u.goal) {
     const a = this.rnd() * 6.283, r = s.N * .35;
@@ -2849,7 +3126,7 @@ Bot.prototype.military = function () {
   // Attack waves
   const ready = army.filter(u => u.k !== 'scout' && u.k !== 'medic' && !u.d.noGround);
   const home = ready.filter(u => !u.goal && !u.force);
-  if (home.length >= (s.t > 1200 ? Math.min(this.waveSize, 8) : this.waveSize) && s.t > (this.level === 'easy' ? 480 : this.level === 'normal' ? 330 : 240)) {
+  if (home.length >= (s.t > 1200 ? Math.min(this.waveSize, 8) : this.waveSize) && s.t > this.cfg.start) {
     const hq = this.enemyHQ();
     if (hq) {
       // Strike from a different direction on alternating waves: a simple flanking habit.
@@ -2861,6 +3138,7 @@ Bot.prototype.military = function () {
       const med = army.filter(u => u.k === 'medic').map(u => u.id);
       if (med.length) this.cmd({c: 'move', ids: med, x: via.x, y: via.y});
       this.waveN++;
+      this.wave = {ids, n: ids.length, t: s.t};
       this.waveSize = Math.min(40, this.waveSize + this.cfg.waveGrow);
       this.lastAttack = s.t;
     }
@@ -2907,7 +3185,7 @@ Bot.prototype.drones = function () {
   const s = this.s;
   const list = [];
   for (const e of s.ents.values()) if (e.o === this.pi && e.d.cat === 'drone' && !e.goal && !e.tid && !e.pilot) list.push(e);
-  if (list.length < 3) return;
+  if (list.length < 5 || this.s.t < this.cfg.start + 120) return;
   const spot = this.hotspot() || this.enemyHQ();
   if (spot) this.cmd({c: 'move', ids: list.map(e => e.id), x: spot.x, y: spot.y, a: 1});
 };
@@ -2969,7 +3247,7 @@ function encodeSnap(sim, sendSlow) {
   }
   const msg = {snap: 1, t: sim.t, buf: out.buffer, meta};
   if (sendSlow) {
-    msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, cds: p.cds, alive: p.alive, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs}));
+    msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, cds: p.cds, alive: p.alive, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood}));
     msg.bs = [];
     for (const e of sim.ents.values()) if (e.b) msg.bs.push({id: e.id, bp: e.bp, q: e.q, prog: e.prog, rally: e.rally, cdn: e.nukeCD, g: e.garrison ? e.garrison.length : 0});
     msg.nodes = sim.M.nodes.map(n => [n.amt | 0, n.taken || 0]);
@@ -2986,7 +3264,7 @@ function Mirror(o) {
   this.t = 0; this.ents = new Map(); this.smokes = []; this.over = null; this.nukes = [];
   this.players = o.players.map((p, i) => {
     const nat = NATIONS[p.nation];
-    return {i, name: p.name || nat.name, nation: p.nation, nat, team: p.team === undefined ? i : p.team, open: !!p.open, steel: 0, fuel: 0, pop: 0, popCap: 15, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0, buffs: {}, reveal: 0, spawn: this.M.spawns[i]};
+    return {i, name: p.name || nat.name, nation: p.nation, nat, team: p.team === undefined ? i : p.team, open: !!p.open, steel: 0, fuel: 0, pop: 0, popCap: 15, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0, buffs: {}, reveal: 0, spawn: this.M.spawns[i], rel: {}, relT: {}, offers: [], mood: {}, str: 0, bot: p.bot};
   });
 }
 Mirror.prototype.friendly = Sim.prototype.friendly;
@@ -4902,6 +5180,11 @@ Renderer.prototype.buildTerrain = function (M, N) {
   sb.rotation.x = -Math.PI / 2; sb.position.set(N / 2, -3.7, N / 2); this.world.add(sb);
   this.scar = []; this.texDirty = false; this.texT = 0;
   this.mmBase = this.makeMinimapBase(M, N);
+  // the highways that come with the map
+  { const q = S / N; ctx.fillStyle = '#6a645a'; for (let i = 0; i < N * N; i++) if (M.road[i]) { ctx.beginPath(); ctx.arc((i % N) * q, ((i / N) | 0) * q, q * .9, 0, 6.3); ctx.fill(); }
+    ctx.fillStyle = 'rgba(200,190,165,.4)'; for (let i = 0; i < N * N; i++) if (M.road[i]) { ctx.beginPath(); ctx.arc((i % N) * q, ((i / N) | 0) * q, q * .28, 0, 6.3); ctx.fill(); }
+    const mg = this.mmBase.getContext('2d'); mg.fillStyle = '#b8ae98'; for (let i = 0; i < N * N; i++) if (M.road[i]) mg.fillRect((i % N) / N * 256 - 1, ((i / N) | 0) / N * 256 - 1, 2, 2);
+    tex.needsUpdate = true; }
 };
 
 Renderer.prototype.makeMinimapBase = function (M, N) {
@@ -6050,7 +6333,7 @@ const Direct = {
     this.ui = ui; this.e = e; this.id = e.id; this.on = true; this.aboard = null;
     const d = e.d;
     this.mode = this.modeOf(d);
-    this.yaw = e.h; this.pitch = this.mode === 'plane' ? 0 : -.05; this.roll = 0; this.fpP = 0; this.pRate = 0; this.rollRate = 0; this.pullUp = false; this.warnT = 0; this.vz = 0; this.mx = this.my = 0; this.keys = {}; this.mouseDown = false;
+    this.yaw = e.h; this.pitch = this.mode === 'plane' ? 0 : -.05; this.roll = 0; this.fpP = 0; this.pRate = 0; this.rollRate = 0; this.pullUp = false; this.warnT = 0; this.killStreak = 0; this.confirm = null; this.vz = 0; this.mx = this.my = 0; this.keys = {}; this.mouseDown = false;
     this.speed = this.mode === 'plane' ? d.spd : this.mode === 'fpv' ? d.spd : 0; this.batt = 1; this.vel = {x: 0, y: 0}; this.hullSpd = 0;
     this.aimYaw = this.yaw; this.aimPitch = 0; this.camYaw = this.yaw; this.camPitch = this.mode === 'plane' ? -.05 : 0;
     this.W = (PWPN[e.k] || []).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0}));
@@ -6719,12 +7002,15 @@ const Direct = {
     if (!this.on) return;
     // missile warning: an enemy missile is coming for the aircraft you fly
     if ((ev.k === 's' && ev.ty === 'missile' && ev.at === this.id) || (ev.k === 'pj' && ev.home === this.id && ev.o !== g.me)) { this.warnT = performance.now() + Math.max(1.5, (ev.d || 2.5)) * 1000; Sfx.beep(1800); }
-    if (ev.k === 'phit' && ev.p === g.me && ev.kill) {
-      const n = UNITS[ev.kk] ? UNITS[ev.kk].n : BUILDINGS[ev.kk] ? BUILDINGS[ev.kk].n : ev.kk;
-      this.feed.unshift({t: 0, text: (ev.crit ? 'BONK! ' : '') + 'Eliminated ' + g.view.players[ev.to].nat.name.replace('The ', '') + ' ' + n});
+    if (ev.k === 'phit' && ev.p === g.me && ev.kill) this.lastCrit = ev.crit;
+    if (ev.k === 'downed' && ev.p === g.me) {
+      const n = UNITS[ev.kk] ? UNITS[ev.kk].n : BUILDINGS[ev.kk] ? BUILDINGS[ev.kk].n : ev.kk, who = g.view.players[ev.to].nat.name.replace('The ', '');
+      this.feed.unshift({t: 0, text: (this.lastCrit ? 'BONK! ' : '') + (ev.air ? 'Shot down ' : ev.b ? 'Destroyed ' : 'Eliminated ') + who + ' ' + n}); this.lastCrit = 0;
       if (this.feed.length > 4) this.feed.pop();
       this.hits.push({t: 0, crit: true, kill: true}); Sfx.killDing();
       this.killStreak = (this.killStreak || 0) + 1;
+      this.confirm = {t: performance.now(), big: ev.air ? 'ENEMY DOWNED' : ev.b ? 'TARGET DESTROYED' : UNITS[ev.kk] && UNITS[ev.kk].cat !== 'inf' ? 'VEHICLE DESTROYED' : 'ENEMY DOWN', sub: who + ' ' + n, n: this.killStreak};
+      if (ev.air) Sfx.tone(660, 990, .25, .12, 'triangle');
     } else if (ev.k === 'ouch' && ev.id === this.id) {
       const a = Math.atan2(ev.y - this.pose.y, ev.x - this.pose.x);
       this.dmgDir.push({a, t: 0, s: Math.min(1, ev.dmg / 30)}); Sfx.ouch();
@@ -6753,6 +7039,7 @@ const Direct = {
     const cx = w / 2, cy = h / 2, W = this.W[this.slot] && this.W[this.slot].w, S = this.W[this.slot], g = this.ui.g, dt = 1 / 60;
     c.save();
     const fp = this.firstPerson();
+    if (fp && (this.mode === 'plane' || this.mode === 'heli')) this.drawCockpit(c, w, h); // the cockpit goes under every other readout
     if (this.mode === 'ship') {
       const K = Settings.keyName(Settings.binds.walk), A = this.aboard;
       c.textAlign = 'center'; c.fillStyle = '#fff'; c.shadowColor = '#000'; c.shadowBlur = 4;
@@ -6889,7 +7176,6 @@ const Direct = {
     { const p = g.view.players[g.me], S = PSPECIAL[p.nat.key]; if (S) { const left = Math.max(0, (p.specT || 0) - g.view.t); c.font = '700 12px system-ui'; c.fillStyle = left > 0 ? 'rgba(255,255,255,.5)' : '#ffd23a'; c.fillText(Settings.keyName(Settings.binds.special) + ': ' + S.n + (left > 0 ? ' (' + Math.ceil(left) + 's)' : ' READY'), 24, h - 22); } }
     // aircraft HUD
     if (this.mode === 'plane') this.drawFlightHud(c, w, h);
-    if (fp && (this.mode === 'plane' || this.mode === 'heli')) this.drawCockpit(c, w, h);
     if (fp && !this.aboard && (this.mode === 'vehicle' || this.mode === 'ship') && !(W && W.arc && !this.direct)) this.drawGunsight(c, w, h);
     if (!this.helpSeen) { this.helpSeen = 1; }
     c.textAlign = 'left'; c.font = '600 11px system-ui'; c.fillStyle = 'rgba(255,255,255,.55)'; if (!this.isTouch()) c.fillText('H: controls', 24, h - 74);
@@ -6898,26 +7184,120 @@ const Direct = {
     if (st) { c.textAlign = 'center'; c.font = '700 14px system-ui'; c.fillStyle = 'rgba(0,0,0,.55)'; const tw = c.measureText(st).width; c.fillRect(cx - tw / 2 - 12, 18, tw + 24, 26); c.fillStyle = this.look === 'free' ? '#ffd23a' : '#fff'; c.fillText(st, cx, 36); }
     if (this.look === 'offset') { c.strokeStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.arc(cx, cy, Math.min(w, h) * .05, 0, 6.2832); c.stroke(); c.beginPath(); c.moveTo(cx, cy); c.lineTo(this.mouseX, this.mouseY); c.stroke(); }
     if (this.msgT > 0) { c.textAlign = 'center'; c.font = '800 18px system-ui'; c.fillStyle = `rgba(255,255,255,${Math.min(1, this.msgT * 2)})`; c.shadowColor = '#000'; c.shadowBlur = 6; c.fillText(this.msgText, cx, h * .3); c.shadowBlur = 0; }
+    if (this.confirm) {
+      const age = (performance.now() - this.confirm.t) / 1000;
+      if (age > 1.8) this.confirm = null;
+      else {
+        const a = Math.min(1, (1.8 - age) * 2.5), sc = 1 + Math.max(0, .25 - age) * 1.6;
+        c.save(); c.textAlign = 'center'; c.globalAlpha = a; c.translate(cx, cy + 74); c.scale(sc, sc);
+        c.font = '900 24px system-ui'; c.lineWidth = 4; c.strokeStyle = 'rgba(0,0,0,.7)'; c.strokeText(this.confirm.big, 0, 0); c.fillStyle = '#ff5640'; c.fillText(this.confirm.big, 0, 0);
+        c.font = '700 13px system-ui'; c.fillStyle = '#fff'; c.strokeText(this.confirm.sub, 0, 20); c.fillText(this.confirm.sub, 0, 20);
+        if (this.confirm.n > 1) { c.font = '800 12px system-ui'; c.fillStyle = '#ffd23a'; c.fillText('x' + this.confirm.n + ' STREAK', 0, 38); }
+        c.restore();
+      }
+    }
     if (this.pullUp && this.mode === 'plane' && Math.floor(performance.now() / 250) % 2) { c.textAlign = 'center'; c.font = '900 26px system-ui'; c.fillStyle = '#ff3b30'; c.fillText('PULL UP', cx, cy - 70); Sfx.beep(1100); }
     c.restore();
   },
   // canopy frame and instrument panel for first-person flying
   drawCockpit(c, w, h) {
-    const heli = this.mode === 'heli', r = this.pose.r * (heli ? .5 : 1);
-    c.save(); c.translate(w / 2, h / 2); c.rotate(0);
-    c.fillStyle = 'rgba(28,32,36,.96)';
-    // instrument panel (does not roll: it is attached to you)
-    c.beginPath(); c.moveTo(-w / 2, h / 2); c.lineTo(-w / 2, h * .33); c.quadraticCurveTo(0, h * .2, w / 2, h * .33); c.lineTo(w / 2, h / 2); c.fill();
-    c.fillStyle = 'rgba(10,30,20,.9)'; c.fillRect(-w * .12, h * .3, w * .1, h * .12); c.fillRect(w * .02, h * .3, w * .1, h * .12);
-    c.strokeStyle = '#7dff8a'; c.lineWidth = 1; c.strokeRect(-w * .12, h * .3, w * .1, h * .12); c.strokeRect(w * .02, h * .3, w * .1, h * .12);
-    // tiny radar: enemies around you
-    const v = this.ui.g.view, me = this.ui.g.me, R = this.ui.g.R, rx = w * .07, ry = h * .36;
-    c.fillStyle = '#7dff8a'; c.beginPath(); c.arc(rx, ry, 2, 0, 6.28); c.fill();
-    for (const t of v.ents.values()) { if (v.friendly(t.o, me) || t.b || !R.isVisible(t.x, t.y)) continue; const dx = t.x - this.pose.x, dy = t.y - this.pose.y, d = Math.hypot(dx, dy); if (d > 60) continue; const a = Math.atan2(dy, dx) - this.pose.h; const px = rx + Math.sin(a) * d / 60 * w * .045, py = ry - Math.cos(a) * d / 60 * h * .055; c.fillStyle = t.air ? '#ff5a4a' : '#ffc23a'; c.fillRect(px - 1.5, py - 1.5, 3, 3); }
-    // canopy bow frame
-    c.strokeStyle = 'rgba(28,32,36,.95)'; c.lineWidth = heli ? 14 : 10;
-    c.beginPath(); c.moveTo(-w * .5, -h * .05); c.quadraticCurveTo(-w * .38, -h * .52, -w * .1, -h * .62); c.moveTo(w * .5, -h * .05); c.quadraticCurveTo(w * .38, -h * .52, w * .1, -h * .62); c.stroke();
-    if (heli) { c.beginPath(); c.moveTo(0, h * .25); c.lineTo(0, -h * .6); c.stroke(); }
+    const heli = this.mode === 'heli', p = this.pose, now = performance.now() / 1000;
+    const v = this.ui.g.view, me = this.ui.g.me, R = this.ui.g.R, M = v.M;
+    const panTop = h * .7, U = Math.min(w / 1280, h / 800) * 1.0;
+    c.save();
+    // canopy frame: bow arch, side rails and a centre bow on helis, with a little glare
+    c.strokeStyle = '#1a1e22'; c.lineCap = 'round';
+    c.lineWidth = 26 * U; c.beginPath(); c.moveTo(-10, h * .52); c.quadraticCurveTo(w * .1, h * .02, w * .5, -h * .12); c.quadraticCurveTo(w * .9, h * .02, w + 10, h * .52); c.stroke();
+    c.strokeStyle = '#2b3036'; c.lineWidth = 6 * U; c.stroke();
+    c.lineWidth = 18 * U; c.strokeStyle = '#1a1e22'; c.beginPath(); c.moveTo(0, h * .52); c.lineTo(w * .13, panTop); c.moveTo(w, h * .52); c.lineTo(w * .87, panTop); c.stroke();
+    if (heli) { c.lineWidth = 14 * U; c.beginPath(); c.moveTo(w / 2, panTop); c.lineTo(w / 2, -10); c.stroke(); }
+    const gl = c.createLinearGradient(0, 0, w, h * .6); gl.addColorStop(0, 'rgba(255,255,255,.05)'); gl.addColorStop(.35, 'rgba(255,255,255,0)'); gl.addColorStop(.6, 'rgba(160,220,255,.035)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = gl; c.fillRect(0, 0, w, panTop);
+    // glare shield and instrument panel
+    const pg = c.createLinearGradient(0, panTop - 20 * U, 0, h); pg.addColorStop(0, '#2a2f35'); pg.addColorStop(.08, '#16191c'); pg.addColorStop(1, '#0b0d0f');
+    c.fillStyle = pg; c.beginPath(); c.moveTo(0, h); c.lineTo(0, panTop + 30 * U); c.quadraticCurveTo(w * .25, panTop - 6 * U, w * .5, panTop - 14 * U); c.quadraticCurveTo(w * .75, panTop - 6 * U, w, panTop + 30 * U); c.lineTo(w, h); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, panTop + 30 * U); c.quadraticCurveTo(w * .25, panTop - 6 * U, w * .5, panTop - 14 * U); c.quadraticCurveTo(w * .75, panTop - 6 * U, w, panTop + 30 * U); c.stroke();
+    // HUD combiner glass above the panel
+    c.strokeStyle = 'rgba(48,54,60,.8)'; c.lineWidth = 2.5 * U; c.fillStyle = 'rgba(120,255,160,.025)';
+    c.beginPath(); c.moveTo(w / 2 - 120 * U, panTop - 12 * U); c.lineTo(w / 2 - 100 * U, panTop - 190 * U); c.lineTo(w / 2 + 100 * U, panTop - 190 * U); c.lineTo(w / 2 + 120 * U, panTop - 12 * U); c.closePath(); c.fill(); c.stroke();
+    const G = '#7dff8a', A = '#ffb63a', RD = '#ff4a3a', mono = s => (s * U | 0) + 'px ui-monospace,monospace';
+    const screen = (x, y, sw, sh, title) => {
+      c.fillStyle = '#05080a'; c.fillRect(x - 6 * U, y - 6 * U, sw + 12 * U, sh + 12 * U);
+      c.fillStyle = '#2a2f35'; for (let i = 0; i < 5; i++) { c.fillRect(x + (i + .5) * sw / 5 - 7 * U, y - 5 * U, 14 * U, 4 * U); c.fillRect(x + (i + .5) * sw / 5 - 7 * U, y + sh + 1 * U, 14 * U, 4 * U); }
+      const sg = c.createRadialGradient(x + sw / 2, y + sh / 2, 4, x + sw / 2, y + sh / 2, sw * .75); sg.addColorStop(0, '#0d2216'); sg.addColorStop(1, '#040b07');
+      c.fillStyle = sg; c.fillRect(x, y, sw, sh);
+      c.fillStyle = G; c.font = '700 ' + mono(10); c.textAlign = 'left'; c.fillText(title, x + 5 * U, y + 12 * U);
+    };
+    const sw = Math.min(190 * U, w * .16), sh = sw * .78, sy = panTop + 34 * U;
+    // ---- left MFD: radar, heading up, sweep and contacts ----
+    const lx = w / 2 - sw * 2 - 40 * U;
+    screen(lx, sy, sw, sh, 'RDR 70');
+    { const rcx = lx + sw / 2, rcy = sy + sh * .92, rr = sh * .85, sweep = (now * 1.6) % 2 - 1;
+      c.save(); c.beginPath(); c.rect(lx, sy, sw, sh); c.clip();
+      c.strokeStyle = 'rgba(125,255,138,.25)'; c.lineWidth = 1;
+      for (const f of [.33, .66, 1]) { c.beginPath(); c.arc(rcx, rcy, rr * f, Math.PI * 1.15, Math.PI * 1.85); c.stroke(); }
+      c.beginPath(); c.moveTo(rcx, rcy); c.lineTo(rcx + Math.cos(-Math.PI / 2 + sweep * .85) * rr, rcy + Math.sin(-Math.PI / 2 + sweep * .85) * rr); c.strokeStyle = 'rgba(125,255,138,.5)'; c.stroke();
+      for (const t of v.ents.values()) {
+        if (t.id === this.id || t.inside) continue;
+        const friend = v.friendly(t.o, me); if (!friend && !R.isVisible(t.x, t.y) && !((t.revealed || 0) > v.t)) continue;
+        if (!t.air && t.b) continue;
+        const dx = t.x - p.x, dy = t.y - p.y, d = Math.hypot(dx, dy); if (d > 70) continue;
+        const a = Math.atan2(dy, dx) - p.h, bx = rcx + Math.sin(a) * d / 70 * rr, by = rcy - Math.cos(a) * d / 70 * rr;
+        c.fillStyle = friend ? 'rgba(110,200,255,.85)' : t.air ? RD : A;
+        if (t.air) { c.beginPath(); c.moveTo(bx, by - 4 * U); c.lineTo(bx + 4 * U, by); c.lineTo(bx, by + 4 * U); c.lineTo(bx - 4 * U, by); c.fill(); } else c.fillRect(bx - 2, by - 2, 4, 4);
+        if (t.id === this.lockId) { c.strokeStyle = this.lockK >= 1 ? RD : A; c.lineWidth = 1.5; c.strokeRect(bx - 7 * U, by - 7 * U, 14 * U, 14 * U); }
+      }
+      c.fillStyle = G; c.beginPath(); c.moveTo(rcx, rcy - 6 * U); c.lineTo(rcx + 5 * U, rcy + 3 * U); c.lineTo(rcx - 5 * U, rcy + 3 * U); c.fill();
+      c.restore(); }
+    // ---- centre: attitude ball and heading ----
+    { const acx = w / 2, acy = sy + sh * .5, ar = sh * .5;
+      c.fillStyle = '#05080a'; c.beginPath(); c.arc(acx, acy, ar + 7 * U, 0, 6.283); c.fill();
+      c.save(); c.beginPath(); c.arc(acx, acy, ar, 0, 6.283); c.clip();
+      c.translate(acx, acy); c.rotate(-p.r); const off = clamp(p.p, -1.2, 1.2) * ar * 1.1;
+      c.fillStyle = '#2f6fae'; c.fillRect(-ar * 2, -ar * 3 + off, ar * 4, ar * 3); c.fillStyle = '#7a5530'; c.fillRect(-ar * 2, off, ar * 4, ar * 3);
+      c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-ar * 2, off); c.lineTo(ar * 2, off); c.stroke();
+      c.lineWidth = 1; for (let k = -3; k <= 3; k++) if (k) { const yy = off - k * ar * .19; c.beginPath(); c.moveTo(-ar * (k % 2 ? .18 : .32), yy); c.lineTo(ar * (k % 2 ? .18 : .32), yy); c.stroke(); }
+      c.restore();
+      c.strokeStyle = A; c.lineWidth = 3 * U; c.beginPath(); c.moveTo(acx - ar * .55, acy); c.lineTo(acx - ar * .18, acy); c.lineTo(acx - ar * .1, acy + 6 * U); c.moveTo(acx + ar * .55, acy); c.lineTo(acx + ar * .18, acy); c.lineTo(acx + ar * .1, acy + 6 * U); c.stroke();
+      c.fillStyle = A; c.beginPath(); c.arc(acx, acy, 2.5 * U, 0, 6.283); c.fill();
+      c.strokeStyle = '#3a4046'; c.lineWidth = 3 * U; c.beginPath(); c.arc(acx, acy, ar + 3 * U, 0, 6.283); c.stroke();
+      const hdg = ((90 - p.h * 180 / Math.PI) % 360 + 360) % 360;
+      c.fillStyle = '#05080a'; c.fillRect(acx + ar + 10 * U, acy - 10 * U, 50 * U, 20 * U); c.fillStyle = G; c.font = '700 ' + mono(12); c.textAlign = 'center'; c.fillText(String(hdg | 0).padStart(3, '0') + '°', acx + ar + 35 * U, acy + 4 * U); }
+    // ---- right MFD: stores, chaff and engine ----
+    const rx = w / 2 + sw + 40 * U;
+    screen(rx, sy, sw, sh, heli ? 'STORES / ROTOR' : 'STORES / ENG');
+    { c.font = '700 ' + mono(11); c.textAlign = 'left'; let yy = sy + 30 * U;
+      this.W.forEach((s, i) => {
+        if (!s || !s.w) return;
+        const sel = i === this.slot, ready = (s.cd || 0) <= 0 && s.rl <= 0;
+        c.fillStyle = sel ? '#05080a' : G; if (sel) { c.fillStyle = G; c.fillRect(rx + 4 * U, yy - 11 * U, sw - 8 * U, 15 * U); c.fillStyle = '#05080a'; }
+        c.fillText((i + 1) + ' ' + s.w.n.toUpperCase().slice(0, 15), rx + 7 * U, yy);
+        c.textAlign = 'right'; c.fillStyle = sel ? '#05080a' : ready ? G : A; c.fillText(s.w.mag ? s.ammo + '' : ready ? 'RDY' : 'RLD', rx + sw - 7 * U, yy); c.textAlign = 'left';
+        yy += 17 * U;
+      });
+      const cm = chaffLeft(this.cm || (this.cm = {}), v.t);
+      c.fillStyle = G; c.fillText('CHAFF', rx + 7 * U, yy + 4 * U); for (let i = 0; i < CHAFF_N; i++) { c.fillStyle = i < cm ? G : 'rgba(125,255,138,.18)'; c.fillRect(rx + 60 * U + i * 11 * U, yy - 5 * U, 8 * U, 10 * U); }
+      // throttle / rpm gauge
+      const th = clamp(heli ? .5 + (this.vz || 0) * .1 : this.throttle || 0, 0, 1), gx = rx + sw * .25, gy = sy + sh - 22 * U, gr = 18 * U;
+      c.strokeStyle = 'rgba(125,255,138,.3)'; c.lineWidth = 4 * U; c.beginPath(); c.arc(gx, gy, gr, Math.PI * .8, Math.PI * 2.2); c.stroke();
+      c.strokeStyle = this.afterburner ? A : G; c.beginPath(); c.arc(gx, gy, gr, Math.PI * .8, Math.PI * (.8 + 1.4 * th)); c.stroke();
+      c.fillStyle = G; c.font = '700 ' + mono(10); c.textAlign = 'center'; c.fillText((th * 100 | 0) + '%', gx, gy + 4 * U); c.fillText(heli ? 'RPM' : this.afterburner ? 'A/B' : 'THR', gx, gy + gr + 6 * U);
+      const alt = (p.z - Math.max(hAt(M, p.x, p.y), 0)) * 10, spd = (this.speed || 0) * 36;
+      c.textAlign = 'left'; c.fillText('KPH ' + (spd | 0), rx + sw * .5, gy - 6 * U); c.fillText('ALT ' + (alt | 0), rx + sw * .5, gy + 8 * U); }
+    // ---- warning lights ----
+    { const lights = [['PULL UP', this.pullUp && !heli], ['MISSILE', (this.warnT || 0) > performance.now()], ['STALL', this.stalled], ['LOCK', this.lockK >= 1], ['A/B', this.afterburner], ['CHAFF', chaffLeft(this.cm || (this.cm = {}), v.t) === 0]];
+      const lw = 62 * U, lh = 18 * U, ly = panTop + 6 * U, l0 = w / 2 - lights.length * (lw + 6 * U) / 2;
+      const blink = Math.floor(now * 4) % 2;
+      lights.forEach(([t, on], i) => {
+        const x = l0 + i * (lw + 6 * U), bad = i < 3, lit = on && (!bad || blink);
+        c.fillStyle = lit ? (bad ? '#d8281c' : i === 3 ? '#e09a18' : '#1f9e46') : '#1c2024'; c.fillRect(x, ly, lw, lh);
+        c.strokeStyle = '#000'; c.lineWidth = 1; c.strokeRect(x, ly, lw, lh);
+        c.fillStyle = lit ? '#fff' : 'rgba(255,255,255,.25)'; c.font = '800 ' + mono(10); c.textAlign = 'center'; c.fillText(t, x + lw / 2, ly + 13 * U);
+      }); }
+    // control stick between your knees, moves with your inputs
+    { const sx = w / 2 + clamp(this.rollRate || 0, -2, 2) * 18 * U, syy = h + 10 + clamp(-(this.pRate || 0), -2, 2) * 10 * U;
+      c.strokeStyle = '#111'; c.lineWidth = 16 * U; c.beginPath(); c.moveTo(w / 2, h + 60 * U); c.lineTo(sx, syy - 40 * U); c.stroke();
+      c.fillStyle = '#23272b'; c.beginPath(); c.ellipse(sx, syy - 48 * U, 16 * U, 22 * U, 0, 0, 6.283); c.fill(); c.fillStyle = '#b22'; c.beginPath(); c.arc(sx + 6 * U, syy - 62 * U, 4 * U, 0, 6.283); c.fill(); }
     c.restore();
   },
   drawGunsight(c, w, h) {
@@ -7300,6 +7680,8 @@ const UI = {
     $('bQuit').onclick = () => this.quit();
     $('bMenu').onclick = () => $('pause').classList.remove('hidden');
     $('bDeploy').onclick = () => this.openDeploy();
+    document.querySelectorAll('#selBar button[data-g]').forEach(b => b.onclick = () => this.selGroup(b.dataset.g));
+    $('bDiplo').onclick = () => this.openDiplo();
     $('dClose').onclick = () => { this.deployed = false; this.closeDeploy(); };
     $('timeCtl').querySelectorAll('button').forEach(b => b.onclick = () => this.setSpeed(+b.dataset.s));
     $('bAgain').onclick = () => { const c = this.camp; this.quit(); if (c) this.openCamp(); };
@@ -7528,7 +7910,8 @@ const UI = {
   startGame() {
     Sfx.init();
     if (Direct.isTouch()) { try { const d = document.documentElement, r = d.requestFullscreen && d.requestFullscreen(); if (r && r.then) r.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); } catch (e) {} }
-    const L = this.lobby, seed = (Math.random() * 1e6) | 0, size = +$('optSize').value;
+    const mv = $('optMap').value, mt = mv === 'r' ? (Math.random() * MAP_TYPES.length) | 0 : +mv;
+    const L = this.lobby, seed = ((Math.random() * 1e6) | 0) + mt * 1e7, size = +$('optSize').value;
     const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked}));
     this.playersIds = L.slots.map(s => s.id || null);
     if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id)}});
@@ -7610,7 +7993,6 @@ const UI = {
     $('menu').classList.add('hidden'); $('lobby').classList.add('hidden'); $('over').classList.add('hidden'); $('pause').classList.add('hidden'); $('hud').classList.remove('hidden');
     document.documentElement.style.setProperty('--acc', me.nat.color);
     $('natBadge').textContent = me.nat.name; $('natBadge').style.borderColor = me.nat.color;
-    this.buildPowers();
     this.objs = o.tut ? [
       {t: 'Select your workers and build Housing or a Barracks', f: () => this.count(e => e.b && e.k !== 'hq') > 0},
       {t: 'Train 4 more soldiers at the Barracks', f: () => me.built >= 4},
@@ -7635,6 +8017,59 @@ const UI = {
     this.startDemo();
   },
   count(f) { let n = 0; for (const e of this.g.view.ents.values()) if (e.o === this.g.me && f(e)) n++; return n; },
+  selGroup(g) {
+    const me = this.g.me, f = SEL_GROUPS[g];
+    this.selectAll(e => e.o === me && !e.b && f(e));
+    const n = this.sel.size;
+    if (!n) { this.addAlert('No ' + (g === 'sea' ? 'ships' : g === 'air' ? 'aircraft' : g === 'workers' ? 'workers' : 'ground troops'), 'bad'); return; }
+    Sfx.ui(); this.addAlert(n + ' selected');
+  },
+  openDiplo() {
+    if (!this.g || this.demo || this.camp) return;
+    this.diploOpen = !this.diploOpen;
+    $('diplo').classList.toggle('hidden', !this.diploOpen);
+    if (this.diploOpen) this.renderDiplo();
+  },
+  renderDiplo() {
+    const v = this.g.view, me = this.g.me, P = v.players[me], el = $('diplo');
+    const dk = (to, a, kind, gs, gf, ws, wf, id) => `data-to="${to}" data-a="${a}" data-k="${kind || ''}" data-gs="${gs || 0}" data-gf="${gf || 0}" data-ws="${ws || 0}" data-wf="${wf || 0}" data-id="${id || 0}"`;
+    let h = '<h3>Diplomacy <button id="dipX">Close [F6]</button></h3><div class="meta">Ceasefires last ' + (TRUCE_T / 60) + ' minutes. Allies never fight and win together. Bots weigh your army, your gifts and grudges, so sweeten a deal if they say no.</div>';
+    const myStr = P.str || 0;
+    for (const q of v.players) {
+      if (q.i === me || !q.alive) continue;
+      const team = q.team === P.team, r = team ? 'ally' : P.rel[q.i] || 'war', left = r === 'truce' ? Math.max(0, (P.relT[q.i] || 0) - v.t) : 0;
+      const ratio = (q.str + 200) / (myStr + 200), power = ratio > 1.6 ? 'Much stronger than you' : ratio > 1.15 ? 'Stronger than you' : ratio > .85 ? 'About even' : ratio > .55 ? 'Weaker than you' : 'Much weaker than you';
+      const mood = (q.mood && q.mood[me]) || 0, feel = mood > 1.2 ? 'Furious with you' : mood > .5 ? 'Holds a grudge' : mood > .15 ? 'Wary' : 'Calm';
+      const col = q.nat.color;
+      h += `<div class="dp"><div class="dn"><i style="background:${col}"></i>${q.name}<span class="st ${r}">${team ? 'Teammate' : r === 'ally' ? 'Allied' : r === 'truce' ? 'Ceasefire ' + fmtT(left) : 'At war'}</span></div>`;
+      h += `<div class="meta">${power} · ${q.bot ? feel : 'Human player'}</div>`;
+      if (!team) {
+        h += '<div class="row">';
+        if (r === 'war') h += `<button ${dk(q.i, 'propose', 'truce')}>Ceasefire</button><button ${dk(q.i, 'propose', 'truce', 150)}>Ceasefire + 150 steel</button><button ${dk(q.i, 'propose', 'truce', 350, 50)}>Ceasefire + 350 steel 50 fuel</button><button ${dk(q.i, 'propose', 'tribute', 0, 0, 200)}>Demand 200 steel tribute</button>`;
+        if (r === 'truce') h += `<button ${dk(q.i, 'propose', 'truce')}>Extend ceasefire</button><button ${dk(q.i, 'propose', 'ally')}>Propose alliance</button><button ${dk(q.i, 'propose', 'ally', 200)}>Alliance + 200 steel</button>`;
+        h += `<button ${dk(q.i, 'propose', 'trade', 120, 0, 0, 100)}>Trade 120 steel → 100 fuel</button><button ${dk(q.i, 'propose', 'trade', 0, 100, 100, 0)}>Trade 100 fuel → 100 steel</button><button ${dk(q.i, 'gift', '', 100)}>Gift 100 steel</button>`;
+        if (r !== 'war') h += `<button class="bad" ${dk(q.i, 'war')}>Declare war</button>`;
+        h += '</div>';
+      }
+      for (const o of P.offers.filter(o => o.from === q.i)) {
+        const nm = {truce: 'Ceasefire', ally: 'Alliance', tribute: 'Pay tribute', trade: 'Trade'}[o.kind];
+        const pay = (a) => (a[0] ? a[0] + ' steel ' : '') + (a[1] ? a[1] + ' fuel' : '') || 'nothing';
+        h += `<div class="offer"><b>Offer: ${nm}</b> · they give ${pay(o.give)}, you give ${pay(o.want)} <div class="row"><button ${dk(q.i, 'accept', '', 0, 0, 0, 0, o.id)}>Accept</button><button ${dk(q.i, 'decline', '', 0, 0, 0, 0, o.id)}>Decline</button></div></div>`;
+      }
+      h += '</div>';
+    }
+    if (h === el._h) return;
+    el._h = h; el.innerHTML = h;
+    $('dipX').onclick = () => this.openDiplo();
+    el.querySelectorAll('button[data-a]').forEach(b => b.onclick = () => {
+      const d = b.dataset; this.g.issue({c: 'diplo', a: d.a, to: +d.to, kind: d.k, gs: +d.gs, gf: +d.gf, ws: +d.ws, wf: +d.wf, id: +d.id}); Sfx.ui();
+    });
+  },
+  updateSelBar() {
+    const v = this.g.view, me = this.g.me, cnt = {workers: 0, ground: 0, air: 0, sea: 0};
+    for (const e of v.ents.values()) if (e.o === me && !e.b) for (const k in SEL_GROUPS) if (SEL_GROUPS[k](e)) cnt[k]++;
+    for (const b of document.querySelectorAll('#selBar button[data-g]')) { const n = cnt[b.dataset.g], el = b.querySelector('b'); if (el.textContent != n) el.textContent = n; b.style.opacity = n ? 1 : .5; }
+  },
   selectAll(f) { this.sel.clear(); for (const e of this.g.view.ents.values()) if (f(e)) this.sel.add(e.id); this.page = 1; this.refreshHud(true); },
 
   // ---------- events ----------
@@ -7654,10 +8089,12 @@ const UI = {
       case 'trained': if (ev.p === me) this.refreshSoon = true; break;
       case 'hero': if (ev.o === me) { this.addAlert(ev.name ? `${ev.n} "${ev.name}" is now a hero!` : `${ev.n} is now a veteran`, 'gold'); Sfx.good(); } break;
       case 'out': { this.addAlert(`${v.players[ev.p].name} has fallen!`, ev.p === me ? 'bad' : 'gold'); if (ev.p === me) this.showOver(false); break; }
-      case 'over': this.showOver(v.players[me].team === ev.team); break;
+      case 'over': this.showOver(ev.wins ? ev.wins.includes(me) : v.players[me].team === ev.team); break;
+      case 'diplo': if (this.diploOpen) this.renderDiplo(); break;
       case 'nuke': { const mine = v.friendly(ev.o, me); this.nukes.push({id: ev.id, until: performance.now() + ev.d * 1000, mine, x: ev.x, y: ev.y}); this.addAlert(mine ? 'ICBM launched!' : 'WARNING: enemy ICBM launched!', 'bad', ev.x, ev.y); break; }
       case 'deployed': if (ev.p === me) { const u = v.ents.get(ev.id); if (u && this.deployMode === 'army') { this.addAlert(u.d.n + ' deployed', 'good'); if (!$('deploy').classList.contains('hidden')) this.openDeploy(); } else if (u) { this.deployed = true; this.flown = true; this.closeDeploy(); Direct.enter(this, u); } } break;
       case 'nukekill': this.nukes = this.nukes.filter(n => n.id !== ev.id); break;
+      case 'dead': if (ev.air && ev.by === me && ev.o !== me && !Direct.on && !ev.quiet) { this.addAlert('Enemy ' + (UNITS[ev.kk] ? UNITS[ev.kk].n : 'aircraft') + ' shot down', 'good', ev.x, ev.y); Sfx.good(); } break;
       case 'hitm': if (Direct.on && ev.p === me) { const x = $('xhair'); x.style.borderColor = '#ff5a4a'; setTimeout(() => x.style.borderColor = '', 120); } break;
     }
   },
@@ -7841,6 +8278,7 @@ const UI = {
     document.addEventListener('visibilitychange', () => { if (document.hidden) { this.keys = {}; Direct.onBlur(); } });
     document.addEventListener('mouseleave', () => this.edgeOk = false);
     const mm = $('mm');
+    $('mmBig').onclick = () => this.toggleBigMap();
     const mmPos = e => { const r = mm.getBoundingClientRect(), N = this.g.view.N; return {x: (e.clientX - r.left) / r.width * N, y: (e.clientY - r.top) / r.height * N}; };
     let mmDrag = false;
     mm.addEventListener('mousedown', e => {
@@ -7862,7 +8300,7 @@ const UI = {
     this.keys[e.code] = true;
     if (e.repeat) return;
     const c = e.code;
-    if (c === 'Escape') { if (this.mode) this.cancelMode(); else if (this.sel.size) { this.sel.clear(); this.refreshHud(true); } else $('pause').classList.toggle('hidden'); return; }
+    if (c === 'Escape') { if (this.bigMap) this.toggleBigMap(); else if (this.mode) this.cancelMode(); else if (this.sel.size) { this.sel.clear(); this.refreshHud(true); } else $('pause').classList.toggle('hidden'); return; }
     if (c === 'Tab') e.preventDefault();
     if (c.startsWith('Digit') && c !== 'Digit0') {
       const n = c.slice(5);
@@ -7881,6 +8319,9 @@ const UI = {
     if (c === 'Minus' || c === 'NumpadSubtract') { this.cam.tdist *= 1.18; return; }
     if (c === Settings.binds.chooser) { this.openDeploy(); return; }
     if (c === Settings.binds.exit) { e.preventDefault(); this.tryDirect(); return; }
+    if (c === 'F1' || c === 'F2' || c === 'F3' || c === 'F4') { e.preventDefault(); this.selGroup(['workers', 'ground', 'air', 'sea'][+c[1] - 1]); return; }
+    if (c === 'F6') { e.preventDefault(); this.openDiplo(); return; }
+    if (c === 'Tab') { e.preventDefault(); this.toggleBigMap(); return; }
     if (c === 'Space') { e.preventDefault(); if (this.lastAlert) this.jump(this.lastAlert.x, this.lastAlert.y); return; }
     if (c === 'Period') { const list = [...this.g.view.ents.values()].filter(u => u.o === this.g.me && u.k === 'worker' && !u.task && !u.goal); if (list.length) { this.sel.clear(); const w = list[(this.idleI = (this.idleI || 0) + 1) % list.length]; this.sel.add(w.id); this.jump(w.x, w.y); this.refreshHud(true); } else this.addAlert('No idle workers'); return; }
     if (e.ctrlKey || e.metaKey) return;
@@ -8013,6 +8454,7 @@ const UI = {
     const m = this.mode, ids = this.ids();
     if (m.kind === 'amove') { this.g.issue({c: 'move', ids, x, y, a: 1, q: shift ? 1 : 0}); this.R.ping(x, y, 0xff9a4a); }
     else if (m.kind === 'patrol') { this.g.issue({c: 'patrol', ids, x, y}); this.R.ping(x, y, 0x6dd8ff); }
+    else if (m.kind === 'zone') { this.g.issue({c: 'zone', ids, x, y}); this.R.ping(x, y, 0x6dd8ff); this.addAlert('Patrolling the new area', 'good'); }
     else if (m.kind === 'power') { this.g.issue({c: 'power', p: m.p, x, y}); this.R.ping(x, y, 0xffd60a); }
     else if (m.kind === 'nuke') { this.g.issue({c: 'nuke', id: m.id, x, y}); this.R.ping(x, y, 0xff2020); }
     Sfx.ack();
@@ -8045,7 +8487,7 @@ const UI = {
       S.push({hk: 'T', name: 'Stop', gl: '■', desc: 'Stop and hold position until something comes close.', act: () => G.issue({c: 'stop', ids})});
       const hold = first.stance === 'hold';
       S.push({hk: 'Y', name: 'Hold ground', gl: '⛨', desc: 'Never chase: only fire at enemies already in range.', act: () => { G.issue({c: 'stance', ids, s: hold ? 'aggr' : 'hold'}); for (const e of units) e.stance = hold ? 'aggr' : 'hold'; this.refreshHud(true); }, active: hold});
-      S.push({hk: 'U', name: 'Patrol', gl: '⇄', desc: 'Walk back and forth, fighting whatever turns up.', act: () => this.setMode({t: 'target', kind: 'patrol'}, 'Patrol to where?')});
+      S.push({hk: 'U', name: 'Patrol area', gl: '⟲', desc: 'Your troops patrol on their own around wherever you last sent them. Pick a new area for them to guard. Stop (T) makes them stand still.', act: () => this.setMode({t: 'target', kind: 'zone'}, 'Patrol around where?')});
       S.push({hk: 'G', name: 'Take control', gl: '◉', desc: 'Fight in person (F). FPV drones fly first person, planes get a chase camera.', act: () => this.tryDirect()});
       const nuker = units.find(e => e.d.nukeT);
       if (nuker) S.push({hk: 'N', name: 'Launch ICBM', gl: '☢', desc: nuker.nukeReady ? 'Launch at any point on the map. Everyone is warned.' : 'Charging: ' + Math.ceil(nuker.nukeCD || 0) + 's', off: !nuker.nukeReady, why: nuker.nukeReady ? '' : 'Still charging', act: () => this.startNuke(nuker)});
@@ -8103,6 +8545,7 @@ const UI = {
     const G = this.g;
     if (!G || this.demo) return;
     const v = G.view, p = v.players[G.me];
+    if (!this.sbT || performance.now() - this.sbT > 500) { this.sbT = performance.now(); this.updateSelBar(); if (this.diploOpen) this.renderDiplo(); }
     $('rSteel').textContent = p.steel | 0; $('rFuel').textContent = p.fuel | 0; $('rPop').textContent = p.pop + ' / ' + p.popCap; $('rPop').style.color = p.pop >= p.popCap ? '#ff5a4a' : ''; $('rTime').textContent = fmtT(v.t);
     if (force || !this.scoreT || performance.now() - this.scoreT > 1000) {
       this.scoreT = performance.now();
@@ -8248,6 +8691,12 @@ const UI = {
   },
 
   // ---------- minimap ----------
+  toggleBigMap() {
+    this.bigMap = !this.bigMap;
+    const mm = $('mm'), S = this.bigMap ? 768 : 220;
+    $('mmwrap').classList.toggle('big', this.bigMap); document.body.classList.toggle('bigmap', this.bigMap); mm.width = mm.height = S; $('mmBig').textContent = this.bigMap ? '✕' : '⤢';
+    this.mmT = 0;
+  },
   drawMinimap(dt) {
     const G = this.g, v = G.view, mm = $('mm'), c = mm.getContext('2d'), S = mm.width, N = v.N, R = this.R, sc = S / N;
     c.drawImage(R.mmBase, 0, 0, S, S);
@@ -8265,6 +8714,15 @@ const UI = {
     }
     if (this.blips) this.blips = this.blips.filter(b => { b.t += dt; c.strokeStyle = 'rgba(255,60,40,' + (1 - b.t / 3) + ')'; c.lineWidth = 2; c.beginPath(); c.arc(b.x * sc, b.y * sc, 4 + b.t * 10 % 12, 0, 6.3); c.stroke(); return b.t < 3; });
     for (const n of this.nukes) { c.strokeStyle = '#ff2020'; c.lineWidth = 2; c.beginPath(); c.arc(n.x * sc, n.y * sc, 16 * sc, 0, 6.3); c.stroke(); }
+    if (this.bigMap) { // labels on the big map
+      c.font = '700 13px system-ui'; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.75)';
+      const lab = (t, x, y, col) => { c.strokeText(t, x, y); c.fillStyle = col; c.fillText(t, x, y); };
+      lab('♛ The Crown', N / 2 * sc, N / 2 * sc - 22, '#ffe48a');
+      for (const q of v.players) { const s = q.spawn; if (s && R.isExplored(s.x, s.y)) lab((q.alive ? '' : '✝ ') + (q.i === G.me ? 'You' : q.name) + (q.i === G.me ? '' : q.rel && q.rel[G.me] === 'ally' ? ' · ally' : q.rel && q.rel[G.me] === 'truce' ? ' · ceasefire' : ''), s.x * sc, s.y * sc - 18, q.nat.color); }
+      c.font = '600 12px system-ui'; c.textAlign = 'left'; c.fillStyle = 'rgba(255,255,255,.8)';
+      c.fillText((MAP_TYPES[mapType(v.seed)] || 'Island') + ' · left-click: look there · right-click: send selected units · Tab or Esc: close', 10, S - 10);
+      for (const id of this.sel) { const e = v.ents.get(id); if (e && !e.b) { c.strokeStyle = '#6dff9a'; c.lineWidth = 1.5; c.strokeRect(e.x * sc - 3, e.y * sc - 3, 6, 6); } }
+    }
     // camera footprint
     const corners = [[0, 0], [innerWidth, 0], [innerWidth, innerHeight * .78], [0, innerHeight * .78]].map(q => this.ground(q[0], q[1]));
     if (corners.every(Boolean)) { c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 1.2; c.beginPath(); corners.forEach((q, i) => i ? c.lineTo(q.x * sc, q.y * sc) : c.moveTo(q.x * sc, q.y * sc)); c.closePath(); c.stroke(); }
