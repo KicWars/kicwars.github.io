@@ -267,6 +267,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 body.dying #gl{filter:grayscale(.85) brightness(.6) contrast(1.15);transition:filter .6s}
 #gl{transition:filter .6s}
 #over{overflow:auto;align-items:flex-start}#over .mcard{margin:auto}#oStats{max-height:42vh;overflow:auto;border-top:1px solid rgba(255,255,255,.1);padding-top:8px}
+#logScr{align-items:flex-start;overflow:auto;justify-content:center;background:rgba(5,8,12,.86);backdrop-filter:blur(10px)}#logScr .mcard{margin:auto}#logList{max-height:58vh;overflow:auto;display:flex;flex-direction:column;gap:12px;padding-right:6px}#logList h3{margin:0 0 4px;font-size:13px;letter-spacing:.06em;color:var(--acc)}#logList ul{margin:0;padding-left:18px;font-size:13px;line-height:1.5;color:#d6dee3}
 </style>
 </head>
 <body>
@@ -286,6 +287,7 @@ body.dying #gl{filter:grayscale(.85) brightness(.6) contrast(1.15);transition:fi
     <button class="big" id="bHost">Play with a Friend: host</button>
     <button class="big" id="bJoin">Join a Friend</button>
     <button class="big" id="bSettings">Controls and settings</button>
+    <button class="big" id="bLog">What's new (changelog)</button>
     <details class="how"><summary>How to play</summary>
       <ul>
         <li><b>Quick Battle</b>: pick a unit and fight it yourself straight away. <b>P</b> reopens the unit chooser; when you die it comes back.</li>
@@ -454,6 +456,7 @@ body.dying #gl{filter:grayscale(.85) brightness(.6) contrast(1.15);transition:fi
 <div id="scenSpawn" class="hidden"><h3>Choose your soldier</h3><div id="ssInfo"></div><div id="ssBtns"></div><p class="small">Press 1 to 7, or click. You land with the next boat, or at the forward position once you have captured an objective.</p></div>
 <div id="campHud" class="hidden"><div class="ch-top"><b id="chName"></b><span id="chBudget"></span><button id="chClear">Clear</button><button id="chStart" class="primary">Start battle</button><button id="chQuit">Quit</button></div>
   <div id="chUnits"></div><div class="ch-tip">Click inside the blue zone to place the selected troop. Right click a troop to sell it back. <span id="chTip"></span></div></div>
+<div id="logScr" class="screen hidden"><div class="mcard wide"><h2 style="margin:0">What's new</h2><p class="small" style="margin:0">Newest first. Hard refresh (Ctrl+Shift+R) if you don't see the latest.</p><div id="logList"></div><button class="big" id="logBack">Back</button></div></div>
 <div id="over" class="screen hidden"><div class="mcard wide"><h1 id="oTitle"></h1><p id="oSub"></p><button class="big primary hidden" id="bNext">Next level</button><button class="big" id="bAgain">Back to menu</button><button class="big" id="bWatch">Keep watching</button><div id="oStats"></div></div></div>
 
 <script>/**
@@ -10892,7 +10895,7 @@ window.Tension = (() => {
 // Settings opens over the menu or pause screen, so closing it brings that screen back. Esc closes the top panel or settings first.
 (() => {
   const $ = id => document.getElementById(id);
-  const SCREENS = ['menu', 'lobby', 'settings', 'joinScr', 'deploy', 'pause', 'campScr', 'batScr', 'over'], PANELS = ['diplo', 'techScr', 'statsScr'];
+  const SCREENS = ['menu', 'lobby', 'settings', 'joinScr', 'deploy', 'pause', 'campScr', 'batScr', 'over', 'logScr'], PANELS = ['diplo', 'techScr', 'statsScr'];
   const vis = id => { const e = $(id); return !!e && !e.classList.contains('hidden'); };
   const hide = id => $(id).classList.add('hidden');
   const last = {}; let displaced = [];
@@ -10910,6 +10913,38 @@ window.Tension = (() => {
     for (const id of SCREENS.concat(PANELS)) last[id] = vis(id);
     obs.takeRecords();
   };
+  // ---- changelog: add a new entry at the TOP of this list whenever something changes
+  const CHANGELOG = [
+    {d: '5 Nov 2026 (latest)', items: [
+      'Campaign: a "Next level" button on the victory screen; the victory screen now scrolls and its buttons sit above the stats.',
+      'Stats screen hides economy columns and the steel graph in campaign battles (there is no economy there).',
+      'Trenches can be dug in any direction (into slopes, straight down, ahead) with spoil mounds and cover. In-field radar minimap.',
+      'Three hand-built war maps: Twin Rivers, Mountain Kingdoms, Iron Bay. New hand-built assault map: Hollow Village.',
+      'Tougher infantry AI: ambushes, burst fire, taking cover and flanking.',
+      'Tension: low-health heartbeat and pulse, hit flash, a death screen, enemy infantry hidden beyond 42 m (shots reveal them).',
+      'Tunnels can ramp down to 3 deep with a sloping roof. Fixed the freeze when digging a tunnel with the shovel (Y).',
+      'Oil and steel spots always have clear room around them now, so they cannot get stuck against city walls or rock.',
+      'War Room fix: it is no longer hidden behind the deploy screen.',
+      'Menus: only one menu open at a time, Settings returns to the screen you came from, Esc closes panels, solid readable panels.',
+      'Planes: real lift, drag and stall flight model. The mouse flies an autopilot (M for manual stick). G-force and angle-of-attack readouts, a lead pipper for the guns, engine and wing damage, speed camera effects. AI jets use boom-and-zoom and energy tactics.',
+      'Ground: every 3rd kill earns an artillery strike, press J to call it where you aim.',
+      'Visuals: procedural clouds in the sky and surface detail on terrain and objects.',
+      'Performance: faster digging, and the game slows down instead of freezing when it falls behind.']},
+    {d: '5 Nov 2026 (earlier)', items: [
+      'Research trees with unlocks; digging (shovel, trenches, tunnels); blob soldiers only; Licases camo look; easy and auto economy; advisor tips; nicer rocks, trees, terrain and UI; patrol boat cannon.',
+      'Tutorial, gritty realistic look, trenches, sandbags and pillboxes, worker build queue, Valentinos melee and Trattoria, stats screen.',
+      'Big custom maps (desert, Hormuz, Stalingrad, Pacific War), War Room and scout reports, transports, swimming, real ICBMs, team deathmatch.',
+      'FPS Battles: D-Day and Pacific landings with landing craft, waves and objectives.',
+      'Diplomacy, auto patrol, kill confirms, highways, big tactical map. The game was renamed KICwars.']},
+    {d: '4 Nov 2026', items: [
+      'New jets (A-10, F/A-18, Typhoon), air-to-air missiles, chaff, radar locks and missile warning. Machine Gunner, Grenadier and Paratrooper.',
+      'Tank barrels aim at the crosshair; vehicle gun elevation fixes; no-build overlay, excavation and time controls.',
+      'Campaign budget-battle mode; Toms special is now a Big Knife.',
+      'First-person direct control, detailed aircraft and vehicles, Quick Battle, settings, two-player over GitHub.']}
+  ];
+  $('logList').innerHTML = CHANGELOG.map(c => '<div><h3>' + c.d + '</h3><ul>' + c.items.map(i => '<li>' + i.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</li>').join('') + '</ul></div>').join('');
+  $('bLog').onclick = () => { $('menu').classList.add('hidden'); $('logScr').classList.remove('hidden'); };
+  $('logBack').onclick = () => { $('logScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
   const obs = new MutationObserver(sync);
   for (const id of SCREENS.concat(PANELS)) { const e = $(id); if (e) { last[id] = vis(id); obs.observe(e, {attributes: true, attributeFilter: ['class']}); } }
   document.addEventListener('keydown', e => {
