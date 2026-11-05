@@ -6050,7 +6050,7 @@ const Direct = {
     this.ui = ui; this.e = e; this.id = e.id; this.on = true; this.aboard = null;
     const d = e.d;
     this.mode = this.modeOf(d);
-    this.yaw = e.h; this.pitch = this.mode === 'plane' ? 0 : -.05; this.roll = 0; this.fpP = 0; this.pRate = 0; this.rollRate = 0; this.vz = 0; this.mx = this.my = 0; this.keys = {}; this.mouseDown = false;
+    this.yaw = e.h; this.pitch = this.mode === 'plane' ? 0 : -.05; this.roll = 0; this.fpP = 0; this.pRate = 0; this.rollRate = 0; this.pullUp = false; this.warnT = 0; this.vz = 0; this.mx = this.my = 0; this.keys = {}; this.mouseDown = false;
     this.speed = this.mode === 'plane' ? d.spd : this.mode === 'fpv' ? d.spd : 0; this.batt = 1; this.vel = {x: 0, y: 0}; this.hullSpd = 0;
     this.aimYaw = this.yaw; this.aimPitch = 0; this.camYaw = this.yaw; this.camPitch = this.mode === 'plane' ? -.05 : 0;
     this.W = (PWPN[e.k] || []).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0}));
@@ -6071,6 +6071,7 @@ const Direct = {
   },
 
   exit(msg) {
+    this.pullUp = false; this.warnT = 0;
     if (!this.on) return;
     this.on = false; this.aboard = null; this.knifeEnd = 0; this.savedW = null; VM.knife = false;
     const ui = this.ui, R = ui.g.R, e = ui.g.view.ents.get(this.id);
@@ -6897,7 +6898,7 @@ const Direct = {
     if (st) { c.textAlign = 'center'; c.font = '700 14px system-ui'; c.fillStyle = 'rgba(0,0,0,.55)'; const tw = c.measureText(st).width; c.fillRect(cx - tw / 2 - 12, 18, tw + 24, 26); c.fillStyle = this.look === 'free' ? '#ffd23a' : '#fff'; c.fillText(st, cx, 36); }
     if (this.look === 'offset') { c.strokeStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.arc(cx, cy, Math.min(w, h) * .05, 0, 6.2832); c.stroke(); c.beginPath(); c.moveTo(cx, cy); c.lineTo(this.mouseX, this.mouseY); c.stroke(); }
     if (this.msgT > 0) { c.textAlign = 'center'; c.font = '800 18px system-ui'; c.fillStyle = `rgba(255,255,255,${Math.min(1, this.msgT * 2)})`; c.shadowColor = '#000'; c.shadowBlur = 6; c.fillText(this.msgText, cx, h * .3); c.shadowBlur = 0; }
-    if (this.pullUp && Math.floor(performance.now() / 250) % 2) { c.textAlign = 'center'; c.font = '900 26px system-ui'; c.fillStyle = '#ff3b30'; c.fillText('PULL UP', cx, cy - 70); Sfx.beep(1100); }
+    if (this.pullUp && this.mode === 'plane' && Math.floor(performance.now() / 250) % 2) { c.textAlign = 'center'; c.font = '900 26px system-ui'; c.fillStyle = '#ff3b30'; c.fillText('PULL UP', cx, cy - 70); Sfx.beep(1100); }
     c.restore();
   },
   // canopy frame and instrument panel for first-person flying
