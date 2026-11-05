@@ -1515,7 +1515,8 @@ const angDiff = (a, b) => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d 
 const DIG_R = 2.5, DIG_COST = 25, DIG_T = 3;
 // Digging: shovels lower the ground a bit at a time. Shallow cuts are trenches (cover); deep ones are tunnels:
 // timber-roofed, and troops inside cannot be seen or shot from more than a few metres away.
-const DIG_MAX = 1.5, TUNNEL_D = 1.0, TRENCH_D = .45, TUNNEL_SEE = 3.5;
+const DIG_MAX = 3, TUNNEL_D = 1.0, // tunnels can now ramp down to 3 deep: dig each cell a little deeper than the last to slope down, shallower to climb out
+   TRENCH_D = .45, TUNNEL_SEE = 3.5;
 function inTunnel(M, N, e) { if (!M.dug) return false; const i = Math.round(e.y) * N + Math.round(e.x); return M.dug[i] >= TUNNEL_D; }
 function digCells(M, N, x, y, amt, o) { // returns [[i, h], ...] of changed cells
   if (!M.h0) { M.h0 = Float32Array.from(M.h); M.dug = new Float32Array(N * N); M.digO = new Uint8Array(N * N); }
@@ -6314,7 +6315,8 @@ Renderer.prototype.flushDig = function () {
     this.roofM.castShadow = this.roofM.receiveShadow = true; this.world.add(this.roofM);
   }
   const m = new THREE.Matrix4(), qq = new THREE.Quaternion(), sc = new THREE.Vector3(1, 1, 1), p = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0); let n = 0;
-  for (const i of cells) { const x = i % N, y = (i / N) | 0, top = M.h0[i] - .12, rot = (x + y) % 2 ? 0 : Math.PI / 2; qq.setFromAxisAngle(up, rot);
+  for (const i of cells) { const x = i % N, y = (i / N) | 0, top = Math.min(M.h0[i] - .12, M.h[i] + 1.4), // the roof follows the tunnel floor, so a ramp has a sloping ceiling
+       rot = (x + y) % 2 ? 0 : Math.PI / 2; qq.setFromAxisAngle(up, rot);
     for (const o of [-.27, .27]) { p.set(x + (rot ? o : 0), top, y + (rot ? 0 : o)); m.compose(p, qq, sc); this.roofM.setMatrixAt(n++, m); } }
   this.roofM.count = n; this.roofM.instanceMatrix.needsUpdate = true;
 };
