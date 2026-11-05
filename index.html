@@ -326,6 +326,8 @@ body.cbDeut #gl,body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDe
     <button class="big mtile" id="bPlay" title="Skirmish against bots: choose nations, teams, map and difficulty"><b>⚔ Play vs Bots</b><small>Choose nations, map and difficulty</small></button>
     <button class="big mtile" id="bCamp" title="Spend a budget on troops, place them, and beat a fixed enemy army"><b>🎖 Campaign</b><small>Budget battles, level by level</small></button>
     <button class="big mtile" id="bBat" title="First-person modes: beach landings and team deathmatch"><b>🎯 FPS Modes</b><small>D-Day, Pacific landing, Deathmatch</small></button>
+    <div class="mgroup">Arcade: air &amp; tanks</div>
+    <button class="big mtile" id="bArc" style="grid-column:1/-1" title="Arcade air and tank battles: endless respawns, tickets and capture points"><b>✈ Air &amp; Tank Battles</b><small>Dogfights and tank fights · 12 vs 12, tickets, capture points</small></button>
     <div class="mgroup">With friends <em>(won't work at school)</em></div>
     <button class="big mtile" id="bHost"><b>🛰 Host a game</b><small>Get a code to share · won't work at school</small></button>
     <button class="big mtile" id="bJoin"><b>🔗 Join a friend</b><small>Enter their code · won't work at school</small></button>
@@ -497,7 +499,7 @@ body.cbDeut #gl,body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDe
 <div id="pause" class="screen hidden"><div class="mcard"><h2>Menu</h2><p class="msg">The war keeps running.</p><button class="big primary" id="bResume">Resume</button><button class="big" id="bSettings2">Controls and settings</button><button class="big" id="bQuit">Quit to menu</button></div></div>
 <div id="campScr" class="screen hidden"><div class="mcard wide"><h2 style="margin:0">Campaign</h2><p style="margin:0;color:#c7d3da">You get a budget. Buy troops, place them in your zone, then press Start and watch the battle. Wipe out the enemy army to unlock the next level.</p>
   <label style="display:flex;gap:8px;align-items:center">Your nation <select id="campNat"></select></label><div id="campList" class="camplist"></div><button class="big" id="campBack">Back</button></div></div>
-<div id="batScr" class="screen hidden"><div class="mcard wide"><h2 style="margin:0">FPS Battles</h2><p style="margin:0;color:#c7d3da">You are one soldier in a huge amphibious assault. Ride the landing craft in, fight up the beach and capture each objective in turn. Every soldier who lands costs a reinforcement ticket; run out and the assault fails. Capture objectives to land closer to the front.</p>
+<div id="batScr" class="screen hidden"><div class="mcard wide"><h2 style="margin:0" id="batH">FPS Battles</h2><p style="margin:0;color:#c7d3da" id="batP">You are one soldier in a huge amphibious assault. Ride the landing craft in, fight up the beach and capture each objective in turn. Every soldier who lands costs a reinforcement ticket; run out and the assault fails. Capture objectives to land closer to the front.</p>
   <label style="display:flex;gap:8px;align-items:center">Your nation <select id="batNat"></select></label><div id="batList" class="camplist"></div><button class="big" id="batBack">Back</button></div></div>
 <div id="warHud" class="hidden"><div id="wrTitle">WAR ROOM</div><div id="wrPrompt"></div><div id="wrHelp">WASD walk · mouse look (click to capture) · E use · F or Esc back to command</div><div id="wrX">+</div></div>
 <div id="scenSpawn" class="hidden"><h3>Choose your soldier</h3><div id="ssInfo"></div><div id="ssBtns"></div><p class="small">Press 1 to 7, or click. You land with the next boat, or at the forward position once you have captured an objective.</p></div>
@@ -10306,7 +10308,8 @@ const UI = {
     $('bNext').onclick = () => { const c = this.camp; if (!c || !CAMPAIGN[c.i + 1]) return; this.quit(); this.openCamp(); this.campLaunch(c.i + 1); };
     $('bCamp').onclick = () => { Sfx.init(); Sfx.ui(); this.openCamp(); };
     $('bTut').onclick = () => { Sfx.init(); Sfx.ui(); this.startTutorial(); };
-    $('bBat').onclick = () => { Sfx.init(); Sfx.ui(); this.openBat(); };
+    $('bBat').onclick = () => { Sfx.init(); Sfx.ui(); this.openBat('fps'); };
+    $('bArc').onclick = () => { Sfx.init(); Sfx.ui(); this.openBat('arc'); };
     $('batBack').onclick = () => { $('batScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
     $('campBack').onclick = () => { $('campScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
     $('chClear').onclick = () => this.campClear();
@@ -10570,10 +10573,13 @@ const UI = {
     $('campHud').classList.remove('hidden', 'live'); $('chName').textContent = (i + 1) + '. ' + L.n; $('chTip').textContent = L.tip;
     this.sel.clear(); this.refreshHud(true); this.campRefresh();
   },
-  openBat() {
+  openBat(kind) {
     $('menu').classList.add('hidden'); $('batScr').classList.remove('hidden');
+    const arc = kind === 'arc', P = $('batP'); P.dataset.fps = P.dataset.fps || P.innerHTML;
+    $('batH').textContent = arc ? 'Air & Tank Battles' : 'FPS Battles';
+    P.innerHTML = arc ? 'Arcade battles, 12 against 12 with endless respawns. <b>Air</b>: shoot down planes and destroy the enemy columns and bases; land on your airfield to rearm. <b>Tanks</b>: hold the capture points A, B and C and kill their armour. Each side has tickets: the first to run out loses.' : P.dataset.fps;
     const sel = $('batNat'); if (!sel.options.length) sel.innerHTML = NATIONS.map((n, i) => `<option value="${i}">${n.name}</option>`).join('');
-    $('batList').innerHTML = BATTLES.map((B, i) => `<button class="camplv" data-i="${i}"><b>${B.n}</b><span>${B.blurb}</span><span class="small">${B.arc ? (B.team + 1) + ' vs ' + (B.team + 1) + (B.arc === 'air' ? ' planes' : ' vehicles') + ' · ' + B.tix + ' tickets' : B.tdm ? (B.team + 1) + ' vs ' + (B.team + 1) + ' · first to ' + B.tdm + ' kills' : B.obj.length + ' objectives · ' + B.tickets + ' reinforcements'} · enemy: ${NATIONS.find(n => n.key === B.foe).name}</span></button>`).join('');
+    $('batList').innerHTML = BATTLES.map((B, i) => !B.arc !== !arc ? '' : `<button class="camplv" data-i="${i}"><b>${B.n}</b><span>${B.blurb}</span><span class="small">${B.arc ? (B.team + 1) + ' vs ' + (B.team + 1) + (B.arc === 'air' ? ' planes' : ' vehicles') + ' · ' + B.tix + ' tickets' : B.tdm ? (B.team + 1) + ' vs ' + (B.team + 1) + ' · first to ' + B.tdm + ' kills' : B.obj.length + ' objectives · ' + B.tickets + ' reinforcements'} · enemy: ${NATIONS.find(n => n.key === B.foe).name}</span></button>`).join('');
     $('batList').querySelectorAll('button').forEach(b => b.onclick = () => this.batLaunch(+b.dataset.i));
   },
   batLaunch(i) {
@@ -10593,6 +10599,8 @@ const UI = {
     if (!show || !this.scen || !this.g || this.g.sim.over) { el.classList.add('hidden'); return; }
     const S = this.g.sim.scen, O = S.obj[S.oi];
     if (O && el.classList.contains('hidden')) this.jump(O.x, O.y + 6);
+    el.querySelector('h3').textContent = S.arc ? (S.arc === 'air' ? 'Choose your plane' : 'Choose your vehicle') : 'Choose your soldier';
+    el.querySelector('p.small').classList.toggle('hidden', !!S.arc);
     if (S.arc) { $('ssInfo').textContent = `Tickets ${Math.ceil(S.tix[0])} : ${Math.ceil(S.tix[1])} · pick your ${S.arc === 'air' ? 'plane' : 'vehicle'}` + (S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ' · STRIKE PLANE READY (A-10)' : ''); }
     else if (S.tdm) { $('ssInfo').textContent = `Score ${this.g.view.players[0].kills} : ${this.g.view.players[1].kills} · first to ${S.B.tdm} · respawn at your base`; }
     else $('ssInfo').textContent = `Reinforcements left: ${S.tickets} · Objective ${String.fromCharCode(65 + S.oi)}: ${O ? O.n : ''} · Landing at: ${S.fwd ? 'forward position' : 'the beach, by boat'}`;
