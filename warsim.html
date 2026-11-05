@@ -9981,8 +9981,12 @@ const UI = {
     box.innerHTML = `<table class="stab"><tr><th>Nation</th><th>Kills</th><th>Troops killed</th><th>Buildings razed</th><th>Losses</th><th>Trained</th><th>Built</th><th>Steel mined</th><th>Army value</th><th>Buildings</th><th>K/D</th></tr>${P.map(row).join('')}</table>
       <div class="schart"><figure><figcaption>Army value over time</figcaption><canvas width="600" height="150"></canvas></figure><figure><figcaption>Steel mined</figcaption><canvas width="600" height="150"></canvas></figure><figure><figcaption>Kills</figcaption><canvas width="600" height="150"></canvas></figure></div>
       <p class="small">Game time ${Math.floor(v.t / 60)}:${String(Math.floor(v.t % 60)).padStart(2, '0')}. Graphs sample every 30 seconds.</p>`;
+    if (v.battle) { // campaign battles have no economy: drop the base-building columns and the steel graph
+      box.querySelectorAll('.stab tr').forEach(tr => { for (const k of [7, 6, 5]) if (tr.children[k]) tr.children[k].remove(); });
+      const figs = box.querySelectorAll('.schart figure'); if (figs[1]) figs[1].remove();
+    }
     box.querySelectorAll('canvas').forEach((cv, ci) => {
-      const c = cv.getContext('2d'), W = cv.width, H = cv.height, col = [2, 1, 4][ci];
+      const c = cv.getContext('2d'), W = cv.width, H = cv.height, col = (v.battle ? [2, 4] : [2, 1, 4])[ci];
       let mx = 1, tm = 1; for (const p of P) for (const h of p.hist || []) { mx = Math.max(mx, h[col]); tm = Math.max(tm, h[0]); }
       c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 1; for (let i = 1; i < 4; i++) { c.beginPath(); c.moveTo(0, H * i / 4); c.lineTo(W, H * i / 4); c.stroke(); }
       c.fillStyle = 'rgba(255,255,255,.5)'; c.font = '11px sans-serif'; c.fillText(Math.round(mx), 4, 12);
