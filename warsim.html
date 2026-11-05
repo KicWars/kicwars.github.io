@@ -899,6 +899,8 @@ const UNITS = {
   patrolboat: {n: 'Patrol Boat', cat: 'sea', arm: 'sea', hp: 260, dmg: 14, rng: 10, cd: .3, spd: 7.5, vis: 15, cost: [130, 40], pop: 2, t: 10, from: 'yard', shot: 'cannon', aa: 1, r: .8, turret: 1, hk: 'I', desc: 'Fast gunboat with twin machine guns. Hunts landing craft and drones.'},
   transport: {n: 'C-130 Transport', cat: 'air', arm: 'air', hp: 420, dmg: 0, rng: 0, cd: 1, spd: 11, vis: 16, cost: [260, 90], pop: 3, t: 18, from: 'airfield', alt: 12, turn: 1, r: 1.2, carry: 10, fill: 'para', hk: 'K', desc: 'Arrives with 10 paratroopers aboard. Fly it over the target and Unload (B): they jump.'},
   chinook:  {n: 'Chinook', cat: 'heli', arm: 'air', hp: 400, dmg: 0, rng: 0, cd: 1, spd: 7.5, vis: 14, cost: [220, 80], pop: 3, t: 16, from: 'airfield', alt: 6, r: 1.2, carry: 10, hk: 'L', desc: 'Twin-rotor transport helicopter. Carries 10 infantry and drops them anywhere.'},
+  sr71:     {n: 'SR-71 Blackbird', cat: 'air', arm: 'air', hp: 320, dmg: 0, rng: 0, cd: 1, spd: 26, vis: 34, cost: [300, 160], pop: 3, t: 24, from: 'airfield', alt: 22, turn: .8, r: 1.2, dodge: .75, hk: 'X', only: ['charlies'], desc: 'Charlies only. The fastest plane ever built: flies so high and fast it reveals a huge area, and most missiles fired at it simply miss. Unarmed.'},
+  b2:       {n: 'B-2 Spirit', cat: 'air', arm: 'air', hp: 640, dmg: 320, rng: 1.8, cd: .9, spd: 11, vis: 16, cost: [480, 300], pop: 6, t: 40, from: 'airfield', shot: 'bomb', splash: 4.2, noAir: 1, stealth: 6, alt: 15, turn: .75, r: 1.6, hk: 'B', only: ['charlies'], desc: 'Charlies only. Stealth flying-wing bomber: invisible to AA until it is almost overhead, and drops huge bombs.'},
   awacs:    {n: 'AWACS', cat: 'air', arm: 'air', hp: 360, dmg: 0, rng: 0, cd: 1, spd: 9, vis: 40, cost: [280, 120], pop: 3, t: 20, from: 'airfield', alt: 14, turn: .9, r: 1.2, radar: 60, hk: 'H', desc: 'Flying radar: huge vision, spots every aircraft within 60 m for your whole army.'},
   fighter:  {n: 'Fighter', cat: 'air', arm: 'air', hp: 240, dmg: 30, rng: 13, cd: .9, spd: 15, vis: 16, cost: [230, 100], pop: 3, t: 18, from: 'airfield', shot: 'cannon', aa: 1, alt: 11, turn: 1.7, r: .9, hk: 'R', notNation: ['toms', 'charlies'], desc: 'Fast multirole jet, guns on air and ground.'},
   interceptor: {n: 'Interceptor', cat: 'air', arm: 'air', hp: 200, dmg: 70, rng: 18, cd: 2.2, spd: 19, vis: 18, cost: [240, 120], pop: 3, t: 18, from: 'airfield', shot: 'missile', aa: 1, noGround: 1, alt: 13, turn: 1.6, r: .9, hk: 'T', notNation: ['toms', 'charlies'], desc: 'Air-to-air missiles only. Kills bombers.'},
@@ -925,7 +927,7 @@ const BUILDINGS = {
   dronebay: {n: 'Drone Bay', hp: 450, s: 4, vis: 9, trains: ['fpv', 'hunter'], cost: [120, 30], t: 14, hk: 'U', desc: 'Builds FPV bomb drones and hunter drones. No population used.'},
   derrick:  {n: 'Oil Derrick', hp: 400, s: 3, vis: 7, oil: 1, cost: [100, 0], t: 12, hk: 'G', desc: 'Build on an oil well for steady fuel.'},
   factory:  {n: 'War Factory', hp: 1100, s: 6, vis: 8, trains: ['tank', 'ifv', 'arty', 'mlrs', 'sam', 'truck', 'supply', 'laser'], req: 'barracks', cost: [260, 40], t: 24, hk: 'H', desc: 'Builds armoured vehicles.'},
-  airfield: {n: 'Airfield', hp: 1000, s: 8, vis: 12, trains: ['fighter', 'interceptor', 'bomber', 'f16', 'f15', 'f35', 'a10', 'fa18', 'typhoon', 'gunship', 'transport', 'chinook', 'awacs'], req: 'factory', cost: [320, 120], t: 28, hk: 'J', desc: 'Builds aircraft.'},
+  airfield: {n: 'Airfield', hp: 1000, s: 8, vis: 12, trains: ['fighter', 'interceptor', 'bomber', 'f16', 'f15', 'f35', 'a10', 'fa18', 'typhoon', 'gunship', 'transport', 'chinook', 'awacs', 'sr71', 'b2'], req: 'factory', cost: [320, 120], t: 28, hk: 'J', desc: 'Builds aircraft.'},
   yard:     {n: 'Naval Yard', hp: 1100, s: 6, vis: 12, coast: 1, trains: ['destroyer', 'attacksub', 'nukesub', 'lcboat', 'patrolboat', 'hover'], req: 'barracks', cost: [280, 60], t: 24, hk: 'K', desc: 'Must touch the sea. Builds warships and submarines.'},
   lab:      {n: 'Research Lab', hp: 500, s: 4, vis: 7, research: 1, req: 'barracks', cost: [160, 60], t: 18, hk: 'V', desc: 'Upgrades weapons, armour and logistics.'},
   hospital: {n: 'Field Hospital', hp: 450, s: 4, vis: 7, aura: 9, cost: [120, 20], t: 14, hk: 'B', desc: 'Heals friendly infantry nearby.'},
@@ -1047,6 +1049,8 @@ const PWPN = {
             {n: 'Air-to-Air Missile', t: 'msl', dmg: 130, vs: 'missile', spd: 44, spl: 1.2, cd: 2.4, rng: 80, air: 1, snd: 'missile'}],
   f15:     [{n: 'M61 Vulcan', t: 'hit', dmg: 11, vs: 'cannon', rpm: 1300, mag: 600, rl: 4, sp: .8, ads: .8, kick: .1, rng: 45, crit: 1.3, auto: 1, aa: 1, snd: 'cannon'},
             {n: 'AIM-120 AMRAAM', t: 'msl', dmg: 150, vs: 'missile', spd: 48, spl: 1.3, cd: 2.2, rng: 100, air: 1, snd: 'missile'}],
+  b2:      [{n: 'Bomb Bay', t: 'bomb', dmg: 320, vs: 'bomb', spl: 4.2, cd: .5, rng: 0, stick: 4, snd: 'bomb'}],
+  sr71:    [{n: 'Recon Camera', t: 'hit', dmg: 0, vs: 'cannon', rpm: 60, mag: 1, rl: 1, sp: 0, rng: 1, snd: 'cannon'}],
   bomber:  [{n: 'Tail Gun', t: 'hit', dmg: 8, vs: 'cannon', rpm: 700, mag: 300, rl: 4, sp: 1.4, rng: 35, auto: 1, aa: 1, snd: 'cannon'},
             {n: 'Bomb Bay', t: 'bomb', dmg: 170, vs: 'bomb', spl: 3.2, cd: .28, rng: 0, stick: 6, snd: 'bomb'},
             {n: 'AIM-9 Sidewinder', t: 'msl', dmg: 120, vs: 'missile', spd: 42, spl: 1.2, cd: 3, rng: 70, air: 1, snd: 'missile'}],
@@ -3101,6 +3105,7 @@ Sim.prototype.stepShots = function () {
       this.splash(s.x, s.y, s.sp, s.base || s.dmg, s.o, s.ty, src);
     } else if (s.tid) {
       const t = this.ents.get(s.tid);
+      if (t && t.hp > 0 && t.d.dodge && (s.ty === 'missile' || s.ty === 'cannon' || s.ty === 'bullet') && this.rnd() < t.d.dodge) { if (s.ty === 'missile') this.ev({k: 'boom', x: t.x + (this.rnd() - .5) * 8, y: t.y + (this.rnd() - .5) * 8, z: t.z, s: .5, ty: 'missile'}); continue; } // too fast and too high
       if (t && t.hp > 0 && s.ty === 'missile' && (t.chaffT || 0) > this.t - .3 && this.rnd() < .8) { this.ev({k: 'boom', x: t.x + (this.rnd() - .5) * 6, y: t.y + (this.rnd() - .5) * 6, z: t.z + 1, s: .5, ty: 'missile'}); if (t.pilot) this.notify(t.o, 'Chaff spoofed the missile!', 'good'); continue; }
       if (t && t.hp > 0) {
         if (src) { t.srcX = src.x; t.srcY = src.y; }
@@ -5341,6 +5346,12 @@ function fuselage(b, len, r, col, noseCol) {
   b.sph(r * 1.5, r * .55, r * .6, len * .3, r * .75, 0, 0x121d29);
 }
 const AIR = {
+  // SR-71: long black fuselage with chines, a thin delta wing and huge engine nacelles with canted fins
+  sr71(P) { const b = new Batch(), c = 0x17191c, d = 0x2a2d31; fuselage(b, 3.4, .12, c, d); b.box(2.2, .04, .42, .1, -.02, 0, c);
+    [-1, 1].forEach(s => { b.add(GEO.wedge, c, -.7, -.02, s * .5, 1.7, .03, .9); b.cylX(.14, 1.6, -.6, -.01, s * .62, d); b.box(.38, .4, .03, -1.15, .22, s * .6, c, 0, s * .25); b.cylX(.08, .1, -1.42, -.01, s * .62, 0x5a3a20); }); return b; },
+  // B-2: a flying wing, swept leading edge, sawtooth trailing edge, humped centre body
+  b2(P) { const b = new Batch(), c = 0x3a3f45, d = 0x2b2f34; b.box(1.5, .2, .9, 0, .03, 0, c); b.box(.5, .1, .6, .55, .1, 0, d);
+    [-1, 1].forEach(s => { b.box(1.0, .07, 1.95, -.5, 0, s * 1.1, c, -s * .6); b.box(.55, .06, .55, -.85, 0, s * .4, d, s * .7); b.box(.5, .06, .5, -1.25, 0, s * 1.55, d, s * .7); }); return b; },
   fighter(P) { const b = new Batch(), c = 0x8d979f; fuselage(b, 2, .17, c, P.trim); [-1, 1].forEach(s => b.add(GEO.wedge, c, -.05, -.02, s * .65, 1.3, .03, 1.3)); [-1, 1].forEach(s => b.add(GEO.wedge, c, -1.05, 0, s * .3, .5, .03, .55)); b.add(GEO.wedge, P.trim, -.95, .1, 0, .6, .55, .03); b.cylX(.13, .2, -1.1, 0, 0, 0x202020); return b; },
   interceptor(P) { const b = new Batch(), c = 0x5d6871; fuselage(b, 2.4, .15, c, c); [-1, 1].forEach(s => { b.add(GEO.wedge, c, -.6, 0, s * .55, 1.3, .03, 1.1); b.add(GEO.cyl, WHITE, -.2, -.05, s * .8, .03, .9, .03, 0, 0, Math.PI / 2); }); [-1, 1].forEach(s => b.add(GEO.wedge, P.trim, -1.1, .08, s * .15, .5, .45, .03, s * .35)); return b; },
   bomber(P) { const b = new Batch(), c = 0x4b545a; fuselage(b, 3.2, .24, c, c); [-1, 1].forEach(s => { b.box(.75, .05, 2, -.1, .02, s * 1.15, c, s * .22); [.7, 1.4].forEach(z => b.cylX(.1, .5, 0, -.1, s * z, 0x2a2a2a)); }); b.add(GEO.wedge, P.trim, -1.5, .1, 0, .85, .8, .05); [-1, 1].forEach(s => b.box(.4, .03, .6, -1.6, .08, s * .35, c)); return b; },
