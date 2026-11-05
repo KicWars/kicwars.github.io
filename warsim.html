@@ -8465,6 +8465,7 @@ const Direct = {
   },
 
   exit(msg) {
+    this.vcurOff();
     this.pullUp = false; this.warnT = 0; if (window.Tension) window.Tension.clear();
     if (!this.on) return;
     this.jump = null; this.endCut(); this.spyNat = undefined; if (this.ui && this.ui.spyCard) this.ui.spyCard(null); this.on = false; this.aboard = null; this.knifeEnd = 0; this.savedW = null; VM.knife = false; this.shovel = false; VM.shovel = false;
@@ -8553,19 +8554,37 @@ const Direct = {
   },
   onLockChange() {
     if (!this.on) return;
-    if (document.pointerLockElement) { this.look = 'locked'; this.lockTries = 0; clearTimeout(this.lockWait); clearTimeout(this.relockT); return; }
+    if (document.pointerLockElement) { if (!this.vcur) this.look = 'locked'; this.lockTries = 0; clearTimeout(this.lockWait); clearTimeout(this.relockT); return; }
+    if (this.vcur) { this.vcur = false; this.vcurShow(false); this.look = 'free'; this.msg('Cursor free. Alt or click the view to aim again', 3); return; } // Esc while the drawn cursor was up
     if (this.look === 'locked') { this.look = 'free'; this.keys = {}; this.mouseDown = false; this.msg('Cursor free. Alt or click the view to aim again', 3); }
   },
+  // Alt frees the cursor WITHOUT leaving pointer lock: browsers will not re-lock the mouse from a modifier key, so a real unlock could only be
+  // undone with a click. Instead we keep the lock and move a drawn cursor; clicks go to whatever is under it. Alt again: straight back to aiming.
+  vcurShow(on) {
+    let el = document.getElementById('vcur');
+    if (!el) { el = document.createElement('div'); el.id = 'vcur'; el.style.cssText = 'position:fixed;left:0;top:0;width:18px;height:18px;z-index:9999;pointer-events:none;background:no-repeat center/contain url("data:image/svg+xml,' + encodeURIComponent('<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 18 18\'><path d=\'M2 1l13 7-6 1.5L6 16z\' fill=\'white\' stroke=\'black\' stroke-width=\'1.3\'/></svg>') + '")'; document.body.appendChild(el); }
+    el.style.display = on ? 'block' : 'none'; if (on) el.style.transform = `translate(${this.vcx}px,${this.vcy}px)`;
+  },
+  vcurOff() { if (!this.vcur) return; this.vcur = false; this.vcurShow(false); if (this.look === 'free' && document.pointerLockElement) this.look = 'locked'; },
   toggleFree() {
+    if (this.vcur) { this.vcurOff(); this.msg('Aiming', .8); return; }
+    if (this.look === 'locked' && document.pointerLockElement) { this.look = 'free'; this.vcur = true; this.vcx = innerWidth / 2; this.vcy = innerHeight / 2; this.vcurShow(true); this.keys = {}; this.mouseDown = false; this.msg('Cursor free. Press Alt again to aim', 2); return; }
     if (this.look === 'free' || this.look === 'offset') { this.lockTries = 0; this.requestLock('alt'); }
     else { this.look = 'free'; if (document.pointerLockElement) document.exitPointerLock(); this.msg('Cursor free. Press Alt again to aim', 2.5); }
   },
   onBlur() { this.keys = {}; this.mouseDown = false; if (this.on && this.look !== 'off') { if (this.look === 'locked' || this.look === 'pending') this.look = 'free'; } },
   onMouseMove(e) {
+    if (this.vcur) { this.vcx = clamp(this.vcx + (e.movementX || 0), 0, innerWidth - 2); this.vcy = clamp(this.vcy + (e.movementY || 0), 0, innerHeight - 2); this.mouseX = this.vcx; this.mouseY = this.vcy; this.vcurShow(true); return; }
     this.mouseX = e.clientX; this.mouseY = e.clientY;
     if (this.look === 'locked') { this.mx += e.movementX || 0; this.my += e.movementY || 0; }
   },
   onMouseDown(e) {
+    if (this.vcur) { // click whatever is under the drawn cursor; clicking the 3D view goes back to aiming
+      const el = document.elementFromPoint(this.vcx, this.vcy), cv = this.ui.g.R.r.domElement;
+      if (!el || el === cv || el.id === 'gl') { this.vcurOff(); this.msg('Aiming', .8); return; }
+      if (e.button === 0) { if (el.focus) el.focus(); el.click(); }
+      return;
+    }
     if (this.look === 'free') { this.lockTries = 0; this.requestLock('click'); return; }
     if (this.look === 'offset' && !this.triedClickLock) { this.triedClickLock = true; this.requestLock('click'); }
     if (e.button === 0) this.mouseDown = true;
