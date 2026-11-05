@@ -271,6 +271,23 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 #diplo,#scenSpawn,#freePanel,#campHud{background:rgba(8,12,17,.97);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 10px 36px rgba(0,0,0,.55)}
 #techScr,#statsScr{background:linear-gradient(180deg,rgba(14,20,26,.985),rgba(8,11,15,.985));backdrop-filter:blur(8px)}
 #objectives{background:rgba(8,12,17,.9)}
+/* main menu layout: brand on top, a tidy grid of modes */
+#menu{justify-content:flex-start;overflow-y:auto;padding:4vh 7vw}#menu .brand{margin-top:auto}#menu #mhome{margin-bottom:auto}
+#menu .brand h1{font-size:clamp(44px,6.5vw,92px)}
+#menu .brand p{margin:6px 0 12px;max-width:640px}
+.natstrip{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px;max-width:640px}
+.natstrip span{font:600 12px system-ui;color:#dfe7ec;padding:4px 10px 4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:6px}
+.natstrip span::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c)}
+#mhome{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:min(620px,92vw)}
+#mhome .mtile{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px 15px;margin:0}
+#mhome .mtile b{font-size:15px;font-weight:700}
+#mhome .mtile small{font-size:12px;font-weight:500;color:#a9b8c2}
+#mhome .hero{grid-column:1/-1;align-items:center;padding:15px}#mhome .hero b{font-size:19px}#mhome .hero small{color:#d9f5e3}
+.mgroup{grid-column:1/-1;font:700 11px system-ui;letter-spacing:.12em;text-transform:uppercase;color:#8fa1ad;margin:6px 0 -2px 2px}
+.mfoot{grid-column:1/-1;display:flex;gap:9px;margin-top:4px}.mfoot .sm{flex:1;padding:9px 12px;font-size:13px;text-align:center}
+#mhome .how{grid-column:1/-1}#mhome .how ul{max-height:38vh;overflow:auto}
+@media (max-width:560px){#mhome{grid-template-columns:1fr}#menu{padding:4vh 16px}}
+@media (max-height:500px){#mhome .mtile small{display:none}#mhome .mtile{padding:7px 12px}.natstrip{display:none}}
 /* tension + death screen */
 #tVig{position:fixed;inset:0;pointer-events:none;z-index:20;opacity:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 38%,rgba(110,0,0,.55) 72%,rgba(40,0,0,.95) 100%)}
 #tFlash{position:fixed;inset:0;pointer-events:none;z-index:21;opacity:0;background:rgba(200,20,10,.35);transition:opacity .35s}
@@ -294,17 +311,25 @@ body.cbDeut{filter:url(#cbDeut)}
 
 <!-- main menu -->
 <div id="menu" class="screen">
-  <div class="brand"><h1>KICwars</h1><p>Five nations. One island. Command the war, or jump into the fight yourself.</p></div>
+  <div class="brand"><h1>KICwars</h1><p>Six nations. One island. Command the war, or jump into the fight yourself.</p>
+    <div class="natstrip">
+      <span style="--c:#ff6b3d">The Licases</span><span style="--c:#4a90ff">The Dhruvs</span><span style="--c:#3fbf6f">The Valentinos</span><span style="--c:#e8283c">The Jethroes</span><span style="--c:#19c8b9">The Toms</span><span style="--c:#2fa84f">The Charlies</span>
+    </div>
+  </div>
   <div class="mcard" id="mhome">
-    <button class="big primary" id="bQuick" title="Choose your nation and enemies, then start with a ready-made base and pick a unit to play straight away">Quick Battle: jump in</button>
-    <button class="big tutbtn" id="bTut" title="A guided first game: every control explained step by step">New? Tutorial: learn to play</button>
-    <button class="big" id="bCamp" title="Spend a budget on troops, place them, and beat a fixed enemy army">Campaign: budget battles</button>
-    <button class="big" id="bBat" title="First-person modes: beach landings and team deathmatch">FPS: D-Day, Pacific landing, Team Deathmatch</button>
-    <button class="big" id="bPlay">Play vs Bots (choose nations)</button>
-    <button class="big" id="bHost">Play with a Friend: host</button>
-    <button class="big" id="bJoin">Join a Friend</button>
-    <button class="big" id="bSettings">Controls and settings</button>
-    <button class="big" id="bLog">What's new (changelog)</button>
+    <button class="big primary mtile hero" id="bQuick" title="Choose your nation and enemies, then start with a ready-made base and pick a unit to play straight away"><b>▶ Quick Battle</b><small>Pick a nation, spawn in and fight straight away</small></button>
+    <div class="mgroup">Play</div>
+    <button class="big mtile tutbtn" id="bTut" title="A guided first game: every control explained step by step"><b>🎓 Tutorial</b><small>New? Learn to play step by step</small></button>
+    <button class="big mtile" id="bPlay" title="Skirmish against bots: choose nations, teams, map and difficulty"><b>⚔ Play vs Bots</b><small>Choose nations, map and difficulty</small></button>
+    <button class="big mtile" id="bCamp" title="Spend a budget on troops, place them, and beat a fixed enemy army"><b>🎖 Campaign</b><small>Budget battles, level by level</small></button>
+    <button class="big mtile" id="bBat" title="First-person modes: beach landings and team deathmatch"><b>🎯 FPS Modes</b><small>D-Day, Pacific landing, Deathmatch</small></button>
+    <div class="mgroup">With friends</div>
+    <button class="big mtile" id="bHost"><b>🛰 Host a game</b><small>Get a code to share</small></button>
+    <button class="big mtile" id="bJoin"><b>🔗 Join a friend</b><small>Enter their code</small></button>
+    <div class="mfoot">
+      <button class="big sm" id="bSettings">⚙ Controls &amp; settings</button>
+      <button class="big sm" id="bLog">✦ What's new</button>
+    </div>
     <details class="how"><summary>How to play</summary>
       <ul>
         <li><b>Quick Battle</b>: pick a unit and fight it yourself straight away. <b>P</b> reopens the unit chooser; when you die it comes back.</li>
