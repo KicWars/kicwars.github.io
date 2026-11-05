@@ -268,9 +268,11 @@ body.dying #gl{filter:grayscale(.85) brightness(.6) contrast(1.15);transition:fi
 #gl{transition:filter .6s}
 #over{overflow:auto;align-items:flex-start}#over .mcard{margin:auto}#oStats{max-height:42vh;overflow:auto;border-top:1px solid rgba(255,255,255,.1);padding-top:8px}
 #logScr{align-items:flex-start;overflow:auto;justify-content:center;background:rgba(5,8,12,.86);backdrop-filter:blur(10px)}#logScr .mcard{margin:auto}#logList{max-height:58vh;overflow:auto;display:flex;flex-direction:column;gap:12px;padding-right:6px}#logList h3{margin:0 0 4px;font-size:13px;letter-spacing:.06em;color:var(--acc)}#logList ul{margin:0;padding-left:18px;font-size:13px;line-height:1.5;color:#d6dee3}
+body.cbDeut{filter:url(#cbDeut)}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="cbDeut" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0.367 0.861 -0.228 0 0  0.280 0.673 0.047 0 0  -0.012 0.043 0.969 0 0  0 0 0 1 0"/></filter></svg>
 <canvas id="gl"></canvas>
 <canvas id="ov"></canvas>
 <div id="whiteout"></div>
@@ -10875,6 +10877,10 @@ const UI = {
   // ---------- frame ----------
   frame(now) {
     requestAnimationFrame(t => this.frame(t));
+    { // the Charlies are red-green colourblind: the whole screen is shown the way they see it
+      const g = this.g, q = g && !this.demo && g.view && g.view.players[g.me], on = !!(q && q.nat.key === 'charlies');
+      if (on !== !!this.cbOn) { this.cbOn = on; document.body.classList.toggle('cbDeut', on); }
+    }
     const raw = (now - this.lastF) / 1000, dt = clamp(raw, 0, .1); this.lastF = now;
     // automatic graphics: if frames stay slow for a few seconds, step quality down once per step
     if (this.gfxAuto && !this.demo && raw > 0 && raw < 1) {
@@ -10976,6 +10982,7 @@ window.Tension = (() => {
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '5 Nov 2026 (latest)', items: [
+      'Playing the Charlies now shows the game with simulated red-green colourblindness (deuteranopia).',
       'New nation: the Charlies. Air-tech specialists: every jet in the game, aircraft +20% damage and health and 15% cheaper, faster research, Autopilot Surge power. But they are colourblind, so they have no pilot licence and cannot fly planes themselves.',
       'The Xaviers: two or three friendly healers wander every war. They cannot attack or be attacked and heal everyone nearby on any side.',
       'Toms only: new end-of-tree research "Directed Energy" (Armour tier 4) unlocks the Directed Energy Tank, a laser beam tank that burns armour, aircraft and infantry.',
