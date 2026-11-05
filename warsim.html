@@ -341,7 +341,7 @@ body.dying #gl{filter:grayscale(.85) brightness(.6) contrast(1.15);transition:fi
           </details>
         </div>
         <h3>Battlefield</h3>
-        <label title="Every map has highways linking the capitals and a rich plateau, the Crown, in the middle">Map <select id="optMap"><option value="r">Random</option><option value="0" selected>Island</option><option value="1">Continent</option><option value="2">Archipelago (lots of sea)</option><option value="3">Highlands (mountain passes)</option><option value="6">Middle East Desert</option><option value="7">Strait of Hormuz</option><option value="8">Stalingrad (ruined city, winter)</option><option value="9">Pacific War (huge island chain)</option></select></label>
+        <label title="Every map has highways linking the capitals and a rich plateau, the Crown, in the middle">Map <select id="optMap"><option value="r">Random</option><option value="0" selected>Island</option><option value="1">Continent</option><option value="2">Archipelago (lots of sea)</option><option value="3">Highlands (mountain passes)</option><option value="6">Middle East Desert</option><option value="7">Strait of Hormuz</option><option value="8">Stalingrad (ruined city, winter)</option><option value="9">Pacific War (huge island chain)</option><option value="11">Twin Rivers (hand-built)</option><option value="12">Mountain Kingdoms (hand-built)</option><option value="13">Iron Bay (hand-built)</option></select></label>
         <label>Map size <select id="optSize"><option value="96">Small</option><option value="128">Medium</option><option value="160" selected>Large</option><option value="192">Huge</option><option value="240">Massive</option></select></label>
         <label>Graphics <select id="optQ"><option value="auto" selected>Auto (adapts to your computer)</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
         <label title="Every unit from every nation, free, from the Deploy screen. Applies to human players only.">All units unlocked and free <input type="checkbox" id="optAll"></label>
@@ -1116,8 +1116,8 @@ function rankField(f, n) {
 
 // Map styles ride along in the seed (seed / 1e7), so every client rebuilds the same world from it.
 // ids 4 and 5 are the FPS battle maps
-const MAP_TYPES = {0: 'Island', 1: 'Continent', 2: 'Archipelago', 3: 'Highlands', 6: 'Middle East Desert', 7: 'Strait of Hormuz', 8: 'Stalingrad', 9: 'Pacific War'};
-const MAP_KEYS = [0, 1, 2, 3, 6, 7, 8, 9];
+const MAP_TYPES = {11: 'Twin Rivers', 12: 'Mountain Kingdoms', 13: 'Iron Bay', 0: 'Island', 1: 'Continent', 2: 'Archipelago', 3: 'Highlands', 6: 'Middle East Desert', 7: 'Strait of Hormuz', 8: 'Stalingrad', 9: 'Pacific War'};
+const MAP_KEYS = [0, 1, 2, 3, 6, 7, 8, 9, 11, 12, 13];
 const mapType = seed => Math.floor(seed / 1e7);
 // Battle maps for the FPS landings: 4 = a beach under bluffs, 5 = a jungle island with a mountain.
 function genBattleMap(N, seed, BT) {
@@ -1206,8 +1206,90 @@ function genBattleMap(N, seed, BT) {
   for (const R2 of ruins) R2.z = h[Math.round(R2.y) * N + Math.round(R2.x)];
   return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes: [], ruins};
 }
+// ---------- Hand-built war maps. Each one is a designed battlefield: fixed capitals, fixed routes, fixed resources, so every game has the same good bones. ----------
+// 11 Twin Rivers: two river lines, three fords each, a rich heartland between them and a crown hill in the middle.
+// 12 Mountain Kingdoms: a great massif with four passes and a high plateau; the long ring road round it is safe but slow.
+// 13 Iron Bay: a bay with three resource islands; capitals on the rim, a long land route round the south and a fast one by sea.
+function genWarMap(N, seed, BT, nPlayers) {
+  const rnd = mulberry(seed * 7919 + 41), nz = makeNoise(rnd), A = N * N;
+  const h = new Float32Array(A).fill(1.2), bio = new Uint8Array(A), tree = new Uint8Array(A), water = new Uint8Array(A), block = new Uint8Array(A), road = new Uint8Array(A), occ = new Int32Array(A), nodes = [], ruins = [];
+  const inb = (x, y) => x > 1 && y > 1 && x < N - 2 && y < N - 2;
+  const each = (u, v, r, fn) => { const cx = u * N, cy = v * N, R2 = r * N; for (let y = Math.floor(cy - R2); y <= Math.ceil(cy + R2); y++) for (let x = Math.floor(cx - R2); x <= Math.ceil(cx + R2); x++) { if (!inb(x, y)) continue; const d = Math.hypot(x - cx, y - cy) / R2; if (d <= 1) fn(y * N + x, d, x, y); } };
+  const path = (pts, step, fn) => { for (let k = 0; k + 1 < pts.length; k++) { const [u0, v0] = pts[k], [u1, v1] = pts[k + 1], n = Math.max(1, Math.ceil(Math.hypot(u1 - u0, v1 - v0) * N / step)); for (let q = 0; q <= n; q++) fn(u0 + (u1 - u0) * q / n, v0 + (v1 - v0) * q / n); } };
+  const hill = (u, v, r, ht, pw) => each(u, v, r, (i, d) => { h[i] += ht * Math.pow(1 - d, pw || 1.5); });
+  const river = (pts, w, depth) => path(pts, .6, (u, v) => each(u, v, w, (i, d) => { h[i] = Math.min(h[i], -depth + d * d * (1.35 + depth)); if (d > .55) bio[i] = BIO.DESERT; }));
+  const ford = (u, v, r) => each(u, v, r, (i, d) => { h[i] = Math.max(h[i], .22 + d * .25); water[i] = 0; bio[i] = BIO.DESERT; });
+  const forest = (u, v, r, dens) => each(u, v, r, (i, d) => { if (rnd() < Math.min(1, dens * 1.7) * (1.1 - d)) tree[i] = 1 + (rnd() * 3 | 0); });
+  const lane = (pts, w) => path(pts, .8, (u, v) => each(u, v, w, (i, d, x, y) => { road[i] = 1; tree[i] = 0; block[i] = 0; if (h[i] < .5) h[i] = .55; }));
+  const open = (pts, w, lift) => path(pts, .8, (u, v) => each(u, v, w, (i, d) => { tree[i] = 0; block[i] = 2; if (lift !== undefined) h[i] = h[i] + (lift - h[i]) * (1 - d * .6); })); // block 2 = kept open when cliffs are cut
+  let spawns;
+  if (BT === 11) {
+    river([[0, .33], [.2, .345], [.5, .32], [.8, .345], [1, .33]], .026, 1.7); river([[0, .67], [.2, .655], [.5, .68], [.8, .655], [1, .67]], .026, 1.7);
+    for (const v of [.33, .67]) for (const u of [.2, .5, .8]) ford(u, v + (v < .5 ? .008 * (u === .5 ? -1 : 1) : -.008 * (u === .5 ? -1 : 1)), .04);
+    hill(.5, .5, .13, 1.7, 1.2); hill(.27, .5, .07, .8); hill(.73, .5, .07, .8); hill(.18, .16, .09, .6); hill(.82, .84, .09, .6); hill(.82, .16, .09, .6); hill(.18, .84, .09, .6);
+    forest(.3, .45, .07, .7); forest(.7, .55, .07, .7); forest(.3, .56, .05, .5); forest(.7, .44, .05, .5); forest(.5, .22, .08, .6); forest(.5, .78, .08, .6); forest(.08, .5, .06, .6); forest(.92, .5, .06, .6);
+    spawns = [{x: N * .2, y: N * .13}, {x: N * .8, y: N * .87}, {x: N * .8, y: N * .13}, {x: N * .2, y: N * .87}, {x: N * .5, y: N * .5}];
+    lane([[.5, .03], [.5, .97]], .012); lane([[.2, .13], [.2, .5], [.2, .87]], .01); lane([[.8, .13], [.8, .5], [.8, .87]], .01); lane([[.2, .13], [.5, .22], [.8, .13]], .01); lane([[.2, .87], [.5, .78], [.8, .87]], .01); lane([[.2, .5], [.5, .5], [.8, .5]], .01);
+  } else if (BT === 12) {
+    const C = [.5, .5];
+    hill(C[0], C[1], .34, 3.6, 1.1); hill(C[0], C[1], .13, 1.0, .6);
+    for (const [u, v] of [[.2, .2], [.8, .2], [.2, .8], [.8, .8]]) hill(u, v, .1, 1.1);
+    // the four passes carve a way through the massif; everything steep and not a pass is a cliff
+    const passes = [[[.5, .14], [.5, .5]], [[.5, .86], [.5, .5]], [[.14, .5], [.5, .5]], [[.86, .5], [.5, .5]]];
+    for (const p of passes) open(p, .035, 2.0);
+    for (let i = 0; i < A; i++) { if (block[i] === 2) { block[i] = 0; continue; } if (h[i] > 3.0) { block[i] = 1; bio[i] = h[i] > 4.2 ? BIO.SNOW : BIO.ROCK; } else if (h[i] > 2.3) bio[i] = BIO.ROCK; }
+    for (const p of passes) path(p, .8, (u, v) => each(u, v, .03, (i) => { block[i] = 0; }));
+    forest(.12, .3, .08, .6); forest(.88, .7, .08, .6); forest(.3, .12, .07, .55); forest(.7, .88, .07, .55); forest(.12, .7, .06, .5); forest(.88, .3, .06, .5); forest(.7, .12, .06, .5); forest(.3, .88, .06, .5);
+    spawns = [{x: N * .13, y: N * .5}, {x: N * .87, y: N * .5}, {x: N * .5, y: N * .12}, {x: N * .5, y: N * .88}, {x: N * .16, y: N * .16}];
+    const ring = []; for (let a = 0; a <= 6.4; a += .2) ring.push([.5 + Math.cos(a) * .39, .5 + Math.sin(a) * .39]); lane(ring, .009);
+    for (const p of passes) lane(p, .009);
+  } else {
+    // Iron Bay
+    each(.5, .42, .3, (i, d, x, y) => { const e = Math.pow(1 - d, .6); h[i] = Math.min(h[i], 1.2 - e * 3.4); if (d > .75) bio[i] = BIO.DESERT; });
+    path([[.5, .38], [.5, 0]], .6, (u, v) => each(u, v, .075, (i, d) => { h[i] = Math.min(h[i], -1.0 + d * d * 2.2); }));        // the channel to the open sea
+    for (const [u, v, r] of [[.4, .42, .05], [.6, .47, .05], [.5, .3, .045]]) each(u, v, r, (i, d) => { h[i] = Math.max(h[i], 1.0 - d * d * 1.0); water[i] = 0; bio[i] = d > .6 ? BIO.DESERT : BIO.GRASS; });
+    hill(.5, .76, .1, 1.5); hill(.14, .25, .08, 1.0); hill(.86, .25, .08, 1.0); hill(.25, .9, .08, .8); hill(.75, .9, .08, .8);
+    forest(.3, .65, .08, .6); forest(.7, .65, .08, .6); forest(.12, .5, .06, .6); forest(.88, .5, .06, .6); forest(.5, .62, .07, .55); forest(.3, .85, .06, .5); forest(.7, .85, .06, .5);
+    spawns = [{x: N * .17, y: N * .72}, {x: N * .83, y: N * .72}, {x: N * .1, y: N * .28}, {x: N * .9, y: N * .28}, {x: N * .5, y: N * .93}];
+    const rim = [[.1, .28], [.1, .5], [.17, .72], [.33, .84], [.5, .93], [.67, .84], [.83, .72], [.9, .5], [.9, .28]]; lane(rim, .01); lane([[.17, .72], [.5, .76], [.83, .72]], .01);
+  }
+  // natural wobble, then flatten and clear every capital
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const i = y * N + x; if (!road[i]) h[i] += (nz(x * .09, y * .09, 3) - .5) * (h[i] > 0 ? .34 : .1); if (h[i] > .5 && h[i] < 2.2 && bio[i] === 0 && nz(x * .05 + 9, y * .05, 3) > .74) bio[i] = BIO.SWAMP; }
+  spawns = spawns.map(s => ({x: Math.round(s.x), y: Math.round(s.y)}));
+  for (const s of spawns) each(s.x / N, s.y / N, 11 / N, (i, d, x, y) => { h[i] = 1.4 + (h[i] - 1.4) * Math.pow(d, 1.5); tree[i] = 0; water[i] = 0; block[i] = 0; bio[i] = BIO.GRASS; });
+  const t2 = new Float32Array(h);
+  for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) { const i = y * N + x; h[i] = (t2[i] * 2 + t2[i - 1] + t2[i + 1] + t2[i - N] + t2[i + N]) / 6; }
+  for (let i = 0; i < A; i++) { if (h[i] < 0) { water[i] = 1; tree[i] = 0; block[i] = 0; road[i] = 0; } if (block[i]) tree[i] = 0; }
+  // resources: every capital gets the same start; the rest is placed by hand where the map wants fights
+  const free = (x, y, d) => { if (!(x > 2 && y > 2 && x < N - 3 && y < N - 3 && h[y * N + x] > .5 && !block[y * N + x])) return false; for (const n of nodes) if (Math.hypot(n.x - x, n.y - y) < d) return false; for (const s of spawns) if (Math.hypot(s.x - x, s.y - y) < 10) return false; return true; };
+  const place = (kind, x, y, amt) => { x = Math.round(x); y = Math.round(y); for (let r = 0; r < 18; r++) for (let q = 0; q < 12; q++) { const px = x + Math.round(Math.cos(q / 12 * 6.283) * r), py = y + Math.round(Math.sin(q / 12 * 6.283) * r); if (free(px, py, 6)) { nodes.push({id: nodes.length, kind, x: px, y: py, amt}); tree[py * N + px] = 0; return; } } };
+  const N1 = (kind, u, v, amt) => place(kind, u * N, v * N, amt);
+  for (const s of spawns) {
+    const a = Math.atan2(s.y - N / 2, s.x - N / 2);
+    place('steel', s.x + Math.cos(a + 1.2) * 12, s.y + Math.sin(a + 1.2) * 12, 5000); place('steel', s.x + Math.cos(a - 1.2) * 12, s.y + Math.sin(a - 1.2) * 12, 5000);
+    place('steel', s.x + Math.cos(a + 3.14) * 11, s.y + Math.sin(a + 3.14) * 11, 4000); place('oil', s.x + Math.cos(a) * 13, s.y + Math.sin(a) * 13, 0);
+  }
+  if (BT === 11) {
+    for (const [u, v] of [[.3, .45], [.7, .55], [.3, .55], [.7, .45]]) N1('steel', u, v, 7000);
+    N1('steel', .5, .47, 12000); N1('steel', .5, .53, 12000); N1('oil', .5, .5, 0); N1('oil', .12, .5, 0); N1('oil', .88, .5, 0);
+    for (const [u, v] of [[.5, .2], [.5, .8], [.35, .2], [.65, .8], [.35, .8], [.65, .2]]) N1('steel', u, v, 6000);
+    N1('oil', .5, .12, 0); N1('oil', .5, .88, 0);
+  } else if (BT === 12) {
+    for (const [u, v] of [[.5, .5], [.46, .5], [.54, .5]]) N1('steel', u, v, 14000); N1('oil', .5, .46, 0); N1('oil', .5, .54, 0);
+    for (const [u, v] of [[.27, .27], [.73, .27], [.27, .73], [.73, .73]]) N1('steel', u, v, 7000);
+    for (const [u, v] of [[.5, .3], [.5, .7], [.3, .5], [.7, .5]]) N1('oil', u, v, 0);
+    for (const [u, v] of [[.3, .3], [.7, .7], [.3, .7], [.7, .3]]) N1('steel', u, v, 6000);
+  } else {
+    N1('steel', .4, .42, 9000); N1('oil', .4, .44, 0); N1('steel', .6, .47, 9000); N1('oil', .6, .45, 0); N1('steel', .5, .3, 12000); N1('oil', .5, .31, 0);
+    for (const [u, v] of [[.5, .76], [.45, .72], [.55, .72]]) N1('steel', u, v, 8000); N1('oil', .5, .8, 0);
+    for (const [u, v] of [[.14, .25], [.86, .25], [.25, .9], [.75, .9]]) N1('steel', u, v, 6000); N1('oil', .3, .55, 0); N1('oil', .7, .55, 0);
+  }
+  for (const n of nodes) for (let y = n.y - 1; y <= n.y + 1; y++) for (let x = n.x - 1; x <= n.x + 1; x++) { tree[y * N + x] = 0; road[y * N + x] = 0; }
+  return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes, ruins};
+}
 function genMap(N, seed, nPlayers) {
   const BT = Math.floor(seed / 1e7);
+  if (BT >= 11 && BT <= 13) return genWarMap(N, seed, BT, nPlayers);
   if (BT === 4 || BT === 5 || BT === 10) return genBattleMap(N, seed, BT);
   const rnd = mulberry(seed * 7919 + 13), nz = makeNoise(rnd), nz2 = makeNoise(rnd), nz3 = makeNoise(rnd), MT = mapType(seed);
   const A = N * N, hr = new Float32Array(A), te = new Float32Array(A), mo = new Float32Array(A);
@@ -9539,7 +9621,7 @@ const UI = {
     Sfx.init();
     if (Direct.isTouch()) { try { const d = document.documentElement, r = d.requestFullscreen && d.requestFullscreen(); if (r && r.then) r.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); } catch (e) {} }
     const mv = $('optMap').value, mt = mv === 'r' ? MAP_KEYS[(Math.random() * MAP_KEYS.length) | 0] : +mv;
-    const L = this.lobby, seed = ((Math.random() * 1e6) | 0) + mt * 1e7, size = Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : 0);
+    const L = this.lobby, seed = ((Math.random() * 1e6) | 0) + mt * 1e7, size = Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : mt >= 11 ? 144 : 0);
     const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked, eco: s.kind === 'bot' ? null : $('optEco').value}));
     this.playersIds = L.slots.map(s => s.id || null);
     if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id)}});
