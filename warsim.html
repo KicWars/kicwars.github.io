@@ -4357,7 +4357,7 @@ function palette(nat) {
 // Every troop is a round blob guy. Body is one smooth sphere; nations and roles differ by colour, face and gear.
 // Facing +X, feet at y=0. BLOB gives the shared proportions so the renderer, hit tests and first person agree.
 const BLOB = {r: .3, cy: .36, bike: .2, eyeY: .44};
-function blobDims(nat) { const T = NATIONS[nat].look === 'toms'; return {w: T ? 1.18 : 1, h: T ? .9 : 1, T}; } // Toms: a bit shorter and broad-shouldered, not squashed
+function blobDims(nat) { const T = NATIONS[nat].look === 'toms'; return {w: 1, h: T ? .9 : 1, T}; } // Toms: round body, a bit shorter; their big arms make them broad
 function isBiker(kind, nat) { return NATIONS[nat].look === 'bike' && kind !== 'sniper' && kind !== 'rocket'; }
 GEO.blob = new THREE.SphereGeometry(1, 22, 16);
 GEO.blobLo = new THREE.SphereGeometry(1, 10, 7);
@@ -4371,7 +4371,7 @@ function blobColor(kind, P) {
 }
 function soldierBody(kind, nat, lo) {
   const P = palette(nat), b = new Batch(), D = blobDims(nat), T = D.T, R = BLOB.r, bike = isBiker(kind, nat);
-  const lift = bike ? BLOB.bike : 0, cy = BLOB.cy * D.h + lift, rx = R * (T ? 1.1 : 1), ry = R * D.h, rz = R * D.w;
+  const lift = bike ? BLOB.bike : 0, cy = BLOB.cy * D.h + lift, rx = R, ry = R * D.h, rz = R * D.w;
   const S = lo ? GEO.blobLo : GEO.blob, body = blobColor(kind, P);
   const sph = (sx, sy, sz, x, y, z, c) => b.add(S, c, x, y, z, sx, sy, sz);
   sph(rx, ry * 1.04, rz, 0, cy, 0, body);                                     // the blob
@@ -4421,7 +4421,7 @@ function soldierBody(kind, nat, lo) {
   if (kind === 'scout' && !bike) { b.box(.02, .08, .02, rx * .2, top + .04, rz * .4, 0x222); b.add(GEO.sph, 0x7cf, rx * .2, top + .09, rz * .4, .015, .015, .015); }
   // hands (and bulging Toms biceps) holding the weapon in front
   const hs = T ? 1.55 : 1, hy = cy - ry * .12, hand = T ? 0xc9ad7a : body;
-  if (T) [-1, 1].forEach(s => sph(.13, .11, .11, .02, cy + ry * .05, s * rz * 1.05, 0xb08f5c));
+  if (T) [-1, 1].forEach(s => { sph(.14, .12, .12, .02, cy + ry * .08, s * rz * 1.12, 0xb08f5c); sph(.1, .09, .09, .1, cy - ry * .15, s * rz * 1.02, 0xc9ad7a); }); // big round shoulders and forearms
   b.add(S, hand, rx * .78, hy, rz * .55, .07 * hs, .065 * hs, .07 * hs);
   b.add(S, hand, rx * .95, hy + .02, -rz * .2, .065 * hs, .06 * hs, .065 * hs);
   // weapons
