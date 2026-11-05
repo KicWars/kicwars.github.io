@@ -309,7 +309,7 @@ body.dying #gl{filter:grayscale(.85) brightness(.6) contrast(1.15);transition:fi
 #gl{transition:filter .6s}
 #over{overflow:auto;align-items:flex-start}#over .mcard{margin:auto}#oStats{max-height:42vh;overflow:auto;border-top:1px solid rgba(255,255,255,.1);padding-top:8px}
 #logScr{align-items:flex-start;overflow:auto;justify-content:center;background:rgba(5,8,12,.86);backdrop-filter:blur(10px)}#logScr .mcard{margin:auto}#logList{max-height:58vh;overflow:auto;display:flex;flex-direction:column;gap:12px;padding-right:6px}#logList h3{margin:0 0 4px;font-size:13px;letter-spacing:.06em;color:var(--acc)}#logList ul{margin:0;padding-left:18px;font-size:13px;line-height:1.5;color:#d6dee3}
-body.cbDeut #gl,body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img{filter:url(#cbDeut)} /* per canvas, not on body: Safari drops a body filter when blurred panels are open */
+body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img{filter:url(#cbDeut)} /* per canvas, not on body: Safari drops a body filter when blurred panels are open */
 </style>
 </head>
 <body>
@@ -8134,23 +8134,27 @@ Renderer.prototype.draw = function (dt, view) {
 // War-film colour grade: everything renders into an offscreen target, then one full-screen pass mutes the colours,
 // splits shadows cool and highlights warm, adds contrast, a vignette, film grain and (on foot) slight lens fringing.
 Renderer.prototype.gradeOn = function () {
-  if (!Settings.gritty || this.quality === 'low' || !this.r.capabilities.isWebGL2) return false;
+  // the colourblind view (the Charlies) also runs through this pass: Safari ignores CSS/SVG filters on a WebGL canvas
+  const look = Settings.gritty && this.quality !== 'low' && this.r.capabilities.isWebGL2;
+  if (!look && !this.cb) return false;
   const r = this.r, v = this._gv || (this._gv = new THREE.Vector2()); r.getDrawingBufferSize(v);
   if (!this.gradeRT || this.gradeRT.width !== v.x || this.gradeRT.height !== v.y) {
     if (this.gradeRT) this.gradeRT.dispose();
-    const RT = THREE.WebGLMultisampleRenderTarget || THREE.WebGLRenderTarget;
+    const RT = (this.r.capabilities.isWebGL2 && THREE.WebGLMultisampleRenderTarget) || THREE.WebGLRenderTarget;
     this.gradeRT = new RT(v.x, v.y, {format: THREE.RGBAFormat, encoding: THREE.sRGBEncoding});
     if (this.gradeRT.samples !== undefined) this.gradeRT.samples = 4;
     this.gradeRT.texture.encoding = THREE.sRGBEncoding;
   }
   if (!this.gradeQ) {
-    this.gradeU = {tex: {value: null}, time: {value: 0}, res: {value: new THREE.Vector2()}, desat: {value: .2}, con: {value: 1.08}, vig: {value: .3}, grain: {value: .035}, ca: {value: 0}, warm: {value: 1}};
+    this.gradeU = {tex: {value: null}, time: {value: 0}, res: {value: new THREE.Vector2()}, desat: {value: .2}, con: {value: 1.08}, vig: {value: .3}, grain: {value: .035}, ca: {value: 0}, warm: {value: 1}, cb: {value: 0}, fx: {value: 1}};
     const m = new THREE.ShaderMaterial({uniforms: this.gradeU, depthTest: false, depthWrite: false,
       vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
-      fragmentShader: `varying vec2 vUv;uniform sampler2D tex;uniform float time,desat,con,vig,grain,ca,warm;uniform vec2 res;
+      fragmentShader: `varying vec2 vUv;uniform sampler2D tex;uniform float time,desat,con,vig,grain,ca,warm,cb,fx;uniform vec2 res;
         float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
         void main(){vec2 d=vUv-.5;vec2 o=d*ca*.006;
           vec3 c=vec3(texture2D(tex,vUv+o).r,texture2D(tex,vUv).g,texture2D(tex,vUv-o).b);
+          if(cb>.5)c=clamp(vec3(dot(c,vec3(.367,.861,-.228)),dot(c,vec3(.280,.673,.047)),dot(c,vec3(-.012,.043,.969))),0.,1.); // deuteranopia
+          if(fx<.5){gl_FragColor=vec4(c,1.);return;}
           float l=dot(c,vec3(.299,.587,.114));
           c=mix(c,vec3(l),desat);
           vec3 sh=vec3(.93,1.,1.03),hi=vec3(1.05,1.,.9);c*=mix(sh,mix(vec3(1.),hi,warm),smoothstep(.15,.85,l));
@@ -8167,6 +8171,7 @@ Renderer.prototype.gradePass = function (dt) {
   const U = this.gradeU, fps = typeof Direct !== 'undefined' && Direct.on && (Direct.mode === 'soldier' || Direct.firstPerson && Direct.firstPerson()), wr = typeof WarRoom !== 'undefined' && WarRoom.on;
   const k = Math.min(1, dt * 3), tg = fps ? [.36, 1.15, .52, .05, 1] : wr ? [.18, 1.06, .55, .045, 0] : [.22, 1.08, .3, .032, 0];
   U.desat.value += (tg[0] - U.desat.value) * k; U.con.value += (tg[1] - U.con.value) * k; U.vig.value += (tg[2] - U.vig.value) * k; U.grain.value = tg[3]; U.ca.value += (tg[4] - U.ca.value) * k;
+  U.cb.value = this.cb ? 1 : 0; U.fx.value = Settings.gritty && this.quality !== 'low' && this.r.capabilities.isWebGL2 ? 1 : 0;
   U.time.value = this.time; U.tex.value = this.gradeRT.texture; U.res.value.set(this.gradeRT.width, this.gradeRT.height);
   const r = this.r; r.setRenderTarget(null);
   const ac = r.autoClear; r.autoClear = true; r.render(this.gradeS, this.gradeC); r.autoClear = ac;
@@ -11965,7 +11970,7 @@ const UI = {
     requestAnimationFrame(t => this.frame(t));
     { // the Charlies are red-green colourblind: the whole screen is shown the way they see it
       const g = this.g, q = g && !this.demo && g.view && g.view.players[g.me], on = !!(q && q.nat.key === 'charlies');
-      if (on !== !!this.cbOn) { this.cbOn = on; document.body.classList.toggle('cbDeut', on); }
+      if (on !== !!this.cbOn) { this.cbOn = on; document.body.classList.toggle('cbDeut', on); } if (this.R) this.R.cb = on;
     }
     const raw = (now - this.lastF) / 1000, dt = clamp(raw, 0, .1); this.lastF = now;
     // automatic graphics: if frames stay slow for a few seconds, step quality down once per step
