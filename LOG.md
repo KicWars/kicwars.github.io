@@ -14,6 +14,18 @@
 
 ## Log (newest first, Sydney time)
 
+### 2026-11-05 — Playtest fixes: tutorial, gritty look, forts, hardening, balance
+- **Tutorial:** a guided 18-step first battle from the main menu (camera, selecting, building, training, fuel, trenches, hardening, scouting, the War Room, fighting in person). The training bot does not attack until the tutorial ends.
+- **Gritty look:** realistic soldiers in muted field uniforms (nation colour on helmet bands and armbands) with striding legs, gloved hands and sleeves in first person, real blood, bodies that fall and bleed. A war-film colour grade over everything: muted colours, contrast, vignette, film grain, lens fringing on foot. Overcast sky, earthier ground and trees. Both can be turned off in Controls and settings.
+- **Workers build in order:** a worker given a new site while building finishes the first one, then does the next, in the order you placed them. Half-built sites nobody is working on get picked back up.
+- **Fortifications:** Trench (troops walk through it), Sandbag Wall and Pillbox (garrison 3). Infantry in or beside them take 55% less damage.
+- **Hardening:** select any finished building and press V. For a big steel and fuel cost it is rebuilt in concrete over 25 s, then takes 65% less damage (80% less from artillery, bombs and missiles).
+- **Valentinos:** infantry charge into bayonet range and stab for heavy damage; the Rally Flag also draws a knife in first person. New **Trattoria** (Valentinos only): each one, up to 3, gives the whole army +5% health and +5% fire rate (morale) and heals troops nearby.
+- **Nation balance:** Dhruvs no longer get everything (now vision +30%, research −35%, damage +5%, health +5%). Licases gain +12% steel and 15% faster training. Jethroes damage +10%, costs −8%. Toms health +12%, damage +8%, costs +12%. Valentinos health +5%.
+- **Campaign:** 10 levels (new: The Trench Line, Air Cavalry, Avanti!, Armoured Spearhead). Budgets now scale with the enemy army and its nation's bonuses, from generous to just under even. The last level was impossible (budget 2300 against 2930 of tougher troops) and is now beatable with the right counters.
+- **Scouts where you want:** capital → Scout to… (L) and click anywhere, or click the War Room map table. Scouts on missions show as dashed lines on the table.
+- **Stats screen (F7, also at the end of every game):** kills, troops and buildings destroyed, losses, trained, built, steel mined, army value, K/D, and graphs of army, economy and kills over time.
+
 
 ### 2026-11-05 — Big maps, Stalingrad, War Room, transports, team deathmatch
 - **Build without selecting workers:** with nothing selected, the command card shows every building. Place one and the nearest workers go and build it, then go back to mining.

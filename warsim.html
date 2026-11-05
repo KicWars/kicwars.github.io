@@ -98,7 +98,17 @@ body.camp #powers,body.camp #bDeploy,body.camp #cards,body.direct-mode #campHud{
 body.warroom #hud,body.warroom #direct{display:none!important}
 #scenSpawn{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:40;background:rgba(6,10,14,.92);border:1px solid var(--bd);border-radius:10px;padding:12px 16px;text-align:center;width:min(640px,calc(100vw - 32px))}
 #scenSpawn h3{margin:0 0 4px}#ssBtns{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0}#ssBtns button{padding:7px 10px}#ssBtns kbd{opacity:.6;margin-right:4px}
+body.scen #tutor,body.camp #tutor,body.warroom #tutor{display:none!important}
 body.scen #top .res:nth-of-type(2),body.scen #top .res:nth-of-type(3),body.scen #top .res:nth-of-type(4),body.scen #bottom,body.scen #selBar,body.scen #bDeploy,body.scen #timeCtl,body.scen #objectives,body.scen #diplo{display:none!important}
+#tutor{position:absolute;left:50%;top:56px;transform:translateX(-50%);width:min(560px,calc(100vw - 32px));background:rgba(8,12,16,.92);border:1px solid var(--acc);border-radius:10px;padding:12px 16px;z-index:30;box-shadow:0 6px 30px rgba(0,0,0,.5)}
+#tutor h3{margin:2px 0 6px;font-size:17px;color:var(--acc)}#tutor p{margin:0 0 8px;font-size:14px;line-height:1.45}#tutor .tstep{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+#tutor .tbtns{display:flex;gap:8px;justify-content:flex-end}#tutor .tbtns button{padding:5px 12px}#tutor.wait #tutNext{display:none}#tutor .ok{color:#6dff9a;font-weight:700}
+.tutHl{outline:3px solid #ffd23a!important;outline-offset:2px;animation:tutPulse 1s infinite alternate}@keyframes tutPulse{from{outline-color:#ffd23a}to{outline-color:rgba(255,210,58,.25)}}
+.tutbtn{border-color:#ffd23a!important}
+#statsScr{position:absolute;inset:60px 5vw 70px;background:rgba(8,12,16,.95);border:1px solid var(--bd);border-radius:10px;padding:14px 18px;overflow:auto;z-index:40}
+#statsScr .shead{display:flex;justify-content:space-between;align-items:center}#statsScr h2{margin:0}
+.stab{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}.stab th,.stab td{padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:center}.stab th:first-child,.stab td:first-child{text-align:left}
+.schart{display:flex;flex-wrap:wrap;gap:12px}.schart figure{margin:0;flex:1 1 300px}.schart figcaption{font-size:12px;color:var(--dim);margin-bottom:3px}.schart canvas{width:100%;height:150px;background:rgba(255,255,255,.03);border-radius:6px}
 #objectives{position:absolute;right:12px;top:48px;width:260px;background:rgba(6,10,14,.72);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;font-size:13px}
 #objectives h4{margin:0 0 5px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 .obj{padding:2px 0;color:#d6dee3}.obj.done{color:var(--acc);text-decoration:line-through;opacity:.7}.obj.cur{font-weight:600;color:#fff}
@@ -219,6 +229,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
   <div class="brand"><h1>KICwars</h1><p>Five nations. One island. Command the war, or jump into the fight yourself.</p></div>
   <div class="mcard" id="mhome">
     <button class="big primary" id="bQuick" title="Choose your nation and enemies, then start with a ready-made base and pick a unit to play straight away">Quick Battle: jump in</button>
+    <button class="big tutbtn" id="bTut" title="A guided first game: every control explained step by step">New? Tutorial: learn to play</button>
     <button class="big" id="bCamp" title="Spend a budget on troops, place them, and beat a fixed enemy army">Campaign: budget battles</button>
     <button class="big" id="bBat" title="First-person modes: beach landings and team deathmatch">FPS: D-Day, Pacific landing, Team Deathmatch</button>
     <button class="big" id="bPlay">Play vs Bots (choose nations)</button>
@@ -234,6 +245,9 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
         <li><b>Ctrl+1-9</b> make a group, <b>1-9</b> recall it. <b>.</b> finds an idle worker. <b>Space</b> jumps to the latest alert.</li>
         <li><b>F1</b> all workers, <b>F2</b> all ground troops, <b>F3</b> all aircraft, <b>F4</b> all ships. <b>Tab</b> opens the big map. Troops patrol by themselves around wherever you last sent them; <b>Patrol area (U)</b> picks a new beat.</li>
         <li>With nothing selected, pick a building and place it: the nearest workers build it. Select your capital and press <b>G</b> for the War Room, <b>J</b> to send a scout. Right click a transport with infantry selected to board; <b>B</b> unloads.</li>
+        <li>New to the game? Press <b>Tutorial</b> on the main menu for a guided first battle.</li>
+        <li><b>Defences</b> (More… in the build menu): Trenches, Sandbags and Pillboxes give infantry 55% cover. Select a finished building and press <b>V</b> to <b>Harden</b> it in concrete against artillery and air strikes.</li>
+        <li><b>Scouting</b>: select the Capital, <b>L</b> sends a scout to any spot you click; in the War Room click the map table. <b>F7</b> shows war statistics.</li>
         <li><b>Diplomacy (F6)</b>: offer ceasefires, alliances, tribute and trades. Bots weigh your army, your gifts and their grudges.</li>
         <li>Destroy every enemy capital to win, or end the war allied with everyone left. Lose yours and you are out.</li>
       </ul>
@@ -282,7 +296,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
         <label>Map size <select id="optSize"><option value="96">Small</option><option value="128">Medium</option><option value="160" selected>Large</option><option value="192">Huge</option><option value="240">Massive</option></select></label>
         <label>Graphics <select id="optQ"><option value="auto" selected>Auto (adapts to your computer)</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
         <label title="Every unit from every nation, free, from the Deploy screen. Applies to human players only.">All units unlocked and free <input type="checkbox" id="optAll"></label>
-        <label>Tutorial <input type="checkbox" id="optTut" checked></label>
+        <label title="A short checklist of goals in the corner. For the full guided tutorial use Tutorial on the main menu.">Objectives checklist <input type="checkbox" id="optTut"></label>
         <div id="lStatus" class="msg"></div>
         <button class="big primary" id="bStart">Start War</button>
       </div>
@@ -306,6 +320,8 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
   <div id="alerts"></div>
   <div id="nukeBanner" class="hidden"></div>
   <div id="objectives" class="hidden"></div>
+  <div id="tutor" class="hidden"><div class="tstep"></div><h3></h3><p></p><div class="tbtns"><button id="tutNext">Next ▸</button><button id="tutSkip">End tutorial</button></div></div>
+  <div id="statsScr" class="hidden"><div class="shead"><h2>War statistics</h2><button id="statsClose">Close [F7]</button></div><div id="statsBody"></div></div>
   <div id="powers"></div>
   <div id="diplo" class="hidden"></div>
   <div id="selBar" class="selbar">
@@ -314,6 +330,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
     <button data-g="air" title="Select all aircraft and drones [F3]">✈ Air <b>0</b><kbd>F3</kbd></button>
     <button data-g="sea" title="Select all ships and submarines [F4]">⚓ Naval <b>0</b><kbd>F4</kbd></button>
     <button id="bDiplo" title="Negotiate ceasefires, alliances and trades [F6]">🤝 Diplomacy<kbd>F6</kbd></button>
+    <button id="bStats" title="Kills, losses, economy and army size over time [F7]">📊 Stats<kbd>F7</kbd></button>
   </div>
   <div id="bottom">
     <div id="mmwrap"><canvas id="mm" width="220" height="220"></canvas><button id="mmBig" title="Big tactical map [Tab]">⤢</button></div>
@@ -342,6 +359,9 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
     <label><input type="checkbox" id="sAuto"> Auto-fire when the crosshair is on an enemy</label>
     <label><input type="checkbox" id="sTp"> Start in third person (V switches any time)</label>
     <label><input type="checkbox" id="sFly"> Flight assist (jets pull up near the ground; only a steep dive crashes)</label>
+    <h3>Look</h3>
+    <label><input type="checkbox" id="sGrit"> Gritty war film look (muted colour grade, film grain, vignette, dust)</label>
+    <label><input type="checkbox" id="sBlob"> Classic cartoon blob soldiers instead of realistic troops</label>
     <p class="small">No clicking needed: as soon as you spawn into a unit the mouse steers the view. <b>Alt</b> frees the cursor and gives it back. If your browser will not lock the mouse, moving the cursor away from the centre of the screen steers instead.</p>
   </div><div class="lcol">
     <h3>Keys (click one, then press the new key)</h3>
@@ -382,7 +402,7 @@ textarea,#joinScr input,#relayBox input{width:100%;box-sizing:border-box;backgro
 <div id="scenSpawn" class="hidden"><h3>Choose your soldier</h3><div id="ssInfo"></div><div id="ssBtns"></div><p class="small">Press 1 to 7, or click. You land with the next boat, or at the forward position once you have captured an objective.</p></div>
 <div id="campHud" class="hidden"><div class="ch-top"><b id="chName"></b><span id="chBudget"></span><button id="chClear">Clear</button><button id="chStart" class="primary">Start battle</button><button id="chQuit">Quit</button></div>
   <div id="chUnits"></div><div class="ch-tip">Click inside the blue zone to place the selected troop. Right click a troop to sell it back. <span id="chTip"></span></div></div>
-<div id="over" class="screen hidden"><div class="mcard wide"><h1 id="oTitle"></h1><p id="oSub"></p><table id="oStats"></table><button class="big primary" id="bAgain">Back to menu</button><button class="big" id="bWatch">Keep watching</button></div></div>
+<div id="over" class="screen hidden"><div class="mcard wide"><h1 id="oTitle"></h1><p id="oSub"></p><div id="oStats"></div><button class="big primary" id="bAgain">Back to menu</button><button class="big" id="bWatch">Keep watching</button></div></div>
 
 <script>/**
  * @license
@@ -700,20 +720,20 @@ ClientLink.prototype.close = function () {
 <script>// KICwars game data: nations, units, buildings, upgrades, powers. No DOM here, the sim also runs in Node.
 const NATIONS = [
   {key: 'licases', name: 'The Licases', leader: 'Lucas Mar', color: '#ff6b3d', dark: '#8a2f12', look: 'bike',
-   blurb: 'Infantry speed +18% · Scouts cost −40%',
-   tr: {infSpd: 1.18, scoutCost: .6}, power: 'sprint'},
+   blurb: 'Infantry speed +20% · Steel income +12% · Scouts cost −50% · Units train 15% faster',
+   tr: {infSpd: 1.2, income: 1.12, scoutCost: .5, train: .85}, power: 'sprint'},
   {key: 'dhruvs', name: 'The Dhruvs', leader: 'Dhruv Hari', color: '#4a90ff', dark: '#1d3f80', look: 'glasses',
-   blurb: 'Vision +30% · Research cost −50% · Damage +15% · Health +15%',
-   tr: {vision: 1.3, research: .5, dmg: 1.15, hp: 1.15}, power: 'satellite'},
+   blurb: 'Vision +30% · Research cost −35% · Damage +5% · Health +5%',
+   tr: {vision: 1.3, research: .65, dmg: 1.05, hp: 1.05}, power: 'satellite'},
   {key: 'valentinos', name: 'The Valentinos', leader: 'Valentino Felsovari', color: '#3fbf6f', dark: '#ce2b37', look: 'italian',
-   blurb: 'All units regenerate health · Forza: +25% damage',
-   tr: {regen: .45}, power: 'forza'},
+   blurb: 'Units regenerate · Infantry fight hand to hand (+melee damage) · Trattoria: morale and health · Health +5%',
+   tr: {regen: .45, melee: 1, hp: 1.05}, power: 'forza'},
   {key: 'jethroes', name: 'The Jethroes', leader: 'Alpha Jethro', color: '#e8283c', dark: '#1b2f6b', look: 'usa',
-   blurb: 'Damage +8% · Infantry can turn into alpha wolves',
-   tr: {wolf: 1, dmg: 1.08}, power: 'howl'},
+   blurb: 'Damage +10% · Costs −8% · Infantry can turn into alpha wolves',
+   tr: {wolf: 1, dmg: 1.1, cost: .92}, power: 'howl'},
   {key: 'toms', name: 'The Toms', leader: 'Big Tom', color: '#19c8b9', dark: '#0d3b3a', look: 'toms',
-   blurb: 'Health +25% · Damage +20% · Costs +25% · F-16, F-15, F-35, nuclear sub',
-   tr: {hp: 1.25, dmg: 1.2, cost: 1.25}, power: 'salvo'},
+   blurb: 'Health +12% · Damage +8% · Costs +12% · F-16, F-15, F-35, nuclear sub',
+   tr: {hp: 1.12, dmg: 1.08, cost: 1.12}, power: 'salvo'},
 ];
 
 // arm: light | heavy | air | sea | bld. dmg per shot, cd seconds, rng world units, spd units/sec.
@@ -778,6 +798,10 @@ const BUILDINGS = {
   ewmast:   {n: 'EW Jammer', hp: 300, s: 2, vis: 10, jam: 11, req: 'dronebay', cost: [130, 60], t: 12, hk: 'T', page: 2, desc: 'Jams enemy drones inside its radius until they crash.'},
   mine:     {n: 'Land Mine', hp: 30, s: 1, vis: 1, mine: 1, cost: [30, 0], t: 3, hk: 'Y', page: 2, desc: 'Invisible to the enemy. Blows up the first ground unit on top of it.'},
   patriot:  {n: 'Patriot Battery', hp: 600, s: 4, vis: 18, dmg: 90, rng: 22, cd: 4, shot: 'missile', aa: 1, noGround: 1, abm: 45, req: 'lab', cost: [280, 180], t: 22, hk: 'U', page: 2, desc: 'Long-range air defence. Can shoot down ICBMs within 45 units.'},
+  trench:   {n: 'Trench', hp: 700, s: 3, vis: 7, walk: 1, cover: 2.6, cost: [35, 0], t: 7, hk: 'H', page: 2, desc: 'Dug-in trench line. Your infantry in or beside it take 55% less damage. Troops walk through it.'},
+  sandbags: {n: 'Sandbag Wall', hp: 380, s: 2, vis: 5, cover: 1.8, cost: [25, 0], t: 4, hk: 'J', page: 2, desc: 'Cheap wall. Infantry right behind it take 55% less damage. Blocks movement.'},
+  pillbox:  {n: 'Pillbox', hp: 950, s: 2, vis: 10, dmg: 8, rng: 10, cd: .3, shot: 'bullet', aa: 1, garrison: 3, cover: 1.8, cost: [110, 10], t: 12, hk: 'K', page: 2, desc: 'Small concrete MG nest. Garrison 3 infantry. Cheap, tough and fast to build.'},
+  trattoria: {n: 'Trattoria', hp: 600, s: 4, vis: 8, aura: 7, morale: 1, only: ['valentinos'], cost: [140, 20], t: 14, hk: 'N', page: 2, desc: 'Italian restaurant. Each one (up to 3) gives +5% health and +5% fire rate to your whole army (morale) and heals troops nearby.'},
   silo:     {n: 'Missile Silo', hp: 1300, s: 5, vis: 8, nukeT: 150, req: 'lab', cost: [700, 500], t: 45, hk: 'G', page: 2, desc: 'Charges one ICBM every 2.5 minutes. Everyone hears the launch.'},
 };
 
@@ -915,14 +939,25 @@ const SEL_GROUPS = {
 // Campaign: budget battles. Spend a budget on troops, place them in your zone, then watch them fight a fixed enemy army.
 const CAMP_UNITS = ['rifle', 'scout', 'assault', 'medic', 'rocket', 'sniper', 'mg', 'grenadier', 'ifv', 'tank', 'arty', 'mlrs', 'gunship'];
 const campCost = k => UNITS[k].cost[0] + UNITS[k].cost[1];
+// Budgets scale with what the enemy fields: its cost, its nation's health and damage bonuses, its forts, and a ratio that
+// starts generous and ends just short of even (beat those with the right counters, not raw numbers).
+const campBudget = (army, ratio, foe, def) => {
+  const tr = NATIONS.find(n => n.key === foe).tr, str = Math.sqrt((tr.hp || 1) * (tr.dmg || 1));
+  const c = army.reduce((a, [k, n]) => a + campCost(k) * n, 0) + (def || []).reduce((a, [k]) => a + (BUILDINGS[k].dmg ? BUILDINGS[k].cost[0] * .9 : BUILDINGS[k].cost[0] * 2.5), 0);
+  return Math.round(c * str * ratio / 10) * 10;
+};
 const CAMPAIGN = [
-  {n: 'First Blood', foe: 'jethroes', budget: 480, seed: 11, army: [['rifle', 6]], tip: 'Six riflemen. Match them, or outgun them.'},
-  {n: 'Sniper Ridge', foe: 'dhruvs', budget: 720, seed: 23, army: [['rifle', 4], ['sniper', 4]], tip: 'Snipers sit at the back. Fast scouts can reach them.'},
-  {n: 'Iron Column', foe: 'valentinos', budget: 1050, seed: 37, army: [['rifle', 6], ['tank', 2]], tip: 'Two tanks. Rocket troopers make short work of armour.'},
-  {n: 'The Swarm', foe: 'licases', budget: 950, seed: 41, army: [['scout', 12], ['assault', 4]], tip: 'A horde of fast blobs. Flamethrowers and IFVs mow down crowds.'},
-  {n: 'Steel Rain', foe: 'dhruvs', budget: 1500, seed: 53, army: [['rifle', 6], ['ifv', 2], ['arty', 2], ['mlrs', 1]], tip: 'Their guns hit hard from range. Rush them, or out-range them.'},
-  {n: 'Big Tom\'s Last Stand', foe: 'toms', budget: 2300, seed: 67, army: [['rifle', 6], ['rocket', 6], ['medic', 2], ['ifv', 2], ['tank', 3], ['gunship', 2]], tip: 'Everything they have. Spend wisely.'},
-];
+  ['First Blood', 'jethroes', 11, 1.3, [['rifle', 6]], 'Six riflemen. Match them, or outgun them.'],
+  ['Sniper Ridge', 'dhruvs', 23, 1.18, [['rifle', 4], ['sniper', 4]], 'Snipers sit at the back. Fast scouts can reach them.'],
+  ['Iron Column', 'valentinos', 37, 1.12, [['rifle', 6], ['tank', 2]], 'Two tanks. Rocket troopers make short work of armour.'],
+  ['The Swarm', 'licases', 41, 1.08, [['scout', 14], ['assault', 5]], 'A horde of fast blobs. Flamethrowers, machine guns and IFVs mow down crowds.'],
+  ['The Trench Line', 'jethroes', 45, 1.05, [['rifle', 8], ['mg', 3], ['grenadier', 2]], 'Dug in behind trenches and a pillbox: troops in cover take half damage. Artillery and grenades break them out.', [['trench', 0, -6], ['trench', 0, 0], ['trench', 0, 6], ['pillbox', -2, -11]]],
+  ['Steel Rain', 'dhruvs', 53, 1.02, [['rifle', 6], ['ifv', 2], ['arty', 2], ['mlrs', 1]], 'Their guns hit hard from range. Rush them, or out-range them.'],
+  ['Air Cavalry', 'licases', 59, 1.0, [['gunship', 3], ['rifle', 6], ['mg', 3], ['medic', 2]], 'Three gunships. Rifles, rockets and IFVs can shoot back at helicopters; tanks cannot.'],
+  ['Avanti!', 'valentinos', 61, .97, [['assault', 6], ['rifle', 8], ['medic', 3], ['grenadier', 3]], 'They charge with bayonets and heal as they go. Keep them at range: machine guns, snipers and artillery.'],
+  ['Armoured Spearhead', 'jethroes', 63, 1.0, [['tank', 4], ['ifv', 3], ['rocket', 4], ['rifle', 6]], 'A full armoured push. Rockets and gunships against the tanks, mind the IFVs.'],
+  ["Big Tom's Last Stand", 'toms', 67, .93, [['rifle', 6], ['rocket', 5], ['medic', 2], ['ifv', 2], ['tank', 3], ['gunship', 2]], 'Everything they have, dug in behind a pillbox. Spend wisely.', [['pillbox', -1, -8], ['pillbox', -1, 8]]],
+].map(([n, foe, seed, ratio, army, tip, def]) => ({n, foe, seed, army, tip, def: def || [], budget: campBudget(army, ratio, foe, def)}));
 // FPS battles: you are one soldier in an amphibious assault. Positions are fractions of the map (u = x / N, v = y / N).
 // def rows: [unit or building, u, v, count, spread, hold position]
 const BATTLES = [
@@ -963,7 +998,7 @@ const KNIFE_T = 8;
 const PSPECIAL = {
   licases: {n: 'Peloton Dash', cd: 20, desc: 'Three seconds of flat-out speed.'},
   dhruvs: {n: 'Smart Scan', cd: 30, desc: 'Reveals every enemy within 25 m for 8 seconds.'},
-  valentinos: {n: 'Rally Flag', cd: 35, desc: 'Heals friends around you and gives them +30% damage for 8 seconds.'},
+  valentinos: {n: 'Rally Flag', cd: 35, desc: 'Heals friends around you, gives them +30% damage for 8 seconds, and you draw a combat knife.'},
   jethroes: {n: 'Alpha Howl', cd: 40, desc: 'Turn into an alpha wolf blob for 14 seconds.'},
   toms: {n: 'Big Knife', cd: 25, desc: 'Pull out a huge knife for 8 seconds. Massive melee slashes.'},
   veil: {n: 'Pocket Bribe', cd: 35, desc: 'The nearest enemy soldier in front of you switches sides.'},
@@ -1482,6 +1517,11 @@ Sim.prototype.setupBattle = function (lv) {
   this.players[0].reveal = 1e9;
   // enemy army: infantry in front rows, vehicles behind
   const Z = this.battle.zones[1], list = [];
+  for (const [k, u, v] of lv.def || []) { // forts: u forward of the zone front (toward the player), v sideways
+    const uu = Z.len - 1 + u, x = Math.round(Z.cx + Z.ax * uu - Z.ay * v), y = Math.round(Z.cy + Z.ay * uu + Z.ax * v);
+    if (this.canPlace(k, x, y, 1)) this.addBuilding(k, 1, x, y, true);
+  }
+  if ((lv.def || []).some(d => BUILDINGS[d[0]].cover)) this.rebuildCover();
   for (const [k, n] of lv.army) for (let i = 0; i < n; i++) list.push(k);
   const rows = {};
   list.forEach(k => { const r = UNITS[k].cat === 'inf' ? (k === 'sniper' || k === 'medic' ? 1 : 0) : UNITS[k].cat === 'heli' ? 3 : 2; (rows[r] = rows[r] || []).push(k); });
@@ -1490,7 +1530,7 @@ Sim.prototype.setupBattle = function (lv) {
     for (let tries = 0; tries < 30; tries++) {
       const vv = v + (tries % 2 ? 1 : -1) * Math.ceil(tries / 2) * 1.3, uu = u - (tries > 14 ? 2 : 0);
       const x = Z.cx + Z.ax * uu - Z.ay * vv, y = Z.cy + Z.ay * uu + Z.ax * vv;
-      if (this.inZone(1, x, y) && this.landOk(x, y)) { const e = this.addUnit(k, 1, x, y); e.h = Math.atan2(Z.ay, Z.ax); break; }
+      if (this.inZone(1, x, y) && this.landOk(x, y)) { const e = this.addUnit(k, 1, x, y); e.h = Math.atan2(Z.ay, Z.ax); if (this.coverMul(e, 'bullet') < 1) e.dug = 1; break; }
     }
   });
 };
@@ -1643,7 +1683,7 @@ Sim.prototype.scenSpawn = function (pi, k) {
   else { let best = S.land[0]; for (const L of S.land) if (Math.abs(L.x - this.N / 2) < Math.abs(best.x - this.N / 2)) best = L; this.scenLanding(best, [k], pi); }
 };
 // ---------- scouting: scouts ride out, note every enemy group they see, and report when they get home ----------
-Sim.prototype.sendRecon = function (p, n, quiet) {
+Sim.prototype.sendRecon = function (p, n, quiet, gx, gy) {
   const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
   let sent = 0;
   for (let i = 0; i < n; i++) {
@@ -1658,13 +1698,14 @@ Sim.prototype.sendRecon = function (p, n, quiet) {
     p.reconI = (p.reconI || 0) + 1;
     const foes = this.players.filter(q => q.alive && !this.friendly(q.i, p.i)), k = p.reconI;
     let tx, ty;
-    if (foes.length && k % 3 !== 0) { // look at an enemy capital from a safe distance, outside its guns
+    if (gx !== undefined) { const a = i * 2.1, r = i ? 5 : 0; tx = gx + Math.cos(a) * r; ty = gy + Math.sin(a) * r; } // where you pointed
+    else if (foes.length && k % 3 !== 0) { // look at an enemy capital from a safe distance, outside its guns
       const f = foes[k % foes.length].spawn, a = Math.atan2(hq.y - f.y, hq.x - f.x) + (this.rnd() - .5) * 1.6; tx = f.x + Math.cos(a) * 25; ty = f.y + Math.sin(a) * 25; }
     else { const a = k * 2.4, r = this.N * (.25 + this.rnd() * .2); tx = this.N / 2 + Math.cos(a) * r; ty = this.N / 2 + Math.sin(a) * r; }
     tx = clamp(tx, 4, this.N - 5); ty = clamp(ty, 4, this.N - 5);
     for (let r = 0; r < 40 && !this.landOk(tx, ty); r += 1.5) { const a = r * 1.7; tx = clamp(tx + Math.cos(a) * r * .3, 4, this.N - 5); ty = clamp(ty + Math.sin(a) * r * .3, 4, this.N - 5); } // never into the sea
     this.clearOrders(s); s.zone = null; s.stance = 'hold';
-    s.recon = {home: {x: hq.x, y: hq.y}, tx, ty, phase: 'out', t0: this.t, seen: {}};
+    s.recon = {home: {x: hq.x, y: hq.y}, tx, ty, phase: 'out', t0: this.t, seen: {}, aim: gx !== undefined, lim: gx !== undefined ? Math.hypot(tx - s.x, ty - s.y) / 4 + 25 : 75};
     this.go(s, tx, ty); s.amove = false; sent++;
   }
   if (sent && !quiet) this.notify(p.i, sent + (sent > 1 ? ' scouts ride' : ' scout rides') + ' out. They report back when they return.', 'info', hq.x, hq.y);
@@ -1681,7 +1722,7 @@ Sim.prototype.stepRecon = function (e) {
     if (t.b) g.b[t.d.n] = (g.b[t.d.n] || 0) + 1; else g.kinds[t.d.cat] = (g.kinds[t.d.cat] || 0) + 1;
   }
   const spottedBase = Object.values(R.seen).some(g => Object.keys(g.b).length >= 2);
-  if (R.phase === 'out' && (Math.hypot(R.tx - e.x, R.ty - e.y) < 4 || this.t - R.t0 > 75 || e.hp < e.hpm * .8 || !e.goal || spottedBase)) { R.phase = 'back'; this.go(e, R.home.x, R.home.y); e.amove = false; }
+  if (R.phase === 'out' && (Math.hypot(R.tx - e.x, R.ty - e.y) < 4 || this.t - R.t0 > (R.lim || 75) || e.hp < e.hpm * .8 || !e.goal || (spottedBase && !R.aim))) { R.phase = 'back'; this.go(e, R.home.x, R.home.y); e.amove = false; }
   else if (R.phase === 'back') {
     if (!e.goal) this.go(e, R.home.x, R.home.y);
     if (Math.hypot(R.home.x - e.x, R.home.y - e.y) < 11) {
@@ -1714,6 +1755,8 @@ Sim.prototype.battleCheck = function () {
     // TABS-style: nobody holds back. Idle troops march on the closest enemy.
     if (this.tick % 20 === 0) for (const e of this.ents.values()) {
       if (e.b || e.hp <= 0 || e.pilot || e.o > 1 || (e.tid && this.ents.get(e.tid)) || (e.goal && e.amove)) continue;
+      if (e.dug && this.t < 90) { e.stance = 'hold'; continue; } // dug-in defenders wait in their trench (for a while)
+      if (e.dug) { e.dug = 0; e.stance = 'aggr'; }
       let best = null, bd = 1e9;
       for (const t of this.ents.values()) if (!t.b && t.hp > 0 && t.o !== e.o && t.o < 2) { const d = Math.hypot(t.x - e.x, t.y - e.y); if (d < bd) { bd = d; best = t; } }
       if (best) this.cmdMove([e], best.x, best.y, true, false);
@@ -1763,7 +1806,8 @@ Sim.prototype.setupPlayer = function (p) {
   }
 };
 
-Sim.prototype.hpMult = function (p) { let m = (p.nat.tr.hp || 1); if (p.ups.armour1) m *= 1.15; if (p.ups.armour2) m *= 1.15; return m; };
+Sim.prototype.morale = function (p) { return Math.min(3, p.trat || 0); };
+Sim.prototype.hpMult = function (p) { let m = (p.nat.tr.hp || 1) * (1 + .05 * this.morale(p)); if (p.ups.armour1) m *= 1.15; if (p.ups.armour2) m *= 1.15; return m; };
 Sim.prototype.dmgMult = function (p) { let m = (p.nat.tr.dmg || 1); if (p.ups.weapons1) m *= 1.15; if (p.ups.weapons2) m *= 1.15; if (p.buffs.forza > this.t) m *= 1.25; return m; };
 Sim.prototype.costOf = function (p, def, key) {
   if (p.open && key) return [0, 0]; // "all units unlocked": units are free, buildings are not
@@ -1806,6 +1850,7 @@ Sim.prototype.canPlace = function (k, x, y, pi) {
     return true;
   });
   if (!ok) return false;
+  if (this.ents) for (const b of this.ents.values()) if (b.b && b.d.walk && Math.abs(b.x - x) < (b.d.s + d.s) / 2 && Math.abs(b.y - y) < (b.d.s + d.s) / 2) return false;
   for (const n of M.nodes) if (Math.abs(n.x - x) < d.s / 2 + 1.5 && Math.abs(n.y - y) < d.s / 2 + 1.5) return false;
   if (d.coast) {
     let sea = 0;
@@ -1828,7 +1873,7 @@ Sim.prototype.addBuilding = function (k, o, x, y, done) {
     if (n) { n.taken = e.id; e.node = n.id; e.x = n.x; e.y = n.y; }
   }
   if (d.nukeT) e.nukeCD = d.nukeT;
-  if (!d.mine) {
+  if (!d.mine && !d.walk) {
     this.footprint(d, e.x, e.y, (i, j) => {
       if (i >= 0 && j >= 0 && i < this.N && j < this.N) { const q = j * this.N + i; this.M.occ[q] = e.id; this.M.tree[q] = 0; }
     });
@@ -1874,6 +1919,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'stance': for (const e of mine) e.stance = c.s; break;
     case 'gather': { const n = this.M.nodes[c.n]; if (n) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'gather', node: n.id}; } break; }
     case 'build': this.cmdBuild(mine, p, c.b, c.x, c.y, !!c.q); break;
+    case 'harden': this.cmdHarden(p, c.id); break;
     case 'assist': { const t = this.ents.get(c.t); if (t && t.b && t.o === pi) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'build', id: t.id}; } break; }
     case 'road': this.cmdRoad(mine, p, c.x1, c.y1, c.x2, c.y2); break;
     case 'chaff': { const a = this.pilotOk(c, pi); if (a && a.air) this.popChaff(a); break; }
@@ -1885,7 +1931,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'power': break; // commander powers were removed
     case 'diplo': this.cmdDiplo(c, pi); break;
     case 'scenSpawn': this.scenSpawn(pi, c.u); break;
-    case 'recon': this.sendRecon(p, Math.min(4, c.n || 1)); break;
+    case 'recon': this.sendRecon(p, Math.min(4, c.n || 1), false, c.x === undefined ? undefined : clamp(+c.x, 4, this.N - 5), c.y === undefined ? undefined : clamp(+c.y, 4, this.N - 5)); break;
     case 'autorecon': p.autoRecon = !!c.on; this.notify(pi, p.autoRecon ? 'Scouts will patrol and report automatically' : 'Automatic scouting off', 'info'); if (p.autoRecon) this.sendRecon(p, 1, true); break;
     case 'nuke': { const e = this.ents.get(c.id); if (e && e.o === pi && e.nukeReady) this.launchNuke(e, c.x, c.y); break; }
     case 'garrison': { const b = this.ents.get(c.t); if (b && b.o === pi && b.d.garrison) for (const e of mine) if (e.d.cat === 'inf') { this.clearOrders(e); e.task = {type: 'garrison', id: b.id}; } break; }
@@ -1927,7 +1973,7 @@ Sim.prototype.issue = function (c, pi) {
 };
 
 Sim.prototype.clearOrders = function (e) {
-  e.goal = null; e.path = null; e.force = 0; e.task = null; e.amove = false; e.patrol = null; e.queue = null; e.tid = 0; e.fg = null;
+  e.goal = null; e.path = null; e.force = 0; e.task = null; e.amove = false; e.patrol = null; e.queue = null; e.tid = 0; e.fg = null; e.bq = null;
 };
 
 Sim.prototype.go = function (e, x, y, gx, gy) {
@@ -1961,7 +2007,7 @@ Sim.prototype.cmdMove = function (es, x, y, atk, queue) {
 
 Sim.prototype.cmdBuild = function (ws, p, k, x, y, q) {
   const d = BUILDINGS[k];
-  if (!d || k === 'hq') return;
+  if (!d || k === 'hq' || (d.only && !d.only.includes(p.nat.key))) return;
   if (d.req && !this.has(p.i, d.req)) { this.notify(p.i, 'Requires ' + BUILDINGS[d.req].n, 'bad'); return; }
   if (!this.canPlace(k, x, y, p.i)) { this.notify(p.i, 'Cannot build there', 'bad'); return; }
   const c = this.costOf(p, d);
@@ -1971,7 +2017,12 @@ Sim.prototype.cmdBuild = function (ws, p, k, x, y, q) {
   if (!wk.length) { this.notify(p.i, 'No workers to build it: train some at your capital', 'bad'); return; }
   p.steel -= c[0]; p.fuel -= c[1];
   const b = this.addBuilding(k, p.i, x, y, false);
-  for (const w of wk) { this.clearOrders(w); w.task = {type: 'build', id: b.id}; }
+  for (const w of wk) {
+    // a worker already on an unfinished site keeps going and does this one next, in the order you placed them
+    const cur = w.task && w.task.type === 'build' ? this.ents.get(w.task.id) : null;
+    if (cur && cur.bp < 1) { (w.bq = w.bq || []).push(b.id); continue; }
+    this.clearOrders(w); w.task = {type: 'build', id: b.id};
+  }
 };
 
 // Pick workers for a job nobody was selected for: idle ones first, then miners, nearest first; never steal a builder.
@@ -1979,7 +2030,7 @@ Sim.prototype.autoWorkers = function (pi, x, y, n) {
   const list = [];
   for (const e of this.ents.values()) if (e.o === pi && e.k === 'worker' && !e.pilot && !e.inside) {
     const busy = e.task && e.task.type !== 'gather' ? 2 : e.task ? 1 : 0;
-    if (busy < 2) list.push({e, s: busy * 40 + Math.hypot(e.x - x, e.y - y)});
+    list.push({e, s: busy * 40 + (e.bq ? e.bq.length * 60 : 0) + Math.hypot(e.x - x, e.y - y)}); // builders get it queued
   }
   return list.sort((a, b) => a.s - b.s).slice(0, n).map(q => q.e);
 };
@@ -2256,6 +2307,7 @@ Sim.prototype.acquire = function (e) {
 // ---------- damage ----------
 Sim.prototype.hurt = function (t, dmg, by) {
   if (t.hp <= 0) return;
+  if (t.b && t.hard >= 1) dmg *= .35;                       // hardened: rebuilt underground in reinforced concrete
   t.hp -= dmg; t.hurtT = this.t;
   if (t.pilot && dmg > .5) this.ev({k: 'ouch', id: t.id, x: t.srcX === undefined ? t.x : t.srcX, y: t.srcY === undefined ? t.y : t.srcY, dmg: Math.round(dmg)});
   t.srcX = undefined;
@@ -2276,7 +2328,7 @@ Sim.prototype.kill = function (t, by) {
   this.ents.delete(t.id);
   if (t.b) {
     if (t.bp >= 1) p.popCap -= t.d.pop || 0;
-    if (!t.d.mine) {
+    if (!t.d.mine && !t.d.walk) {
       this.footprint(t.d, t.x, t.y, (i, j) => { if (i >= 0 && j >= 0 && i < this.N && j < this.N && this.M.occ[j * this.N + i] === t.id) this.M.occ[j * this.N + i] = 0; });
       this.F.flush();
     }
@@ -2284,11 +2336,14 @@ Sim.prototype.kill = function (t, by) {
     if (t.garrison) this.unload(t);
     for (const it of t.q) { if (it.up) delete p.ups['_' + it.up]; }
     this.ev({k: 'bdead', id: t.id, x: t.x, y: t.y, s: t.d.s, b: t.k});
+    if (t.d.cover) this.coverDirty = true;
+    if (by !== null && by !== undefined && this.players[by]) this.stat(this.players[by], 'bkills', 1);
     if (t.k === 'hq') this.playerOut(t.o, by);
   } else {
     if (t.recon) this.notify(t.o, 'A scout was killed before reporting back', 'bad', t.x, t.y);
     if (t.cargo) for (const id of t.cargo) { const u = this.ents.get(id); if (u) { u.inside = 0; if (t.sea && !t.d.sub) { u.x = t.x; u.y = t.y; u.z = SWIM_Z; } else this.kill(u, by); } } // sailors can swim for it
     p.pop -= t.d.pop; p.losses++;
+    if (by !== null && by !== undefined && this.players[by]) this.stat(this.players[by], 'ukills', 1);
     this.ev({k: 'dead', id: t.id, x: t.x, y: t.y, z: t.z, kk: t.k, o: t.o, air: t.air ? 1 : 0, by: by === null || by === undefined ? -1 : by});
     if (t.force) t.force = 0;
   }
@@ -2462,14 +2517,14 @@ Sim.prototype.splash = function (x, y, r, dmg, o, ty, src) {
     if (t.air && ty !== 'drone') return;
     const d = Math.hypot(t.x - x, t.y - y);
     if (d > r) return;
-    const dm = dmg * (vs[t.d.arm] || 0) * (1 - d / r * .65) * (t.d.sub ? .5 : 1);
+    const dm = dmg * (vs[t.d.arm] || 0) * (1 - d / r * .65) * (t.d.sub ? .5 : 1) * this.coverMul(t, ty);
     if (dm > 0) { this.hurt(t, dm, o); if (src) this.creditKill(src, t); }
   });
   for (const b of [...this.ents.values()]) {
     if (!b.b || (o !== null && this.friendly(b.o, o))) continue;
     const dd = Math.max(0, Math.hypot(b.x - x, b.y - y) - b.d.s / 2);
     if (dd > r || b.d.mine) continue;
-    this.hurt(b, dmg * vs.bld * (1 - dd / r * .5), o);
+    this.hurt(b, dmg * vs.bld * (1 - dd / r * .5) * (b.hard >= 1 ? .6 : 1), o);
     if (src && b.hp <= 0) this.creditKill(src, b);
   }
 };
@@ -2486,6 +2541,14 @@ Sim.prototype.fire = function (a, t) {
   if (!a.air && !t.air && hd > 1.4) dm *= 1.25;          // high ground
   if (!t.b && !t.air && this.M.tree[Math.round(t.y) * this.N + Math.round(t.x)]) dm *= ty === 'bullet' || ty === 'sniper' ? .75 : 1;  // forest cover
   if (this.inSmoke(t) || this.inSmoke(a)) dm *= .55;
+  dm *= this.coverMul(t, ty);
+  // Valentinos infantry fix bayonets: anything on foot within arm's reach gets stabbed instead of shot
+  if (p.nat.tr.melee && d.cat === 'inf' && !t.b && t.d.cat === 'inf' && !a.pilot && a.k !== 'medic' && a.k !== 'wolf' && Math.hypot(t.x - a.x, t.y - a.y) < 2.3) {
+    const md = (22 + d.hp * .12) * this.dmgMult(p) * this.coverMul(t, 'bite');
+    this.ev({k: 's', a: a.id, t: t.id, at: t.id, ty: 'bite', d: .05, x: t.x, y: t.y, z: t.z});
+    this.hurt(t, md, a.o); if (t.hp <= 0) this.creditKill(a, t);
+    a.st = 2; a.cd = Math.min(a.cd, 0) + .75; return;
+  }
   if (t.d.turret && !t.b) {                               // flanking armour
     const from = Math.atan2(a.y - t.y, a.x - t.x);
     if (Math.abs(angDiff(t.h, from)) > 2.2) dm *= 1.35;
@@ -2589,6 +2652,9 @@ Sim.prototype.step = function () {
     if (!p.alive) continue;
     if (this.tick % 10 === 0) this.income(p);
   }
+  if (this.tick % 10 === 3) this.stepMorale();
+  if (this.coverDirty) this.rebuildCover();
+  if (this.tick % 300 === 7) this.sampleStats();
   if (this.tick % 10 === 0) this.stepDiplo();
   if (this.tick % 900 === 450) for (const p of this.players) if (p.alive && p.autoRecon && ![...this.ents.values()].some(e => e.o === p.i && e.recon)) this.sendRecon(p, 1, true);
   // sudden death: after 30 minutes every capital slowly crumbles, so no war drags on forever
@@ -2607,6 +2673,63 @@ Sim.prototype.step = function () {
   this.stepProjs();
   this.smokes = this.smokes.filter(s => s.until > this.t);
   this.stepNukes();
+};
+
+// Morale: every finished Trattoria (max 3) is +5% health and +5% fire rate across the whole army.
+Sim.prototype.stepMorale = function () {
+  for (const p of this.players) {
+    let n = 0;
+    for (const b of this.ents.values()) if (b.b && b.o === p.i && b.d.morale && b.bp >= 1) n++;
+    n = Math.min(3, n);
+    const old = p.trat || 0;
+    if (n !== old) {
+      const r = (1 + .05 * n) / (1 + .05 * old);
+      for (const e of this.ents.values()) if (e.o === p.i && !e.b) { e.hpm *= r; e.hp *= r; }
+      if (n > old) this.notify(p.i, 'Trattoria open: army morale ' + (100 + n * 5) + '%', 'good');
+      p.trat = n;
+    }
+  }
+};
+
+// Cover grid: cells next to trenches, sandbags and pillboxes. Stores owner+1.
+Sim.prototype.rebuildCover = function () {
+  this.coverDirty = false;
+  const N = this.N, C = this.M.cover || (this.M.cover = new Uint8Array(N * N));
+  C.fill(0);
+  for (const b of this.ents.values()) if (b.b && b.d.cover && b.bp >= 1) {
+    const r = b.d.s / 2 + b.d.cover;
+    for (let j = Math.floor(b.y - r); j <= Math.ceil(b.y + r); j++) for (let i = Math.floor(b.x - r); i <= Math.ceil(b.x + r); i++)
+      if (i >= 0 && j >= 0 && i < N && j < N && Math.abs(i - b.x) <= r && Math.abs(j - b.y) <= r) C[j * N + i] = b.o + 1;
+  }
+};
+Sim.prototype.coverMul = function (t, ty) {
+  if (t.b || t.air || t.d.cat !== 'inf' || !this.M.cover) return 1;
+  if (this.M.cover[Math.round(t.y) * this.N + Math.round(t.x)] !== t.o + 1) return 1;
+  return ty === 'flame' || ty === 'bite' ? .8 : .45;
+};
+
+// Hardening: rebuild a finished building underground in reinforced concrete. Takes 25 s, then it takes 65% less damage.
+Sim.prototype.hardCost = function (b) {
+  if (b.k === 'hq') return [900, 300];
+  const c = b.d.cost; return [Math.max(150, Math.round(c[0] * .9)), Math.max(60, Math.round(c[1] * .9 + 40))];
+};
+Sim.prototype.cmdHarden = function (p, id) {
+  const b = this.ents.get(id);
+  if (!b || !b.b || b.o !== p.i || b.bp < 1 || b.hard || b.d.mine || b.d.walk) return;
+  const c = this.hardCost(b);
+  if (p.steel < c[0] || p.fuel < c[1]) { this.notify(p.i, 'Hardening needs ' + c[0] + ' steel and ' + c[1] + ' fuel', 'bad'); return; }
+  p.steel -= c[0]; p.fuel -= c[1]; b.hard = .001;
+  this.notify(p.i, 'Hardening ' + b.d.n + '...', 'good', b.x, b.y);
+};
+
+// Stats over time for the stats screen.
+Sim.prototype.sampleStats = function () {
+  for (const p of this.players) {
+    let army = 0, bld = 0;
+    for (const e of this.ents.values()) if (e.o === p.i) { if (e.b) bld++; else if (e.d.dmg) army += e.d.cost[0] + e.d.cost[1]; }
+    (p.hist = p.hist || []).push([Math.round(this.t), Math.round(p.st ? p.st.mined : 0), army, bld, p.kills]);
+    if (p.hist.length > 240) p.hist.splice(0, 2);
+  }
 };
 
 Sim.prototype.income = function (p) {
@@ -2657,9 +2780,11 @@ Sim.prototype.stepNukes = function () {
   this.nukes = this.nukes.filter(n => !n.dead);
 };
 
+Sim.prototype.stat = function (p, k, v) { const S = p.st || (p.st = {mined: 0, spent: 0, trained: 0, lost: 0, bkills: 0, ukills: 0, dmg: 0, built: 0}); S[k] = (S[k] || 0) + v; };
 Sim.prototype.stepBuilding = function (b) {
   const d = b.d, p = this.players[b.o];
   if (b.bp < 1) return;
+  if (b.hard > 0 && b.hard < 1) { b.hard = Math.min(1, b.hard + DT / 25); if (b.hard >= 1) { this.notify(p.i, d.n + ' hardened: bunkered in concrete', 'good', b.x, b.y); this.ev({k: 'hard', id: b.id}); } }
   // training or research
   if (b.q.length) {
     const it = b.q[0];
@@ -2674,7 +2799,7 @@ Sim.prototype.stepBuilding = function (b) {
       const ud = UNITS[it.u];
       if (p.pop + ud.pop > p.popCap) { if (this.tick % 150 === 0) this.notify(p.i, 'Population capped: build Housing', 'bad'); }
       else {
-        b.prog += DT;
+        b.prog += DT / (p.nat.tr.train || 1);
         if (b.prog >= ud.t) { b.q.shift(); b.prog = 0; this.spawnFrom(b, it.u, p); }
       }
     }
@@ -2783,7 +2908,7 @@ Sim.prototype.stepUnit = function (e) {
   if (d.carry && e.cargo && e.cargo.length && e.unloadAt && Math.hypot(e.unloadAt.x - e.x, e.unloadAt.y - e.y) < (e.air ? 3 : 2.5)) { e.unloadAt = null; this.unloadT(e); }
   if (d.repair && this.tick % 10 === e.id % 10) this.near(e.x, e.y, d.repair, t => { if (t.o === e.o && !t.b && t.hp < t.hpm && t !== e) { t.hp = Math.min(t.hpm, t.hp + (t.d.cat === 'inf' ? 5 : 14)); if (this.rnd() < .2) this.ev({k: 'heal', t: t.id}); } });
   if (e.drop) { if (this.t > e.drop) { e.drop = 0; this.ev({k: 'land', id: e.id}); } return; }
-  e.cd -= DT;
+  e.cd -= DT * (1 + .05 * (p.trat || 0));
   if (e.st > 0) e.st = 0;
   if (p.nat.tr.regen && e.hp < e.hpm && this.tick % 10 === 0 && this.t - (e.hurtT || 0) > 6) e.hp = Math.min(e.hpm, e.hp + p.nat.tr.regen * 2); // heals between fights
   if (e.wolf && this.t > e.wolf.until) this.fromWolf(e);
@@ -2874,7 +2999,10 @@ Sim.prototype.stepGround = function (e, p) {
   let moving = false;
   if (tgt && tgt.hp > 0) {
     const q = Math.hypot(tgt.x - e.x, tgt.y - e.y) - (tgt.b ? tgt.d.s / 2 : 0);
-    if (q <= d.rng && !(d.minRng && q < d.minRng)) {
+    if (p.nat.tr.melee && d.cat === 'inf' && !tgt.b && tgt.d.cat === 'inf' && q > 1.8 && q < 5.5 && e.hp > e.hpm * .45 && e.stance !== 'hold' && e.k !== 'medic' && e.k !== 'sniper') {
+      this.moveAlong(e, tgt.x, tgt.y, dom, p, tgt.x, tgt.y); moving = true;   // Avanti! charge into bayonet range
+      if (e.cd <= 0 && q <= d.rng) { this.fire(e, tgt); e.cd = d.cd * 1.4; }
+    } else if (q <= d.rng && !(d.minRng && q < d.minRng)) {
       e.moving = false;
       e.face = Math.atan2(tgt.y - e.y, tgt.x - e.x);
       if (e.cd <= 0) { this.fire(e, tgt); e.cd = d.cd * (.9 + this.rnd() * .2); }
@@ -2983,7 +3111,7 @@ Sim.prototype.stepTask = function (e, p) {
       if (!drop) { e.task = null; return; }
       const q = dist(e, drop) - drop.d.s / 2;
       if (q < 1.2) {
-        p.steel += e.carry * (p.nat.tr.income || 1); e.carry = 0; T.back = false;
+        p.steel += e.carry * (p.nat.tr.income || 1); this.stat(p, 'mined', e.carry * (p.nat.tr.income || 1)); e.carry = 0; T.back = false;
         if (!n || n.amt <= 0) { const m = this.nearestNode(e, 'steel'); if (m) T.node = m.id; else e.task = null; }
       } else this.moveAlong(e, drop.x, drop.y, 0, p, drop.x, drop.y);
       return;
@@ -2998,7 +3126,7 @@ Sim.prototype.stepTask = function (e, p) {
     } else this.moveAlong(e, n.x, n.y, 0, p, n.x, n.y);
   } else if (T.type === 'build') {
     const b = this.ents.get(T.id);
-    if (!b) { e.task = null; return; }
+    if (!b) { this.afterBuild(e, null, p); return; }
     if (b.bp >= 1 && b.hp >= b.hpm) { this.afterBuild(e, b, p); return; }
     const q = dist(e, b) - b.d.s / 2;
     if (q < 1.3) {
@@ -3010,7 +3138,7 @@ Sim.prototype.stepTask = function (e, p) {
         if (b.bp >= 1) {
           p.popCap += b.d.pop || 0;
           this.notify(p.i, b.d.n + ' complete', 'good', b.x, b.y);
-          this.ev({k: 'bdone', id: b.id});
+          this.ev({k: 'bdone', id: b.id}); if (b.d.cover) this.coverDirty = true; this.stat(p, 'built', 1);
           this.afterBuild(e, b, p);
         }
       } else { b.hp = Math.min(b.hpm, b.hp + b.hpm * .02 * DT * 5); }
@@ -3057,6 +3185,16 @@ Sim.prototype.stepTask = function (e, p) {
 
 Sim.prototype.afterBuild = function (e, b, p) {
   e.task = null;
+  // next job in this worker's queue, then any half-built site of ours that nobody is working on
+  while (e.bq && e.bq.length) { const id = e.bq.shift(), nb = this.ents.get(id); if (nb && nb.bp < 1) { e.task = {type: 'build', id}; return; } }
+  e.bq = null;
+  let best = null, bd = 40;
+  for (const o of this.ents.values()) if (o.b && o.o === e.o && o.bp < 1 && o.k !== 'mine') {
+    const d = dist(e, o); if (d >= bd) continue;
+    let staffed = false; for (const w of this.ents.values()) if (w !== e && w.o === e.o && w.task && w.task.type === 'build' && w.task.id === o.id) { staffed = true; break; }
+    if (!staffed) { bd = d; best = o; }
+  }
+  if (best) { e.task = {type: 'build', id: best.id}; return; }
   const n = this.nearestNode(e, 'steel');
   if (n && Math.hypot(n.x - e.x, n.y - e.y) < 30) e.task = {type: 'gather', node: n.id};
 };
@@ -3329,7 +3467,7 @@ Sim.prototype.pilotSpecial = function (c, pi) {
   p.specT = this.t + S.cd;
   const k = p.nat.key;
   if (k === 'dhruvs') this.near(a.x, a.y, 25, t => { if (!this.friendly(t.o, pi)) t.revealed = this.t + 8; });
-  else if (k === 'valentinos') this.near(a.x, a.y, 6, t => { if (t.o === pi && !t.b) { t.hp = Math.min(t.hpm, t.hp + 40); t.rallyT = this.t + 8; this.ev({k: 'heal', t: t.id}); } });
+  else if (k === 'valentinos') { this.near(a.x, a.y, 6, t => { if (t.o === pi && !t.b) { t.hp = Math.min(t.hpm, t.hp + 40); t.rallyT = this.t + 8; this.ev({k: 'heal', t: t.id}); } }); if (a.d.cat === 'inf') a.knifeT = this.t + KNIFE_T + .5; }
   else if (k === 'jethroes') { if (a.d.cat === 'inf' && a.k !== 'wolf') { const hp = a.hp / a.hpm; this.toWolf(a, 14); a.hpm *= PILOT_HP; a.hp = a.hpm; a.wolf.frac = hp; } }
   else if (k === 'toms') { if (a.d.cat !== 'inf') { p.specT = this.t + 1; return; } a.knifeT = this.t + KNIFE_T + .5; }
   else if (k === 'veil') {
@@ -3376,6 +3514,7 @@ Bot.prototype.update = function () {
   this.buildOrder();
   this.train();
   this.research();
+  if (s.peace) return; // tutorial: the enemy builds up but does not attack until you are ready
   this.military();
   this.drones();
   this.nukes();
@@ -3441,7 +3580,9 @@ Bot.prototype.buildOrder = function () {
     if (free && dist(free, p.spawn) < (s.t > 200 ? 60 : 34)) { if (this.tryBuild('derrick', {x: free.x, y: free.y})) return; }
   }
   if (wk < 6) return;
-  const order = ['dronebay', 'factory', 'lab', 'tower', 'housing', 'barracks', 'airfield', 'aa', 'hospital', 'patriot', 'factory', 'ewmast', 'bunker', 'yard', 'silo'];
+  if (s.t > 720 && this.level === 'hard' && p.steel > 1600 && p.fuel > 500) { const hq = (this.mine.b.hq || [])[0]; if (hq && !hq.hard) this.cmd({c: 'harden', id: hq.id}); }
+  const order = ['dronebay', 'factory', 'lab', 'tower', 'housing', 'barracks', 'pillbox', 'airfield', 'aa', 'hospital', 'trench', 'patriot', 'factory', 'ewmast', 'bunker', 'pillbox', 'yard', 'silo'];
+  if (p.nat.key === 'valentinos') order.splice(2, 0, 'trattoria');
   for (const k of order) {
     const want = order.filter(o => o === k).length;
     if (n(k) >= want) continue;
@@ -3693,9 +3834,9 @@ function encodeSnap(sim, sendSlow) {
   }
   const msg = {snap: 1, t: sim.t, buf: out.buffer, meta};
   if (sendSlow) {
-    msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, cds: p.cds, alive: p.alive, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, autoRecon: p.autoRecon}));
+    msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, autoRecon: p.autoRecon}));
     msg.bs = [];
-    for (const e of sim.ents.values()) if (e.b) msg.bs.push({id: e.id, bp: e.bp, q: e.q, prog: e.prog, rally: e.rally, cdn: e.nukeCD, g: e.garrison ? e.garrison.length : 0});
+    for (const e of sim.ents.values()) if (e.b) msg.bs.push({id: e.id, bp: e.bp, q: e.q, prog: e.prog, rally: e.rally, cdn: e.nukeCD, g: e.garrison ? e.garrison.length : 0, hd: e.hard || 0});
     msg.nodes = sim.M.nodes.map(n => [n.amt | 0, n.taken || 0]);
     msg.smokes = sim.smokes;
     msg.over = sim.over;
@@ -3719,6 +3860,7 @@ Mirror.prototype.footprint = Sim.prototype.footprint;
 Mirror.prototype.has = Sim.prototype.has;
 Mirror.prototype.trainable = Sim.prototype.trainable;
 Mirror.prototype.costOf = Sim.prototype.costOf;
+Mirror.prototype.hardCost = Sim.prototype.hardCost;
 Mirror.prototype.apply = function (m) {
   this.t = m.t;
   if (m.ev) for (const e of m.ev) this.applyEvent(e);
@@ -3745,7 +3887,7 @@ Mirror.prototype.apply = function (m) {
   }
   for (const id of this.ents.keys()) if (!seen.has(id)) this.ents.delete(id);
   if (m.pl) m.pl.forEach((q, i) => Object.assign(this.players[i], q));
-  if (m.bs) for (const b of m.bs) { const e = this.ents.get(b.id); if (e) { e.bp = b.bp; e.q = b.q; e.prog = b.prog; e.rally = b.rally; e.nukeCD = b.cdn; e.g = b.g; e.garrison = new Array(b.g); } }
+  if (m.bs) for (const b of m.bs) { const e = this.ents.get(b.id); if (e) { e.bp = b.bp; e.q = b.q; e.prog = b.prog; e.rally = b.rally; e.nukeCD = b.cdn; e.g = b.g; e.garrison = new Array(b.g); e.hard = b.hd; } }
   if (m.nodes) m.nodes.forEach((n, i) => { this.M.nodes[i].amt = n[0]; this.M.nodes[i].taken = n[1]; });
   if (m.smokes) this.smokes = m.smokes;
   if (m.over) this.over = m.over;
@@ -3754,10 +3896,10 @@ Mirror.prototype.applyEvent = function (e) {
   const M = this.M, N = this.N;
   if (e.k === 'bspawn') {
     const d = BUILDINGS[e.b];
-    if (!d.mine) this.footprint(d, e.x, e.y, (i, j) => { if (i >= 0 && j >= 0 && i < N && j < N) { M.occ[j * N + i] = e.id; M.tree[j * N + i] = 0; } });
+    if (!d.mine && !d.walk) this.footprint(d, e.x, e.y, (i, j) => { if (i >= 0 && j >= 0 && i < N && j < N) { M.occ[j * N + i] = e.id; M.tree[j * N + i] = 0; } });
   } else if (e.k === 'bdead') {
     const d = BUILDINGS[e.b];
-    if (!d.mine) this.footprint(d, e.x, e.y, (i, j) => { if (i >= 0 && j >= 0 && i < N && j < N && M.occ[j * N + i] === e.id) M.occ[j * N + i] = 0; });
+    if (!d.mine && !d.walk) this.footprint(d, e.x, e.y, (i, j) => { if (i >= 0 && j >= 0 && i < N && j < N && M.occ[j * N + i] === e.id) M.occ[j * N + i] = 0; });
   } else if (e.k === 'road') { M.road[e.y * N + e.x] = 1; M.tree[e.y * N + e.x] = 0; }
   else if (e.k === 'dig') applyDig(M, N, e.x, e.y);
 };
@@ -3939,6 +4081,93 @@ function soldierBody(kind, nat, lo) {
     b.box(.1, .02, .06, -.08, cy - ry * .95, 0, 0x111214); b.box(.03, .02, .2, .3, .38, 0, 0x101216); b.cyl(.012, .14, .29, .32, 0, 0x888, 0, 0, .3);
     [-1, 1].forEach(s => b.add(S, 0x22201d, .02, .14, s * .07, .06, .04, .045)); // feet on the pedals
   }
+  return b;
+}
+
+// ---------- realistic infantry ----------
+// Human soldiers in muted field uniforms, nation colour only on armbands and helmet bands. Same footprint as the
+// blobs (feet at 0, about .68 tall, facing +X) so hit tests and the first-person camera agree. Legs are drawn
+// separately by the renderer so they can stride; this is everything above the hips plus a seated biker's legs.
+const UNIFORM = {bike: [0x6b5a45, 0x4e4232, 0x8a7558], glasses: [0x4d5763, 0x363e48, 0x6a7684], italian: [0x5c6146, 0x464a35, 0x7b7f60], usa: [0x55603f, 0x3e472e, 0x6f7a55], toms: [0x3b4547, 0x2a3234, 0x56625f], veil: [0x6a5a3a, 0x4c412a, 0x8a7a55]};
+const HUM = {hip: .33, sh: .55, head: .615, hr: .052, eye: .6};
+function limb(b, a, c, r, col, geo) { // a cylinder from point a to point c
+  const dx = c[0] - a[0], dy = c[1] - a[1], dz = c[2] - a[2], L = Math.hypot(dx, dy, dz) || 1e-4, ux = dx / L, uy = dy / L, uz = dz / L;
+  const th = Math.acos(clamp(uy, -1, 1)), ph = Math.atan2(uz, -ux);
+  b.add(geo || GEO.cyl6, col, (a[0] + c[0]) / 2, (a[1] + c[1]) / 2, (a[2] + c[2]) / 2, r, L, r, 0, ph, th);
+}
+function humanLeg(nat, kind) {
+  const U = UNIFORM[NATIONS[nat].look] || UNIFORM.usa, b = new Batch();
+  limb(b, [0, 0, 0], [.01, -.17, 0], .036, U[0]); limb(b, [.01, -.17, 0], [-.005, -.3, 0], .031, U[0]);
+  b.box(.1, .045, .06, .02, -.31, 0, BOOT); b.box(.05, .03, .065, -.005, -.27, 0, 0x2a261f); // boot and gaiter
+  b.box(.05, .06, .075, .018, -.17, 0, U[1]); // knee pad
+  return b;
+}
+function soldierHuman(kind, nat, lo) {
+  const P = palette(nat), look = P.look, U = UNIFORM[look] || UNIFORM.usa, b = new Batch(), bike = isBiker(kind, nat);
+  const L = bike ? BLOB.bike : 0, hip = HUM.hip + L, sh = HUM.sh + L, hy = HUM.head + L, hr = HUM.hr;
+  const skin = look === 'toms' ? 0xc89a78 : look === 'usa' ? 0xd8a888 : look === 'italian' ? 0xcf9e78 : look === 'glasses' ? 0xa8764e : look === 'veil' ? 0xb88a62 : 0xd9a985;
+  const S = lo ? GEO.sph6 : GEO.sph, cam = U[0], dk = U[1], lt = U[2], tough = look === 'toms' ? 1.14 : 1;
+  // torso: jacket, plate carrier, belt with pouches
+  b.add(GEO.box, cam, 0, (hip + sh) / 2 - .005, 0, .12 * tough, sh - hip + .03, .17 * tough);
+  b.add(GEO.box, dk, .012, (hip + sh) / 2 + .02, 0, .135 * tough, (sh - hip) * .72, .155 * tough);
+  b.box(.13 * tough, .03, .18 * tough, 0, hip + .01, 0, 0x2b2a24);
+  if (!lo) { [-.05, 0, .05].forEach(z => b.box(.03, .045, .035, .072 * tough, hip + .07, z, lt)); b.box(.025, .03, .03, .072 * tough, sh - .03, -.04, 0x1a1a1a); }
+  b.add(GEO.box, cam, 0, hip - .02, 0, .11, .06, .17); // seat of the trousers
+  // backpack / gear on the back
+  if (kind === 'medic') { b.box(.08, .15, .13, -.1, sh - .1, 0, 0xe8e4d8); b.box(.005, .05, .015, -.141, sh - .1, 0, 0xc82020); b.box(.005, .015, .05, -.141, sh - .1, 0, 0xc82020); }
+  else if (kind === 'assault') [-1, 1].forEach(sd => b.cyl(.04, .22, -.1, sh - .1, sd * .045, 0x6a4a22));
+  else if (kind === 'mg') b.box(.08, .12, .14, -.1, sh - .11, 0, 0x3e3a2a);
+  else if (kind !== 'sniper') b.box(.07, .13, .13, -.095, sh - .1, 0, dk);
+  // neck, head, face
+  b.cyl(.025, .05, 0, sh + .02, 0, skin);
+  b.add(S, skin, 0, hy, 0, hr * .95, hr * 1.08, hr * .9);
+  if (!lo) { b.box(.01, .008, .06, hr * .9, hy + .012, 0, 0x2a1c14); b.add(GEO.sph6, skin, hr * .92, hy - .002, 0, .012, .014, .012); } // brow shadow, nose
+  // headgear: helmets with a nation-colour band; caps for workers, medics, snipers in a boonie hat
+  const hcol = kind === 'worker' ? 0xd89a2a : kind === 'medic' ? 0xd8d6cc : look === 'toms' ? 0x2a3133 : dk;
+  if (kind === 'worker') { b.add(S, hcol, 0, hy + .03, 0, hr * 1.12, hr * .62, hr * 1.12); b.box(.04, .008, .1, hr * 1.05, hy + .015, 0, hcol); }
+  else if (kind === 'sniper') { b.add(S, 0x55603f, 0, hy + .03, 0, hr * 1.05, hr * .6, hr * 1.05); b.add(GEO.cyl6, 0x4a5236, 0, hy + .02, 0, hr * 1.8, .01, hr * 1.8); }
+  else if (kind === 'para' || (look === 'italian' && kind === 'scout')) { b.add(S, look === 'italian' ? 0x7a1a24 : 0x6a1a22, -.005, hy + .035, 0, hr * 1.08, hr * .5, hr * 1.05); }
+  else { b.add(S, hcol, -.004, hy + .022, 0, hr * 1.22, hr * .85, hr * 1.2); b.add(GEO.cyl6, hcol, -.004, hy + .005, 0, hr * 1.28, .012, hr * 1.26);
+    b.add(GEO.cyl6, P.main, -.004, hy + .03, 0, hr * 1.23, .012, hr * 1.21); // band in the nation colour
+    if (look === 'italian' && !lo) b.add(GEO.cone, 0x1d3a1a, -.05, hy + .06, -.03, .015, .09, .015, .5, 0, .9); } // capercaillie feathers
+  if (look === 'glasses' && !lo) b.box(.012, .014, .075, hr * .93, hy + .005, 0, 0x101214);
+  if (look === 'toms' && !lo) b.box(.014, .016, .08, hr * .93, hy + .006, 0, 0x070809);
+  if (look === 'veil') b.box(.02, .035, .085, hr * .9, hy - .02, 0, P.trim);
+  // arms holding the weapon: right hand on the grip, left on the foregrip
+  const shR = [0, sh - .015, -.1 * tough], shL = [0, sh - .015, .1 * tough];
+  let gx = .1, gy = sh - .14, fz = 0;
+  if (kind === 'rocket') { gy = sh - .07; }
+  const grip = [gx, gy, -.03], fore = [gx + .14, gy + .015, .005];
+  const elbR = [.02, (sh + gy) / 2 - .04, -.11 * tough], elbL = [.1, (sh + gy) / 2 - .02, .09 * tough];
+  limb(b, shR, elbR, .03 * tough, cam); limb(b, elbR, grip, .026 * tough, cam);
+  limb(b, shL, elbL, .03 * tough, cam); limb(b, elbL, fore, .026 * tough, cam);
+  b.add(GEO.sph6, P.main, shL[0], shL[1] - .035, shL[2] + .004, .032, .03, .03); // nation armband / shoulder patch
+  b.add(GEO.sph6, 0x2c2a24, grip[0], grip[1], grip[2], .022, .022, .022); b.add(GEO.sph6, 0x2c2a24, fore[0], fore[1], fore[2], .022, .022, .022); // gloves
+  // weapons
+  const wy = gy + .02, wz = -.01, G2 = 0x1f2124, FUR = 0x4a3524;
+  if (kind === 'rifle' || kind === 'worker' || kind === 'para' || kind === 'scout') {
+    const ln = kind === 'scout' ? .3 : .34;
+    b.box(ln, .03, .022, gx + ln / 2 - .06, wy, wz, G2); b.box(.06, .05, .02, gx + .04, wy - .035, wz, G2); // body + magazine
+    b.box(.09, .035, .02, gx - .1, wy - .008, wz, kind === 'scout' ? FUR : 0x2a2c2e); b.cylX(.007, .1, gx + ln - .02, wy + .004, wz, 0x111); // stock, barrel
+    if (!lo) b.box(.05, .018, .016, gx + .07, wy + .025, wz, 0x111); // optic
+  } else if (kind === 'sniper') { b.box(.46, .026, .02, gx + .16, wy, wz, 0x2b2a20); b.cylX(.016, .13, gx + .08, wy + .032, wz, 0x101216); b.box(.12, .04, .02, gx - .11, wy - .006, wz, 0x3b2e1c); [-1, 1].forEach(sd => limb(b, [gx + .33, wy, wz], [gx + .37, wy - .07, wz + sd * .03], .004, 0x111));
+    b.add(S, 0x4e5a2e, -.06, sh - .08, 0, .08, .1, .1); } // ghillie hood on the back
+  else if (kind === 'mg') { b.box(.42, .045, .03, gx + .14, wy, wz, G2); b.box(.07, .06, .06, gx + .05, wy - .045, wz + .02, 0x4a4a2a); b.cylX(.014, .14, gx + .38, wy + .005, wz, 0x111); b.box(.1, .04, .025, gx - .1, wy - .005, wz, G2); }
+  else if (kind === 'grenadier') { b.box(.3, .04, .03, gx + .1, wy, wz, 0x3a3f36); b.cylX(.03, .18, gx + .2, wy + .005, wz, 0x2a2d28); b.box(.08, .035, .022, gx - .09, wy - .005, wz, FUR); }
+  else if (kind === 'assault') { b.box(.3, .05, .04, gx + .1, wy, wz, 0x4a4030); b.cylX(.014, .16, gx + .3, wy + .006, wz, GUN); b.add(GEO.sph6, 0xff7a20, gx + .39, wy + .006, wz, .01, .01, .01); }
+  else if (kind === 'rocket') { b.cylX(.035, .5, .06, sh + .01, -.08, 0x3b4a30); b.add(GEO.cone, 0x6a6a5a, .33, sh + .01, -.08, .032, .08, .032, 0, 0, -Math.PI / 2); b.box(.04, .05, .02, .1, sh - .04, -.08, G2); }
+  else if (kind === 'medic') { b.box(.004, .04, .012, 0, shL[1] - .035, shL[2] + .035, 0xc82020); b.box(.07, .03, .02, gx + .05, wy, wz, G2); }
+  if (kind === 'worker') { b.cyl(.008, .26, -.1, sh - .06, .05, 0x7a5a30, .35, 0, .3); b.box(.04, .06, .015, -.15, sh + .06, .1, STEEL); b.box(.128, .02, .178, 0, sh - .03, 0, 0xffa726); } // shovel, hi-vis stripe
+  if (bike) { // road bike: frame, seat, bars; wheels are spun by the renderer. Legs sit on the pedals.
+    b.box(.62, .03, .03, 0, .3, 0, 0x1c1e22); b.cyl(.016, .3, .14, .25, 0, P.trim, 0, 0, .55); b.cyl(.016, .26, -.12, .24, 0, P.trim, 0, 0, -.5); b.box(.1, .02, .06, -.06, hip - .01, 0, 0x111214); b.box(.03, .02, .2, .3, .38, 0, 0x101216);
+    [-1, 1].forEach(sd => { limb(b, [-.02, hip, sd * .05], [.08, hip - .12, sd * .06], .032, cam); limb(b, [.08, hip - .12, sd * .06], [.03, .17, sd * .07], .028, cam); b.box(.08, .035, .05, .05, .15, sd * .07, BOOT); });
+  }
+  return b;
+}
+function soldierFull(kind, nat, lo) { // human with legs standing, as one Batch (icons, crews, corpses)
+  if (Settings.blobs) return soldierBody(kind, nat, lo);
+  const b = soldierHuman(kind, nat, lo);
+  if (!isBiker(kind, nat)) for (const sd of [-1, 1]) { const L = humanLeg(nat, kind); for (const q of L.parts) { q.m.premultiply(new THREE.Matrix4().makeTranslation(0, HUM.hip, .045 * sd)); b.parts.push(q); } }
   return b;
 }
 // Blob feet: two little rounded boots that step under the body.
@@ -4212,6 +4441,34 @@ const BLD = {
   airfield(P) { const b = new Batch(); b.box(8, .1, 2.6, 0, .05, .4, 0x3a3c3e); for (let i = 0; i < 7; i++) b.box(.6, .02, .1, -3.2 + i * 1.07, .11, .4, WHITE); b.box(2.6, 1.2, 2, -2, .65, -2.5, 0x737a7f); b.cyl(1, 2.6, -2, 1.2, -2.5, 0x5d6469, 0, 0, Math.PI / 2); b.box(2.3, .9, .05, -2, .5, -1.5, 0x20201f); b.box(.9, 2.4, .9, 2.4, 1.2, -2.6, 0x8b9093); b.box(1.5, .6, 1.5, 2.4, 2.7, -2.6, 0x213443); b.box(1.6, .08, 1.6, 2.4, 3.05, -2.6, P.main); b.cyl(.04, 1, 2.4, 3.5, -2.6, 0x222222); return b; },
   yard(P) { const b = plinth(new Batch(), 6, 0x4e5154); b.box(5, 1.4, 2, 0, .8, -1.6, 0x6e7880); b.box(5.1, .12, 2.1, 0, 1.55, -1.6, P.main); b.box(.3, 3.5, .3, 2.2, 1.8, 1, 0xd8a02a); b.box(3, .2, .2, 1, 3.4, 1, 0xd8a02a); b.box(.05, 1.4, .05, 0, 2.7, 1, 0x222222); [-1.8, -.6].forEach(x => b.cyl(.5, 1, x, .65, 1.4, 0x565c60)); return b; },
   lab(P) { const b = plinth(new Batch(), 4, 0x8a8c88); b.box(3, 1.5, 2.6, 0, .9, 0, 0xdfe2e3); b.box(3.02, .5, 2.62, 0, 1, 0, 0x7fb4cc); b.sph(1, 1, 1, .4, 1.75, 0, 0xe8ebed); b.box(.14, 1, .14, -1, 2.1, -.7, 0x444444); b.add(GEO.cone, 0xeeeeee, -1, 2.8, -.7, .55, .3, .55, Math.PI, 0, 0); b.box(3.1, .1, 2.7, 0, 1.64, 0, P.main); return b; },
+  trench(P) { // a zig-zag cut in the ground: dark floor, earth parapets, duckboards, sandbags on the lip
+    const b = new Batch(), E = 0x5a4a36, D = 0x2e261c, SB = 0x9c8c66;
+    b.box(3, .04, 1.1, 0, .02, 0, D); b.box(1.1, .04, 3, .9, .02, 0, D);
+    [[0, .75, 3, 1], [0, -.75, 1.6, 1]].forEach(([x, z, w]) => b.box(w, .35, .4, x - (w < 3 ? .7 : 0), .17, z, E));
+    b.box(.4, .35, 3, 1.65, .17, 0, E); b.box(.4, .35, 1.6, .15, .17, .7, E);
+    for (let i = 0; i < 6; i++) b.box(.32, .03, .5, -1.2 + i * .4, .06, 0, 0x6e5a3e);
+    for (let i = 0; i < 7; i++) b.sph(.24, .1, .14, -1.3 + i * .42, .4, .8 + (i % 2) * .04, SB);
+    for (let i = 0; i < 6; i++) b.sph(.14, .1, .24, 1.72 + (i % 2) * .04, .4, -1.2 + i * .45, SB);
+    b.box(.06, .5, .06, -1.4, .3, -.8, 0x4a3a28); b.box(.06, .5, .06, 1.4, .3, -1.4, 0x4a3a28);
+    return b; },
+  sandbags(P) { const b = new Batch(), SB = [0xa09070, 0x8f8062, 0xb2a27e];
+    for (let r = 0; r < 3; r++) for (let i = 0; i < 5; i++) b.sph(.24, .11, .16, -.8 + i * .4 + (r % 2) * .2, .11 + r * .2, 0, SB[(i + r) % 3]);
+    for (let r = 0; r < 2; r++) for (let i = 0; i < 2; i++) b.sph(.16, .11, .24, .95, .11 + r * .2, -.45 + i * .45, SB[(i + r) % 3]);
+    return b; },
+  pillbox(P) { const b = new Batch(), C = 0x76786f, C2 = 0x86887f;
+    b.add(GEO.cyl6, C, 0, .45, 0, 1, .9, 1); b.add(GEO.cyl6, C2, 0, .95, 0, .85, .14, .85);
+    b.box(1.6, .14, .3, .55, .55, 0, 0x101010, 0); b.box(.3, .14, 1.4, 0, .55, .62, 0x101010); b.box(.3, .14, 1.4, 0, .55, -.62, 0x101010);
+    b.cylX(.05, .6, 1.05, .55, 0, GUN);
+    for (let i = 0; i < 9; i++) b.sph(.22, .12, .16, 1.25 * Math.cos(i * .7 + .4), .12, 1.25 * Math.sin(i * .7 + .4), 0x9c8c66);
+    return b; },
+  trattoria(P) { const b = plinth(new Batch(), 4, 0x8a8170);
+    b.box(3.2, 1.6, 2.6, 0, .95, 0, 0xd8b98a); b.box(3.3, .12, 2.7, 0, 1.8, 0, 0x8a4a2c);
+    b.add(GEO.cone4, 0xa8483a, 0, 2.25, 0, 2.5, .8, 2.1, 0, .785, 0);
+    for (let i = 0; i < 6; i++) b.box(.52, .06, .7, -1.3 + i * .52, 1.2, 1.55, [0x2f8f3f, 0xf0f0e8, 0xc8303a][i % 3], 0, -.35); // tricolour awning
+    b.box(.6, .9, .04, 0, .6, 1.31, 0x4a2a18); b.box(.5, .4, .04, -1, .9, 1.31, GLOW); b.box(.5, .4, .04, 1, .9, 1.31, GLOW);
+    for (const x of [-1.2, 1.2]) { b.add(GEO.cyl6, 0xe8e4d8, x, .32, 2.05, .3, .04, .3); b.add(GEO.cyl6, 0x4a3a2a, x, .16, 2.05, .04, .32, .04); b.add(GEO.cyl6, 0xc8303a, x, .9, 2.05, .02, .9, .02); b.add(GEO.cone, 0xf0ead8, x, 1.4, 2.05, .4, .25, .4); }
+    b.box(.14, .5, .14, 1.1, 2.2, -.6, 0x8a7a68); b.box(.9, .22, .04, 0, 1.55, 1.33, 0x2f8f3f);
+    return b; },
   hospital(P) { const b = plinth(new Batch(), 4, 0x8a8c88); b.box(3, 1.3, 2.6, 0, .8, 0, 0xeeeee8); b.box(3.1, .1, 2.7, 0, 1.5, 0, 0xd8d8d0); b.box(1.2, .03, .36, 0, 1.56, 0, 0xd8202f); b.box(.36, .03, 1.2, 0, 1.56, 0, 0xd8202f); b.box(.8, .8, .05, 0, .5, 1.31, 0x8ab4c8); return b; },
   tower(P) { const b = new Batch(); [[-.5, -.5], [.5, -.5], [-.5, .5], [.5, .5]].forEach(([x, z]) => b.add(GEO.cyl6, 0x5b4630, x * .85, 1.6, z * .85, .07, 3.2, .07, z * .1, 0, -x * .1)); b.box(1.6, .12, 1.6, 0, 3.2, 0, 0x6a5038); b.box(1.6, .45, .06, 0, 3.45, .78, 0x6a5038); b.box(1.6, .45, .06, 0, 3.45, -.78, 0x6a5038); b.box(.06, .45, 1.6, .78, 3.45, 0, 0x6a5038); b.box(.06, .45, 1.6, -.78, 3.45, 0, 0x6a5038); b.add(GEO.cone4, P.dark, 0, 4.3, 0, 1.4, .8, 1.4, 0, .785, 0); b.cylX(.05, .7, .5, 3.6, 0, GUN); return b; },
   bunker(P) { const b = new Batch(); b.box(3, .9, 3, 0, .45, 0, 0x7d7f78); b.box(2.5, .4, 2.5, 0, 1.1, 0, 0x8e908a); b.box(3.02, .16, .35, 0, .62, 0, 0x151515); b.box(.35, .16, 3.02, 0, .62, 0, 0x151515); b.cylX(.07, 1, 1.3, .62, 0, GUN); b.box(1, .06, 1, 0, 1.33, 0, P.main); for (let i = 0; i < 8; i++) b.sph(.3, .2, .3, 1.75 * Math.cos(i * .785), .15, 1.75 * Math.sin(i * .785), 0xa89d7d); return b; },
@@ -4240,8 +4497,8 @@ function nodeGeoOil() {
 // Trees: index by look. They share one instanced mesh per type.
 function treeGeo(type) {
   const b = new Batch(), TR = 0x5a4028;
-  if (type === 0) { b.add(GEO.cyl6, TR, 0, .4, 0, .09, .8, .09); b.add(GEO.cone, 0x2c5a2f, 0, 1.1, 0, .6, 1.1, .6); b.add(GEO.cone, 0x356a35, 0, 1.7, 0, .45, .9, .45); b.add(GEO.cone, 0x3e7a3b, 0, 2.2, 0, .28, .7, .28); }
-  else if (type === 1) { b.add(GEO.cyl6, TR, 0, .55, 0, .11, 1.1, .11); b.add(GEO.ico, 0x477f35, 0, 1.45, 0, .72, .68, .72); b.add(GEO.ico, 0x57923c, .22, 1.8, .1, .42, .4, .42); b.add(GEO.ico, 0x3f7432, -.25, 1.25, -.15, .42, .4, .42); }
+  if (type === 0) { b.add(GEO.cyl6, TR, 0, .4, 0, .09, .8, .09); b.add(GEO.cone, 0x2a4a2c, 0, 1.1, 0, .6, 1.1, .6); b.add(GEO.cone, 0x30532f, 0, 1.7, 0, .45, .9, .45); b.add(GEO.cone, 0x385c34, 0, 2.2, 0, .28, .7, .28); }
+  else if (type === 1) { b.add(GEO.cyl6, TR, 0, .55, 0, .11, 1.1, .11); b.add(GEO.ico, 0x3d5e30, 0, 1.45, 0, .72, .68, .72); b.add(GEO.ico, 0x486a35, .22, 1.8, .1, .42, .4, .42); b.add(GEO.ico, 0x34522b, -.25, 1.25, -.15, .42, .4, .42); }
   else if (type === 2) { b.add(GEO.cyl6, 0x3b2d20, 0, .6, 0, .08, 1.2, .08); b.add(GEO.ico, 0x3f4f2a, 0, 1.3, 0, .55, .3, .55); b.add(GEO.ico, 0x4d5b2e, .25, 1.05, 0, .35, .2, .35); }
   else if (type === 3) { b.add(GEO.cyl6, 0x6f8c3a, 0, .55, 0, .13, 1.1, .13); b.cyl(.08, .4, .22, .75, 0, 0x6f8c3a, 0, 0, 0); b.cyl(.13, .05, .13, .6, 0, 0x6f8c3a, 0, 0, Math.PI / 2); b.cyl(.07, .35, -.2, .9, 0, 0x6f8c3a); b.cyl(.13, .05, -.12, .75, 0, 0x6f8c3a, 0, 0, Math.PI / 2); }
   else { b.add(GEO.cyl6, TR, 0, .4, 0, .09, .8, .09); b.add(GEO.cone, 0x4a6b55, 0, 1.1, 0, .6, 1.1, .6); b.add(GEO.cone, 0xe6edf2, 0, 1.3, 0, .5, .8, .5); b.add(GEO.cone, 0xf4f7fa, 0, 1.9, 0, .32, .85, .32); }
@@ -5606,7 +5863,7 @@ const Sfx = {
 
 <script>// Three.js renderer. Reads any "view" (a Sim or a network mirror) and draws it; never changes game state.
 const SUN = new THREE.Vector3(.55, .8, .35).normalize();
-const SKY_TOP = 0x3f7fc4, HORIZON = 0xbcd5e8;
+const SKY_TOP = 0x56789a, HORIZON = 0xc3ccd2; // overcast, hazy
 
 function Renderer(canvas, quality) {
   const r = this.r = new THREE.WebGLRenderer({canvas, antialias: true, powerPreference: 'high-performance'});
@@ -5619,8 +5876,8 @@ function Renderer(canvas, quality) {
   this.scene.background = new THREE.Color(HORIZON);
   this.scene.fog = new THREE.Fog(HORIZON, 110, 420);
   this.cam = new THREE.PerspectiveCamera(46, 1, .2, 1400);
-  const hemi = new THREE.HemisphereLight(0xcfe4ff, 0x5a5238, .85); this.scene.add(hemi);
-  const sun = this.sun = new THREE.DirectionalLight(0xfff0d8, 2.0);
+  const hemi = new THREE.HemisphereLight(0xc4d2de, 0x4a4434, .8); this.scene.add(hemi);
+  const sun = this.sun = new THREE.DirectionalLight(0xffe8cc, 1.9);
   sun.castShadow = quality !== 'low';
   sun.shadow.mapSize.set(2048, 2048);
   const sc = sun.shadow.camera; sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 1; sc.far = 300;
@@ -5686,7 +5943,7 @@ Renderer.prototype.buildTerrain = function (M, N) {
   g.computeVertexNormals();
   const S = this.quality === 'low' ? 1024 : 2048, c = this.tc = document.createElement('canvas'); c.width = c.height = S;
   const ctx = this.tg = c.getContext('2d'), img = ctx.createImageData(S, S), d = img.data;
-  const pal = [[.33, .47, .22], [.78, .64, .4], [.9, .93, .97], [.27, .34, .22], [.46, .43, .39]];
+  const pal = [[.31, .39, .21], [.7, .58, .4], [.86, .88, .9], [.25, .3, .2], [.43, .41, .37]]; // muted, earthy
   const rnd = mulberry(M.seed + 5), nz = makeNoise(rnd);
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
     const wx = x / S * N, wy = y / S * N, h = hAt(M, wx, wy), cx = Math.min(N - 1, wx | 0), cy = Math.min(N - 1, wy | 0), b = M.bio[cy * N + cx];
@@ -5697,6 +5954,8 @@ Renderer.prototype.buildTerrain = function (M, N) {
     const bx = M.bio[cy * N + Math.max(0, Math.min(N - 1, (wx + (n2 - .5) * 3) | 0))], by = M.bio[Math.min(N - 1, Math.max(0, (wy + (n1 - .5) * 4) | 0)) * N + cx];
     R = (R * 2 + pal[bx][0] + pal[by][0]) / 4; G = (G * 2 + pal[bx][1] + pal[by][1]) / 4; B = (B * 2 + pal[bx][2] + pal[by][2]) / 4;
     const v = .84 + n1 * .24 + (n2 - .5) * .14; R *= v; G *= v; B *= v;
+    const n3 = nz(wx * 6.5, wy * 6.5, 1); if (b === 0 || b === 3) { const dq = Math.max(0, n3 - .55) * 1.6; R += (.42 - R) * dq; G += (.36 - G) * dq; B += (.27 - B) * dq; } // worn dirt patches
+    const gr = (rnd() - .5) * .05; R += gr; G += gr; B += gr;
     if (M.tree[cy * N + cx] && b !== 2) { R *= .78; G *= .82; B *= .72; }
     const rk = Math.min(1, Math.max(0, (sl - .7) * 1.6)); R += (.42 - R) * rk; G += (.4 - G) * rk; B += (.37 - B) * rk;
     const sn = Math.min(1, Math.max(0, (h - 8.5 - (n2 - .5) * 2) * .7)); R += (.94 - R) * sn; G += (.96 - G) * sn; B += (.99 - B) * sn;
@@ -6020,6 +6279,7 @@ Renderer.prototype.newMesh = function (geo, cap, opts) {
   this.world.add(m);
   return m;
 };
+const _darkTint = new THREE.Color(.82, .8, .78);
 const _m = new THREE.Matrix4(), _m2 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(0, 0, 0, 'YZX'), _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _col = new THREE.Color(), _white = new THREE.Color(1, 1, 1);
 
 Renderer.prototype.put = function (key, geoFn, cap, opts, x, y, z, ry, rz, rx, sc, tint, sy) {
@@ -6051,8 +6311,18 @@ Renderer.prototype.drawUnit = function (e, dt, tint) {
     if (e.d.para && y - Math.max(0, hAt(this.view.M, e.rx, e.ryy)) > .8) { // paratrooper under canopy
       this.put('chute|' + nat, () => { const b = new Batch(), P = palette(nat); b.add(GEO.sph, P.main, 0, 0, 0, 1.1, .45, 1.1); b.add(GEO.sph, 0xf1f1ec, 0, -.06, 0, 1.05, .38, 1.05); for (const [a, c] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) b.add(GEO.cyl6, 0xdddddd, a * .45, -.75, c * .45, .012, 1.5, .012, c * .55, 0, -a * .55); return b.geo(); }, 32, null, x, y + 2.1, z, h, 0, 0, 1, tint);
     }
-    this.put(key + (lo ? '|lo' : ''), () => soldierBody(k, nat, lo).geo(), 64, null, x, y + hop, z, h, -lean + (e.st === 2 ? .05 : 0), wob, sc, tint, sy);
     const c = Math.cos(h), s = Math.sin(h);
+    if (!Settings.blobs) { // realistic soldier: steady torso with a small walking bob, legs that stride, a flinch when hit
+      const bob = mv && !bike ? Math.abs(Math.cos(ph)) * .018 : 0, lean2 = mv ? (bike ? .08 : .07) : 0, fl = hurt ? .12 : 0;
+      this.put(key + '|h' + (lo ? '|lo' : ''), () => soldierHuman(k, nat, lo).geo(), 64, null, x, y + bob, z, h, -lean2 - fl + (e.st === 2 ? .03 : 0), 0, sc, tint);
+      if (bike) for (const f of [.3, -.3]) this.put('bwheel', () => bikeWheel().geo(), 128, null, x + c * f * sc, y + .16 * sc, z - s * f * sc, h, -this.time * (mv ? 14 : 0), 0, sc, tint);
+      else if (!lo || mv) for (const sd of [-1, 1]) {
+        const sw = mv ? Math.sin(ph + (sd > 0 ? 0 : Math.PI)) * .55 : 0, hz = .045 * sd * sc, hh = (HUM.hip + bob) * sc;
+        this.put('leg|' + nat + (lo ? '|lo' : ''), () => humanLeg(nat, k).geo(), 128, null, x + s * hz, y + hh, z + c * hz, h, sw, 0, sc, tint);
+      }
+      return;
+    }
+    this.put(key + (lo ? '|lo' : ''), () => soldierBody(k, nat, lo).geo(), 64, null, x, y + hop, z, h, -lean + (e.st === 2 ? .05 : 0), wob, sc, tint, sy);
     if (bike) {
       for (const f of [.3, -.3]) this.put('bwheel', () => bikeWheel().geo(), 128, null, x + c * f * sc, y + .16 * sc, z - s * f * sc, h, -this.time * (mv ? 14 : 0), 0, sc, tint);
     } else if (!lo) {
@@ -6477,6 +6747,14 @@ Renderer.prototype.stepMisc = function (dt, v) {
     for (const c of this.corpses) {
       const fade = Math.max(0, 1 - Math.max(0, c.t - 18) / 2), nat = this.view.players[c.o] ? this.view.players[c.o].nation : 0;
       if (!UNITS[c.k] || UNITS[c.k].cat !== 'inf') continue;
+      if (!Settings.blobs && c.k !== 'wolf') { // a soldier crumples and falls, and a pool of blood spreads under him
+        const q = Math.min(1, c.t / .55), fall = q * q * 1.5, spin = (c.k.length * 7 + c.o * 3 + (c.x * 13 | 0)) % 6.28, side = ((c.x * 7 | 0) % 2 ? 1 : -1);
+        const gz = Math.max(0, hAt(this.view.M, c.x, c.z));
+        this.put(c.k + '|' + nat + '|deadH', () => soldierFull(c.k, nat, true).geo(), 32, {noShadow: true}, c.x, gz + .02 + (1 - q) * .02, c.z, spin, side * fall, 0, fade < 1 ? Math.max(.01, fade) : 1, _darkTint);
+        if (c.t > .5) { const r = Math.min(1, (c.t - .5) / 4); this.put('bloodpool', () => { const b = new Batch(); b.add(GEO.cyl, 0x3a0606, 0, 0, 0, 1, .004, 1); b.add(GEO.cyl, 0x4e0a08, .2, .002, .15, .6, .004, .5); return b.geo(); }, 32, {noShadow: true}, c.x - Math.cos(spin) * side * .2, gz + .012, c.z + Math.sin(spin) * side * .2, spin, 0, 0, (.08 + r * .2) * Math.min(1, fade * 1.5)); }
+        if (!c.puff) { c.puff = 1; for (let i = 0; i < 4; i++) this.addP(c.x, gz + .08, c.z, (this.rnd() - .5) * .6, .3 + this.rnd() * .3, (this.rnd() - .5) * .6, .12, 1.1, .45, .4, .32, false, .6, .5); }
+        continue;
+      }
       // funny blob death: a little pop upwards with a spin, then a splat into a wobbly pancake
       const q = Math.min(1, c.t / .45), pop = c.t < .45 ? Math.sin(q * Math.PI) * .45 : 0, sy = c.t < .45 ? 1 + Math.sin(q * Math.PI) * .25 : Math.max(.2, .2 + .08 * Math.sin(c.t * 9) * Math.max(0, 1 - (c.t - .45) * 2));
       const spin = (c.k.length + c.o) * 1.3 + Math.min(c.t, .45) * 9;
@@ -6603,7 +6881,14 @@ Renderer.prototype.drawEntities = function (dt, v) {
       const q = e.bp;
       o.h += (q - o.h) * k;
       o.m.scale.y = Math.max(.04, o.h);
-      o.sc.visible = q < 1;
+      o.sc.visible = q < 1 || (e.hard > 0 && e.hard < 1);
+      if (e.hard >= 1 && !o.hd) { // hardened: concrete berm and blast walls around a building now sunk into the ground
+        o.hd = 1; const s = e.d.s, B = new Batch(), C = 0x6d6f69, C2 = 0x5c5e58;
+        for (const [x, z, w, d] of [[0, s / 2 + .3, s + 1.2, .9], [0, -s / 2 - .3, s + 1.2, .9], [s / 2 + .3, 0, .9, s], [-s / 2 - .3, 0, .9, s]]) { B.box(w, .9, d, x, .45, z, C); B.box(w * .96, .12, d * .7, x, .95, z, C2); }
+        for (let i = 0; i < 4; i++) B.box(.5, .25, .5, (i % 2 ? 1 : -1) * (s / 2 + .3), 1.1, (i < 2 ? 1 : -1) * (s / 2 + .3), 0x2f312d);
+        const hm = new THREE.Mesh(B.geo(), this.matV); hm.position.set(e.x, e.z, e.y); hm.castShadow = hm.receiveShadow = true; o.group.add(hm);
+        o.m.position.y = e.z - Math.min(1.2, s * .12);
+      }
       if (hurtQ && !o.hit) { o.hit = 1; }
       // damaged buildings burn
       if (e.hp < e.hpm * .5 && q >= 1 && Math.random() < dt * 8) {
@@ -6647,7 +6932,50 @@ Renderer.prototype.draw = function (dt, view) {
   const t = this.r.render; const self = this;
   // commit instance counts just before rendering, after every put() of this frame
   this.r.render = function (s, c) { self.commit(); self.r.render = t; t.call(self.r, s, c); };
+  const post = this.gradeOn();
+  if (post) this.r.setRenderTarget(this.gradeRT);
   _origDraw.call(this, dt, view);
+  if (post) this.gradePass(dt);
+};
+// War-film colour grade: everything renders into an offscreen target, then one full-screen pass mutes the colours,
+// splits shadows cool and highlights warm, adds contrast, a vignette, film grain and (on foot) slight lens fringing.
+Renderer.prototype.gradeOn = function () {
+  if (!Settings.gritty || this.quality === 'low' || !this.r.capabilities.isWebGL2) return false;
+  const r = this.r, v = this._gv || (this._gv = new THREE.Vector2()); r.getDrawingBufferSize(v);
+  if (!this.gradeRT || this.gradeRT.width !== v.x || this.gradeRT.height !== v.y) {
+    if (this.gradeRT) this.gradeRT.dispose();
+    const RT = THREE.WebGLMultisampleRenderTarget || THREE.WebGLRenderTarget;
+    this.gradeRT = new RT(v.x, v.y, {format: THREE.RGBAFormat, encoding: THREE.sRGBEncoding});
+    if (this.gradeRT.samples !== undefined) this.gradeRT.samples = 4;
+    this.gradeRT.texture.encoding = THREE.sRGBEncoding;
+  }
+  if (!this.gradeQ) {
+    this.gradeU = {tex: {value: null}, time: {value: 0}, res: {value: new THREE.Vector2()}, desat: {value: .2}, con: {value: 1.08}, vig: {value: .3}, grain: {value: .035}, ca: {value: 0}, warm: {value: 1}};
+    const m = new THREE.ShaderMaterial({uniforms: this.gradeU, depthTest: false, depthWrite: false,
+      vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
+      fragmentShader: `varying vec2 vUv;uniform sampler2D tex;uniform float time,desat,con,vig,grain,ca,warm;uniform vec2 res;
+        float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+        void main(){vec2 d=vUv-.5;vec2 o=d*ca*.006;
+          vec3 c=vec3(texture2D(tex,vUv+o).r,texture2D(tex,vUv).g,texture2D(tex,vUv-o).b);
+          float l=dot(c,vec3(.299,.587,.114));
+          c=mix(c,vec3(l),desat);
+          vec3 sh=vec3(.93,1.,1.03),hi=vec3(1.05,1.,.9);c*=mix(sh,mix(vec3(1.),hi,warm),smoothstep(.15,.85,l));
+          c=(c-.5)*con+.5;c=max(c-.012,0.)*1.012;
+          float v=length(d*vec2(res.x/res.y*.85,1.));c*=1.-vig*smoothstep(.3,.95,v);
+          float n=hash(vUv*res+fract(time*7.31)*91.)-.5;c+=n*grain*(1.1-l*.6);
+          gl_FragColor=vec4(clamp(c,0.,1.),1.);}`});
+    this.gradeQ = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m); this.gradeQ.frustumCulled = false;
+    this.gradeS = new THREE.Scene(); this.gradeS.add(this.gradeQ); this.gradeC = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  }
+  return true;
+};
+Renderer.prototype.gradePass = function (dt) {
+  const U = this.gradeU, fps = typeof Direct !== 'undefined' && Direct.on && (Direct.mode === 'soldier' || Direct.firstPerson && Direct.firstPerson()), wr = typeof WarRoom !== 'undefined' && WarRoom.on;
+  const k = Math.min(1, dt * 3), tg = fps ? [.36, 1.15, .52, .05, 1] : wr ? [.18, 1.06, .55, .045, 0] : [.22, 1.08, .3, .032, 0];
+  U.desat.value += (tg[0] - U.desat.value) * k; U.con.value += (tg[1] - U.con.value) * k; U.vig.value += (tg[2] - U.vig.value) * k; U.grain.value = tg[3]; U.ca.value += (tg[4] - U.ca.value) * k;
+  U.time.value = this.time; U.tex.value = this.gradeRT.texture; U.res.value.set(this.gradeRT.width, this.gradeRT.height);
+  const r = this.r; r.setRenderTarget(null);
+  const ac = r.autoClear; r.autoClear = true; r.render(this.gradeS, this.gradeC); r.autoClear = ac;
 };
 
 // ---------- direct-control effects: real projectiles you can see fly, impacts, muzzle flashes ----------
@@ -6711,8 +7039,10 @@ Renderer.prototype.impact = function (x, y, z, water, friend) {
 };
 // blobs do not bleed: they squirt their own colour of goo
 Renderer.prototype.blood = function (x, y, z, nat) {
-  const c = new THREE.Color(blobColor('rifle', palette(nat))), r = this.rnd;
-  for (let i = 0; i < 5; i++) this.addP(x, z, y, (r() - .5) * 2, .5 + r() * 2, (r() - .5) * 2, .07, .45, c.r, c.g, c.b, false, .95, .1, 10);
+  const r = this.rnd;
+  if (Settings.blobs) { const c = new THREE.Color(blobColor('rifle', palette(nat))); for (let i = 0; i < 5; i++) this.addP(x, z, y, (r() - .5) * 2, .5 + r() * 2, (r() - .5) * 2, .07, .45, c.r, c.g, c.b, false, .95, .1, 10); return; }
+  for (let i = 0; i < 9; i++) this.addP(x, z, y, (r() - .5) * 1.6, .2 + r() * 1.4, (r() - .5) * 1.6, .035 + r() * .03, .5, .38 + r() * .12, .02, .02, false, .95, .05, 10); // droplets
+  this.addP(x, z, y, 0, .15, 0, .18, .35, .45, .05, .04, false, .5, .5); // red mist
 };
 
 // Graphics quality at runtime: pixel ratio and shadows. 'auto' lets the UI step it down when frames are slow.
@@ -6907,7 +7237,7 @@ Game.prototype.issue = function (c) {
 
 const BIND_DEFAULTS = {fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', walk: 'KeyB', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP', chaff: 'KeyZ'};
 const Settings = {
-  view: 'fp', sens: 1, invert: false, assist: false, autofire: false, flightAssist: true,
+  view: 'fp', sens: 1, invert: false, assist: false, autofire: false, flightAssist: true, gritty: true, blobs: false,
   binds: Object.assign({}, BIND_DEFAULTS),
   load() { try { const o = JSON.parse(localStorage.getItem('warsim-settings') || '{}'); for (const k in o) if (k === 'binds') Object.assign(this.binds, o.binds); else this[k] = o[k]; } catch (e) {} const B = this.binds; if (B.exit === B.fire) B.exit = B.fire === 'Space' ? 'KeyF' : 'Space'; },
   // Give an action a new key. A key already used by another action is swapped, so nothing is left without a key or fights over one.
@@ -6919,7 +7249,7 @@ const Settings = {
     this.save(); return swapped;
   },
   resetBinds() { Object.assign(this.binds, BIND_DEFAULTS); this.save(); },
-  save() { try { const o = {}; for (const k of ['view', 'sens', 'invert', 'assist', 'autofire', 'flightAssist', 'binds']) o[k] = this[k]; localStorage.setItem('warsim-settings', JSON.stringify(o)); } catch (e) {} },
+  save() { try { const o = {}; for (const k of ['view', 'sens', 'invert', 'assist', 'autofire', 'flightAssist', 'gritty', 'blobs', 'binds']) o[k] = this[k]; localStorage.setItem('warsim-settings', JSON.stringify(o)); } catch (e) {} },
   keyName(code) { return !code ? '?' : code.replace(/^Key/, '').replace(/^Digit/, '').replace('Left', '').replace('Right', '').replace('Space', 'Space').replace('Arrow', ''); },
 };
 Settings.load();
@@ -7098,7 +7428,7 @@ const Direct = {
     p.specT = g.view.t + S.cd; this.msg(S.n + '!', 1.2); Sfx.good();
     if (p.nat.key === 'licases') this.dashT = performance.now() + 3000;
     if (p.nat.key === 'jethroes') Sfx.howl();
-    if (p.nat.key === 'toms') this.drawKnife();
+    if (p.nat.key === 'toms' || (p.nat.key === 'valentinos' && this.mode === 'soldier')) this.drawKnife();
   },
   drawKnife() {
     if (this.mode !== 'soldier' || this.knifeEnd) { if (this.mode !== 'soldier') this.msg('Knife only works on foot', 1.2); return; }
@@ -7355,7 +7685,7 @@ const Direct = {
     const p = this.pose, e = this.e, d = e.d;
     if (this.mode === 'soldier') {
       const nat = this.ui.g.view.players[e.o].nation, D = blobDims(nat), bike = isBiker(e.k, nat);
-      const h = e.k === 'wolf' ? .62 : (BLOB.cy * D.h + BLOB.r * D.h * .3 + (bike ? BLOB.bike : 0)) * (1 + (e.vet || 0) * .08);
+      const h = e.k === 'wolf' ? .62 : (Settings.blobs ? BLOB.cy * D.h + BLOB.r * D.h * .3 : HUM.eye - .02) * (1 + (e.vet || 0) * .08) + (bike ? BLOB.bike : 0);
       return {x: p.x + Math.cos(this.yaw) * .16, y: p.y + Math.sin(this.yaw) * .16, z: p.z + h + (this.land || 0) * -.1};
     }
     if (this.mode === 'vehicle' || this.mode === 'ship') { const up = this.mode === 'ship' ? (d.sub ? .9 : 1.6) : e.k === 'tank' ? 1.05 : .95; return {x: p.x + Math.cos(this.turret) * .2, y: p.y + Math.sin(this.turret) * .2, z: p.z + up}; }
@@ -8117,7 +8447,11 @@ const WarRoom = {
     this.drawSign();
     if (!this.bound) { this.bound = 1;
       addEventListener('mousemove', e => { if (!this.on || document.pointerLockElement !== $('gl')) return; this.yaw += e.movementX * .0025; this.pitch = clamp(this.pitch - e.movementY * .0025, -1.4, 1.2); });
-      $('gl').addEventListener('mousedown', () => { if (this.on && document.pointerLockElement !== $('gl')) $('gl').requestPointerLock && $('gl').requestPointerLock(); });
+      $('gl').addEventListener('mousedown', ev => {
+        if (!this.on) return;
+        if (this.focus === 'table') { this.tableClick(ev); return; }
+        if (document.pointerLockElement !== $('gl')) $('gl').requestPointerLock && $('gl').requestPointerLock();
+      });
     }
     Sfx.ui();
   },
@@ -8135,13 +8469,23 @@ const WarRoom = {
     if (c === 'KeyR' && this.near === 'desk') { const p = this.ui.g.view.players[this.ui.g.me]; this.ui.g.issue({c: 'autorecon', on: !p.autoRecon}); }
     if (c === 'Digit3' && this.near === 'desk') this.ui.g.issue({c: 'recon', n: 3});
   },
-  stations() { const W = this.R.W; return [{k: 'table', x: 0, z: 0, r: 2.6, txt: 'E: lean over the map'}, {k: 'desk', x: -W + 1.3, z: -.5, r: 1.6, txt: 'E: send a scout (50 steel)   3: send three\nR: automatic scouting '}, {k: 'board', x: W - 1.2, z: 0, r: 1.8, txt: 'E: read the reports up close'}, {k: 'door', x: 0, z: this.R.D - .8, r: 1.1, txt: 'E: leave the War Room'}]; },
+  stations() { const W = this.R.W; return [{k: 'table', x: 0, z: 0, r: 2.6, txt: 'E: lean over the map (click it to send scouts anywhere)'}, {k: 'desk', x: -W + 1.3, z: -.5, r: 1.6, txt: 'E: send a scout (50 steel)   3: send three\nR: automatic scouting '}, {k: 'board', x: W - 1.2, z: 0, r: 1.8, txt: 'E: read the reports up close'}, {k: 'door', x: 0, z: this.R.D - .8, r: 1.1, txt: 'E: leave the War Room'}]; },
   use() {
     const n = this.near;
     if (this.focus) { this.focus = null; return; }
     if (n === 'door') this.exit();
     else if (n === 'desk') this.ui.g.issue({c: 'recon', n: 1});
-    else if (n === 'table' || n === 'board') this.focus = n;
+    else if (n === 'table' || n === 'board') { this.focus = n; if (document.pointerLockElement) document.exitPointerLock(); }
+  },
+  // click a spot on the map table: a scout rides there and reports back
+  tableClick(ev) {
+    const C = this.R.cam, v = this.ui.g.view, N = v.N, rc = new THREE.Raycaster();
+    rc.setFromCamera({x: ev.clientX / innerWidth * 2 - 1, y: -(ev.clientY / innerHeight) * 2 + 1}, C);
+    const o = rc.ray.origin, d = rc.ray.direction; if (Math.abs(d.y) < 1e-4) return;
+    const t = (.965 - o.y) / d.y, px = o.x + d.x * t, pz = o.z + d.z * t;
+    const mx = (px + 1.3) / 2.6 * N, my = (pz + 1.3) / 2.6 * N;
+    if (mx < 2 || my < 2 || mx > N - 2 || my > N - 2) return;
+    this.ui.g.issue({c: 'recon', n: 1, x: mx, y: my}); this.mark = {x: mx, y: my, t: v.t}; this.texT = 0; Sfx.ui();
   },
   frame(dt) {
     const k = this.keys, R = this.R, sp = 2.4 * dt;
@@ -8155,7 +8499,7 @@ const WarRoom = {
     for (const st of this.stations()) { const d = Math.hypot(st.x - this.x, st.z - this.z) - st.r; if (d < .5 && d < bd) { bd = d; best = st; } }
     this.near = best ? best.k : null;
     const p = this.ui.g.view.players[this.ui.g.me];
-    $('wrPrompt').textContent = this.focus ? 'E: step back' : best ? best.txt + (best.k === 'desk' ? (p.autoRecon ? 'ON' : 'OFF') : '') : '';
+    $('wrPrompt').textContent = this.focus === 'table' ? 'Click anywhere on the map to send a scout there (50 steel)   ·   E: step back' : this.focus ? 'E: step back' : best ? best.txt + (best.k === 'desk' ? (p.autoRecon ? 'ON' : 'OFF') : '') : '';
     this.texT -= dt; if (this.texT <= 0) { this.texT = .5; this.drawMap(R.mapT, true); this.drawMap(R.wallT, false); this.drawBoard(); }
   },
   render() {
@@ -8200,6 +8544,7 @@ const WarRoom = {
       if (e.b) { const s = Math.max(6, e.d.s * k); c.fillRect(ox + e.x * k - s / 2, oy + e.y * k - s / 2, s, s); }
       else { c.beginPath(); c.arc(ox + e.x * k, oy + e.y * k, e.air ? 3 : 4, 0, 6.283); c.fill(); }
     }
+    if (this.mark && v.t - this.mark.t < 8) { const mx = ox + this.mark.x * k, my = oy + this.mark.y * k; c.strokeStyle = '#1c4f9a'; c.lineWidth = 3; c.beginPath(); c.arc(mx, my, 14, 0, 6.283); c.moveTo(mx - 22, my); c.lineTo(mx + 22, my); c.moveTo(mx, my - 22); c.lineTo(mx, my + 22); c.stroke(); c.fillStyle = '#1c4f9a'; c.font = '800 18px Georgia,serif'; c.fillText('SCOUT SENT', mx, my - 26); }
     // scouts out on patrol: a line back home
     for (const e of v.ents.values()) if (e.o === me && e.recon) { c.strokeStyle = '#1c4f9a'; c.setLineDash([8, 6]); c.lineWidth = 2; c.beginPath(); c.moveTo(ox + e.recon.home.x * k, oy + e.recon.home.y * k); c.lineTo(ox + e.x * k, oy + e.y * k); c.stroke(); c.setLineDash([]); }
     c.font = '800 28px Georgia,serif'; c.fillStyle = '#3a2410'; c.textAlign = 'left'; c.fillText(table ? 'THEATRE OF WAR' : 'STRATEGIC MAP · ' + (MAP_TYPES[mapType(v.seed)] || 'Battlefield').toUpperCase(), ox + 14, oy + 36);
@@ -8303,7 +8648,7 @@ const Interior = {
     scene.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({vertexColors: true})));
     scene.add(new THREE.HemisphereLight(sub ? 0xffd9c8 : 0xffffff, 0x50504a, sub ? .85 : 1));
     const li = new THREE.DirectionalLight(sub ? 0xffb090 : 0xffffff, .55); li.position.set(.4, 1, .3); scene.add(li);
-    const body = soldierBody('rifle', nat).geo(), mat = new THREE.MeshLambertMaterial({vertexColors: true});
+    const body = soldierFull('rifle', nat).geo(), mat = new THREE.MeshLambertMaterial({vertexColors: true});
     const blocks = L.blocks.slice();
     for (const [x, z, ry] of L.crew) { const m = new THREE.Mesh(body, mat); m.position.set(x, 0, z); m.rotation.y = ry; scene.add(m); blocks.push([x - .2, x + .2, z - .2, z + .2]); }
     const M = .2, walk = L.rooms.map(r => [r.x0 + M, r.x1 - M, r.z0 + M, r.z1 - M, r.n]);
@@ -8331,7 +8676,7 @@ const VM = {
   },
   build(e, nat, slot) {
     if (!this.scene) this.init();
-    const k = e.k, W = this.knife ? KNIFE : (PWPN[k] || [])[slot || 0], key = k + '|' + nat + '|' + (slot || 0) + (this.knife ? '|knife' : '');
+    const k = e.k, W = this.knife ? KNIFE : (PWPN[k] || [])[slot || 0], key = k + '|' + nat + '|' + (slot || 0) + (this.knife ? '|knife' : '') + (Settings.blobs ? '|b' : '');
     if (this.key === key) return; this.key = key;
     if (this.mesh) { this.scene.remove(this.mesh); this.mesh.geometry.dispose(); }
     const b = new Batch(), P = palette(nat), skin = k === 'wolf' ? 0x7a808c : blobColor(k, P), G = GUN, T = P.look === 'toms';
@@ -8342,8 +8687,8 @@ const VM = {
       b.box(.016, .085, .42, .07, -.06, -.42, 0xd5dadf); b.box(.018, .02, .42, .07, -.02, -.42, 0xf4f6f8);
       b.add(GEO.cone, 0xd5dadf, .07, -.06, -.66, .012, .1, .045, -Math.PI / 2, 0, 0);
       b.box(.03, .14, .03, .07, -.07, -.2, 0x3a3d40); b.box(.04, .05, .12, .07, -.08, -.12, 0x2a1b10);
-      b.add(GEO.blob, skin, .07, -.09, -.12, .05 * hs, .045 * hs, .055 * hs);
-      if (T) b.add(GEO.blob, 0x2fb3a7, .12, -.2, .02, .07, .06, .1);
+      if (Settings.blobs) { b.add(GEO.blob, skin, .07, -.09, -.12, .05 * hs, .045 * hs, .055 * hs); if (T) b.add(GEO.blob, 0x2fb3a7, .12, -.2, .02, .07, .06, .1); }
+      else { const U = UNIFORM[P.look] || UNIFORM.usa; b.box(.055, .06, .08, .07, -.08, -.12, 0x2a2924); limb(b, [.07, -.09, -.1], [.2, -.34, .2], .038, U[0]); }
     }
     else if (k === 'wolf') { [-1, 1].forEach(s => { b.add(GEO.blob, skin, s * .14, -.12, -.3, .08, .07, .12); for (let i = -1; i <= 1; i++) b.add(GEO.cone, 0xf1f1ec, s * .14 + i * .03, -.12, -.43, .012, .05, .012, -Math.PI / 2, 0, 0); }); }
     else {
@@ -8361,9 +8706,18 @@ const VM = {
         if (/Shotgun/.test(gun)) b.add(GEO.cyl, 0x3a2a18, .05, -.08, -.3, .025, .14, .025, Math.PI / 2, 0, 0);
         if (/Rifle|SMG/.test(gun)) b.box(.006, .05, .4, .074, -.04, -.22, P.trim);
       }
-      b.add(GEO.blob, skin, .07, -.12, -.1, .045 * hs, .04 * hs, .05 * hs);   // right mitt on the grip
-      b.add(GEO.blob, skin, .02, -.08, -.32, .042 * hs, .038 * hs, .05 * hs);  // left mitt under the barrel
-      if (T) b.add(GEO.blob, 0x2fb3a7, .12, -.2, .02, .07, .06, .1);            // forearm bulge
+      if (!Settings.blobs) { // gloved hands and sleeved forearms reaching in from below the camera
+        const U = UNIFORM[P.look] || UNIFORM.usa, gl = 0x2a2924, th = T ? 1.25 : 1;
+        if (!/Rocket|Flame/.test(gun)) { b.box(.045, .02, long * .55, .05, -.005, -.2 - long * .15, 0x1a1b1d); b.box(.05, .045, long * .42, .05, -.045, -.28 - long * .12, 0x2e3032); for (let i = 0; i < 4; i++) b.box(.052, .008, .02, .05, -.03, -.24 - long * .1 - i * .05, 0x141516); } // top rail, handguard with vents
+        if (/Rifle|Carbine|SMG/.test(gun) && !/Sniper/.test(gun)) { b.box(.03, .035, .06, .05, .02, -.12, 0x121314); b.add(GEO.cyl, 0x3a0a0a, .05, .02, -.155, .011, .004, .011, Math.PI / 2, 0, 0); } // red-dot sight
+        limb(b, [.07, -.115, -.1], [.2 * th, -.34, .22], .036 * th, U[0]); b.box(.05 * th, .055, .075, .07, -.11, -.1, gl); b.add(GEO.cyl6, U[1], .135 * th, -.23, .06, .042 * th, .05, .042 * th, .9, 0, -.4); // right glove, sleeve, cuff
+        limb(b, [.03, -.085, -.32], [-.14 * th, -.34, -.02], .034 * th, U[0]); b.box(.06 * th, .045, .07, .035, -.085, -.32, gl); b.add(GEO.cyl6, U[1], -.06 * th, -.22, -.16, .04 * th, .05, .04 * th, 1, 0, .5); // left glove under the barrel
+        if (/Rifle|Carbine|Sniper/.test(gun)) b.box(.006, .045, .02, .076, -.02, -.12, 0x111); // trigger-finger glove seam detail
+      } else {
+        b.add(GEO.blob, skin, .07, -.12, -.1, .045 * hs, .04 * hs, .05 * hs);   // right mitt on the grip
+        b.add(GEO.blob, skin, .02, -.08, -.32, .042 * hs, .038 * hs, .05 * hs);  // left mitt under the barrel
+        if (T) b.add(GEO.blob, 0x2fb3a7, .12, -.2, .02, .07, .06, .1);            // forearm bulge
+      }
     }
     this.mesh = new THREE.Mesh(b.geo(), this.mat); this.scene.add(this.mesh);
     this.muz = new THREE.Vector3(.05, -.03, -.2 - ((/Sniper/.test(gun) ? .75 : .55) * .8));
@@ -8424,8 +8778,9 @@ const Thumbs = {
     else {
       const d = UNITS[k];
       if (d.cat === 'inf') {
-        add(soldierBody(k, nat).geo());
+        add(soldierFull(k, nat).geo());
         const T = P.look === 'toms', hip = T ? .33 : .42;
+        if (!Settings.blobs) { /* legs already in the model */ } else
         [-1, 1].forEach(sd => { const b = new Batch(); b.box(T ? .13 : .1, hip, T ? .17 : .12, 0, hip / 2, sd * (T ? .17 : .09), P.uni); b.box(.17, .07, T ? .18 : .13, .03, .03, sd * (T ? .17 : .09), BOOT); add(b.geo()); });
       } else if (VEH[k]) { const v = VEH[k](P); add(v.h.geo()); if (v.t) add(v.t.geo(), v.ty, v.tx || 0); }
       else add(AIR[k](P).geo());
@@ -8520,10 +8875,13 @@ const UI = {
     $('bDeploy').onclick = () => this.openDeploy();
     document.querySelectorAll('#selBar button[data-g]').forEach(b => b.onclick = () => this.selGroup(b.dataset.g));
     $('bDiplo').onclick = () => this.openDiplo();
+    $('bStats').onclick = () => this.toggleStats(); $('statsClose').onclick = () => this.toggleStats(false);
+    $('tutNext').onclick = () => this.tutAdvance(true); $('tutSkip').onclick = () => this.tutEnd();
     $('dClose').onclick = () => { this.deployed = false; this.closeDeploy(); };
     $('timeCtl').querySelectorAll('button').forEach(b => b.onclick = () => this.setSpeed(+b.dataset.s));
     $('bAgain').onclick = () => { const c = this.camp; this.quit(); if (c) this.openCamp(); };
     $('bCamp').onclick = () => { Sfx.init(); Sfx.ui(); this.openCamp(); };
+    $('bTut').onclick = () => { Sfx.init(); Sfx.ui(); this.startTutorial(); };
     $('bBat').onclick = () => { Sfx.init(); Sfx.ui(); this.openBat(); };
     $('batBack').onclick = () => { $('batScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
     $('campBack').onclick = () => { $('campScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
@@ -8593,6 +8951,8 @@ const UI = {
     $('sAssist').onchange = () => { S.assist = $('sAssist').checked; S.save(); };
     $('sAuto').onchange = () => { S.autofire = $('sAuto').checked; S.save(); };
     $('sFly').checked = S.flightAssist; $('sFly').onchange = () => { S.flightAssist = $('sFly').checked; S.save(); };
+    $('sGrit').checked = S.gritty; $('sGrit').onchange = () => { S.gritty = $('sGrit').checked; S.save(); };
+    $('sBlob').checked = S.blobs; $('sBlob').onchange = () => { S.blobs = $('sBlob').checked; S.save(); };
     $('sTp').onchange = () => { S.view = $('sTp').checked ? 'tp' : 'fp'; S.save(); if (Direct.on) Direct.applyView(); };
     const w = $('sBinds'); w.innerHTML = '';
     if (note) { const m = document.createElement('p'); m.className = 'msg good'; m.style.gridColumn = '1 / -1'; m.textContent = note; w.append(m); }
@@ -8883,6 +9243,7 @@ const UI = {
   },
   quit() {
     if (Direct.on) Direct.exit();
+    this.tutEnd(true); $('statsScr').classList.add('hidden');
     this.camp = null; $('campHud').classList.add('hidden'); document.body.classList.remove('camp');
     this.scen = null; document.body.classList.remove('scen'); $('scenSpawn').classList.add('hidden');
     if (this.link) { this.link.close(); this.link = null; }
@@ -8979,6 +9340,85 @@ const UI = {
     const v = new THREE.Vector3(x, 1, y).project(this.R.cam);
     return Math.abs(v.x) < .95 && Math.abs(v.y) < .95 && v.z < 1;
   },
+  // ---------- stats ----------
+  toggleStats(on) {
+    if (!this.g || this.demo) return;
+    const el = $('statsScr'); on = on === undefined ? el.classList.contains('hidden') : on;
+    el.classList.toggle('hidden', !on); if (on) this.renderStats($('statsBody'));
+  },
+  renderStats(box) {
+    const v = this.g.view, me = this.g.me, P = v.players;
+    let army = P.map(() => 0), blds = P.map(() => 0);
+    for (const e of v.ents.values()) if (P[e.o]) { if (e.b) blds[e.o]++; else if (e.d.dmg) army[e.o] += e.d.cost[0] + e.d.cost[1]; }
+    const S = p => p.st || {}, row = (p, i) => `<tr><td style="color:${p.nat.color}"><b>${p.name}</b>${i === me ? ' (you)' : ''}${p.alive ? '' : ' ✝'}</td><td>${p.kills}</td><td>${S(p).ukills || 0}</td><td>${S(p).bkills || 0}</td><td>${p.losses}</td><td>${p.built}</td><td>${S(p).built || 0}</td><td>${Math.round(S(p).mined || 0)}</td><td>${army[i]}</td><td>${blds[i]}</td><td>${p.losses ? (p.kills / p.losses).toFixed(2) : p.kills ? '∞' : '-'}</td></tr>`;
+    box.innerHTML = `<table class="stab"><tr><th>Nation</th><th>Kills</th><th>Troops killed</th><th>Buildings razed</th><th>Losses</th><th>Trained</th><th>Built</th><th>Steel mined</th><th>Army value</th><th>Buildings</th><th>K/D</th></tr>${P.map(row).join('')}</table>
+      <div class="schart"><figure><figcaption>Army value over time</figcaption><canvas width="600" height="150"></canvas></figure><figure><figcaption>Steel mined</figcaption><canvas width="600" height="150"></canvas></figure><figure><figcaption>Kills</figcaption><canvas width="600" height="150"></canvas></figure></div>
+      <p class="small">Game time ${Math.floor(v.t / 60)}:${String(Math.floor(v.t % 60)).padStart(2, '0')}. Graphs sample every 30 seconds.</p>`;
+    box.querySelectorAll('canvas').forEach((cv, ci) => {
+      const c = cv.getContext('2d'), W = cv.width, H = cv.height, col = [2, 1, 4][ci];
+      let mx = 1, tm = 1; for (const p of P) for (const h of p.hist || []) { mx = Math.max(mx, h[col]); tm = Math.max(tm, h[0]); }
+      c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 1; for (let i = 1; i < 4; i++) { c.beginPath(); c.moveTo(0, H * i / 4); c.lineTo(W, H * i / 4); c.stroke(); }
+      c.fillStyle = 'rgba(255,255,255,.5)'; c.font = '11px sans-serif'; c.fillText(Math.round(mx), 4, 12);
+      P.forEach(p => { const h = p.hist || []; if (!h.length) return; c.strokeStyle = p.nat.color; c.lineWidth = p.i === me ? 3 : 1.6; c.beginPath(); h.forEach((q, j) => { const x = q[0] / tm * (W - 4) + 2, y = H - 3 - q[col] / mx * (H - 18); j ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); });
+    });
+  },
+
+  // ---------- guided tutorial ----------
+  startTutorial() {
+    const nat = 1;
+    this.launch({mode: 'host', size: 112, seed: 4242, players: [{nation: nat, name: 'You'}, {nation: 3, name: 'The Jethroes (training bot)', bot: 'easy'}], me: 0, link: null, tut: false, quick: false});
+    this.g.sim.peace = true;
+    const v = this.g.view, me = v.players[0], C = this.cam, hq = () => [...v.ents.values()].find(e => e.k === 'hq' && e.o === 0);
+    const start = {x: C.x, z: C.z, d: C.dist, y: C.yaw}, cnt = k => this.count(e => e.k === k), done = k => this.count(e => e.k === k && e.bp >= 1);
+    let rifles0 = cnt('rifle');
+    this.tut = {i: 0, steps: [
+      {h: 'Welcome, Commander', p: 'This tutorial walks you through a real game against a training bot that will not attack until you are ready. Read each card, do what it says, and it moves on by itself. Press <b>Next</b> on cards that only explain something.'},
+      {h: 'Move the camera', p: 'Pan with <b>W A S D</b> (or push the mouse to the screen edge), zoom with the <b>mouse wheel</b>, rotate with <b>Q</b> and <b>E</b>. Look around your capital.', f: () => Math.hypot(C.tx - start.x, C.tz - start.z) > 3 || Math.abs(C.tdist - start.d) > 4 || Math.abs(C.tyaw - start.y) > .3},
+      {h: 'Your army and your capital', p: 'The walled city is your <b>Capital</b>: lose it and you lose. Around it are 5 <b>workers</b> (already mining steel), 4 riflemen and a scout. Top left shows <b>Steel</b>, <b>Fuel</b> and <b>Population</b>.', hl: '#top'},
+      {h: 'Select and move', p: '<b>Left click</b> a soldier to select him, or <b>drag a box</b> around several. Then <b>right click</b> the ground to send them there.', f: () => [...this.sel].some(id => { const e = v.ents.get(id); return e && !e.b && e.k !== 'worker' && e.goal; })},
+      {h: 'Select groups in one click', p: 'These buttons select every worker, ground unit, aircraft or ship at once (<b>F1</b>-<b>F4</b>). Press <b>⚔ Ground</b> now.', hl: '#selBar', f: () => [...this.sel].filter(id => { const e = v.ents.get(id); return e && !e.b && e.k !== 'worker'; }).length >= 4},
+      {h: 'Troops patrol by themselves', p: 'Soldiers you send somewhere guard that area on their own and fight anything that comes near. You only change <b>where</b> they patrol. <b>Attack-move (R)</b> sends them fighting their way forward.'},
+      {h: 'Build Housing', p: 'Press <b>Esc</b> (or click empty ground) so nothing is selected: the <b>build menu</b> appears bottom right. Click <b>Housing</b>, then click the ground near your capital. The nearest workers go and build it; you do not need to pick them.', hl: '#cards', f: () => cnt('housing') > 0},
+      {h: 'Build a Barracks', p: 'Now place a <b>Barracks</b> the same way. If workers are already busy they finish the first job, then build the next one, in the order you placed them.', hl: '#cards', f: () => cnt('barracks') > 0},
+      {h: 'Wait for the Barracks', p: 'Construction takes a little while. The scaffold disappears when it is done. Speed up time with the <b>2×</b> button at the top if you like.', hl: '#timeCtl', f: () => done('barracks') > 0},
+      {h: 'Train soldiers', p: 'Click your <b>Barracks</b> to select it, then click <b>Rifleman</b> (or press its hotkey) three times. Each one costs steel and takes a few seconds.', hl: '#cards', f: () => cnt('rifle') >= rifles0 + 3, enter: () => { rifles0 = cnt('rifle'); }},
+      {h: 'Fuel', p: 'Tanks, aircraft and research also need <b>fuel</b>. Deselect everything, pick <b>Oil Derrick</b> and place it on one of the black oil wells near your base.', hl: '#cards', f: () => cnt('derrick') > 0},
+      {h: 'Dig in', p: 'Press <b>More…</b> in the build menu for defences. Place a <b>Trench</b> in front of your base: infantry standing in or beside it take <b>55% less damage</b>. Sandbags and Pillboxes work the same way.', hl: '#cards', f: () => cnt('trench') + cnt('sandbags') + cnt('pillbox') > 0},
+      {h: 'Hardening', p: 'Any finished building can be <b>Hardened</b> (select it, press <b>V</b>): rebuilt in concrete, it then shrugs off artillery and air strikes. It is expensive, so save it for your capital and key buildings later on.'},
+      {h: 'Send a scout', p: 'Click your <b>Capital</b>, press <b>Scout to… (L)</b> and click somewhere on the map. The scout rides there, counts the enemies it sees and reports back.', hl: '#cards', f: () => this.count(e => e.recon) > 0},
+      {h: 'The War Room', p: 'With the Capital selected press <b>G</b> to walk into your War Room. Lean over the map table (<b>E</b>) to see every scout sighting, and click the table to send scouts. Press <b>Esc</b> to come back out.', f: () => WarRoom.on || this.tutWR, enter: () => { this.tutWR = false; }},
+      {h: 'Fight in person', p: 'Select a single soldier and press <b>F</b> to take control. Move the mouse to aim, <b>Space</b> fires, <b>R</b> reloads, <b>WASD</b> moves. Press <b>F</b> again to go back to commanding.', f: () => Direct.on || this.flown},
+      {h: 'Stats and diplomacy', p: '<b>📊 Stats (F7)</b> compares every nation: kills, losses, economy and army size over time. <b>🤝 Diplomacy (F6)</b> lets you offer ceasefires, alliances and trades.', hl: '#selBar'},
+      {h: 'Now win the war', p: 'That is everything you need. The training bot is now allowed to attack. Build a <b>War Factory</b> for tanks, research at a <b>Lab</b>, and destroy the enemy Capital. Good luck, Commander!', last: 1},
+    ]};
+    $('tutor').classList.remove('hidden'); $('objectives').classList.add('hidden');
+    this.tutShow();
+  },
+  tutShow() {
+    const T = this.tut; if (!T) return;
+    const S = T.steps[T.i], el = $('tutor');
+    if (S.enter) S.enter();
+    el.querySelector('.tstep').textContent = 'Tutorial ' + (T.i + 1) + ' / ' + T.steps.length;
+    el.querySelector('h3').textContent = S.h; el.querySelector('p').innerHTML = S.p + (S.f ? '<br><span class="small" style="color:var(--dim)">Do it to continue…</span>' : '');
+    el.classList.toggle('wait', !!S.f); $('tutNext').textContent = S.last ? 'Start the war ▸' : 'Next ▸';
+    document.querySelectorAll('.tutHl').forEach(n => n.classList.remove('tutHl'));
+    if (S.hl) { const n = document.querySelector(S.hl); if (n) n.classList.add('tutHl'); }
+  },
+  tutAdvance(manual) {
+    const T = this.tut; if (!T) return;
+    const S = T.steps[T.i];
+    if (S.f && manual) return;
+    if (S.last) { this.tutEnd(); return; }
+    T.i++; Sfx.good(); this.tutShow();
+  },
+  tutTick() { const T = this.tut; if (!T) return; if (WarRoom.on) this.tutWR = true; const S = T.steps[T.i]; if (S.f && S.f()) this.tutAdvance(false); },
+  tutEnd(silent) {
+    if (!this.tut) return;
+    this.tut = null; $('tutor').classList.add('hidden'); document.querySelectorAll('.tutHl').forEach(n => n.classList.remove('tutHl'));
+    if (this.g && this.g.sim) this.g.sim.peace = false;
+    if (!silent) this.addAlert('Tutorial over: the enemy is coming. Destroy their Capital!', 'gold');
+  },
+
   showOver(won) {
     if (this.overShown) return;
     this.overShown = true;
@@ -8995,7 +9435,8 @@ const UI = {
       $('oSub').textContent = won ? 'Level cleared, ' + (c.L.budget - c.spent) + ' budget to spare. ' + (next ? 'Unlocked: ' + next.n + '.' : 'Campaign complete!') : 'Your army was wiped out. Try a different mix.';
       $('campHud').classList.add('hidden');
     }
-    $('oStats').innerHTML = '<tr><th align="left">Nation</th><th>Kills</th><th>Losses</th><th>Trained</th></tr>' + v.players.map(p => `<tr><td style="color:${p.nat.color}">${p.name}</td><td align="center">${p.kills}</td><td align="center">${p.losses}</td><td align="center">${p.built}</td></tr>`).join('');
+    this.renderStats($('oStats'));
+    if (this.tut) this.tutEnd(true);
     $('over').classList.remove('hidden');
     won ? Sfx.good() : Sfx.bad();
   },
@@ -9201,6 +9642,7 @@ const UI = {
     if (c === Settings.binds.exit) { e.preventDefault(); this.tryDirect(); return; }
     if (c === 'F1' || c === 'F2' || c === 'F3' || c === 'F4') { e.preventDefault(); this.selGroup(['workers', 'ground', 'air', 'sea'][+c[1] - 1]); return; }
     if (c === 'F6') { e.preventDefault(); this.openDiplo(); return; }
+    if (c === 'F7') { e.preventDefault(); this.toggleStats(); return; }
     if (c === 'Tab') { e.preventDefault(); this.toggleBigMap(); return; }
     if (c === 'Space') { e.preventDefault(); if (this.lastAlert) this.jump(this.lastAlert.x, this.lastAlert.y); return; }
     if (c === 'Period') { const list = [...this.g.view.ents.values()].filter(u => u.o === this.g.me && u.k === 'worker' && !u.task && !u.goal); if (list.length) { this.sel.clear(); const w = list[(this.idleI = (this.idleI || 0) + 1) % list.length]; this.sel.add(w.id); this.jump(w.x, w.y); this.refreshHud(true); } else this.addAlert('No idle workers'); return; }
@@ -9335,6 +9777,7 @@ const UI = {
     const m = this.mode, ids = this.ids();
     if (m.kind === 'amove') { this.g.issue({c: 'move', ids, x, y, a: 1, q: shift ? 1 : 0}); this.R.ping(x, y, 0xff9a4a); }
     else if (m.kind === 'patrol') { this.g.issue({c: 'patrol', ids, x, y}); this.R.ping(x, y, 0x6dd8ff); }
+    else if (m.kind === 'recon') { this.g.issue({c: 'recon', n: 1, x, y}); this.R.ping(x, y, 0xffd97a); this.addAlert('Scout sent: it reports back when it returns', 'info'); }
     else if (m.kind === 'unloadAt') { this.g.issue({c: 'unloadAt', ids, x, y}); this.R.ping(x, y, 0x6dd8ff); }
     else if (m.kind === 'zone') { this.g.issue({c: 'zone', ids, x, y}); this.R.ping(x, y, 0x6dd8ff); this.addAlert('Patrolling the new area', 'good'); }
     else if (m.kind === 'power') { this.g.issue({c: 'power', p: m.p, x, y}); this.R.ping(x, y, 0xffd60a); }
@@ -9356,7 +9799,7 @@ const UI = {
         const page = this.page === 2 ? 2 : 1;
         for (const k in BUILDINGS) {
           const d = BUILDINGS[k];
-          if (k === 'hq' || (d.page || 1) !== page) continue;
+          if (k === 'hq' || (d.page || 1) !== page || (d.only && !d.only.includes(p.nat.key))) continue;
           const c = cost(d, k), reqOk = !d.req || v.has(G.me, d.req);
           S.push({hk: d.hk, name: d.n, img: Thumbs.get(k, nat), cost: c, desc: d.desc, off: !reqOk || p.steel < c[0] || p.fuel < c[1], why: !reqOk ? 'Requires ' + BUILDINGS[d.req].n : (p.steel < c[0] || p.fuel < c[1]) ? 'Not enough resources' : '', act: () => this.startPlace(k)});
         }
@@ -9387,6 +9830,7 @@ const UI = {
     if (b.k === 'hq' && b.o === G.me) {
       S.push({hk: 'G', name: 'War Room', gl: '⚑', desc: 'Walk inside your capital as the general: a live map table, scout dispatch and reports.', act: () => { this.cancelMode(); WarRoom.enter(this); }});
       S.push({hk: 'J', name: 'Send scout', gl: '👁', cost: [50, 0], desc: 'A scout rides out, notes every enemy group it sees and reports back here. Uses an idle scout, or recruits one for 50 steel.', act: () => G.issue({c: 'recon', n: 1})});
+      S.push({hk: 'L', name: 'Scout to...', gl: '⌖', cost: [50, 0], desc: 'Pick a spot on the map (or the Tab map) and a scout rides there, looks around and reports back.', act: () => this.setMode({t: 'target', kind: 'recon'}, 'Scout where?  (right click cancels)')});
       S.push({hk: 'K', name: p.autoRecon ? 'Auto scouting: ON' : 'Auto scouting: OFF', gl: '⟳', desc: 'Keep a scout patrolling and reporting on its own.', act: () => G.issue({c: 'autorecon', on: !p.autoRecon}), active: p.autoRecon});
     }
     if (d.trains) for (const u of d.trains) {
@@ -9401,6 +9845,11 @@ const UI = {
     }
     if (d.garrison) S.push({hk: 'B', name: 'Unload', gl: '⇱', desc: 'Send garrisoned infantry back outside.', act: () => G.issue({c: 'unload', b: b.id})});
     if (d.nukeT) S.push({hk: 'N', name: 'Launch ICBM', gl: '☢', desc: b.nukeReady ? 'Launch at any point on the map. Everyone is warned.' : 'Charging: ' + Math.ceil(b.nukeCD || 0) + 's', off: !b.nukeReady, why: b.nukeReady ? '' : 'Still charging', act: () => this.startNuke(b)});
+    if (b.o === G.me && b.bp >= 1 && !d.mine && !d.walk) {
+      const hc = v.hardCost(b), hd = b.hard || 0;
+      if (hd >= 1) S.push({hk: 'V', name: 'Hardened', gl: '⛫', desc: 'Bunkered in reinforced concrete: takes 65% less damage (80% less from explosions).', off: true, why: 'Already hardened'});
+      else S.push({hk: 'V', name: hd > 0 ? 'Hardening ' + Math.round(hd * 100) + '%' : 'Harden', gl: '⛫', cost: hd > 0 ? null : hc, desc: 'Rebuild it underground in reinforced concrete (25 s). It then takes 65% less damage, and 80% less from artillery, bombs and missiles. Expensive.', off: hd > 0 || p.steel < hc[0] || p.fuel < hc[1], why: hd > 0 ? 'Already hardening' : 'Not enough resources', act: () => { G.issue({c: 'harden', id: b.id}); Sfx.ui(); }});
+    }
     if (b.k !== 'hq') S.push({hk: 'X', name: 'Demolish', gl: '✖', desc: 'Destroy this building.', act: () => G.issue({c: 'demolish', ids: [b.id]})});
     return S;
   },
@@ -9445,6 +9894,8 @@ const UI = {
     if (force || !this.scoreT || performance.now() - this.scoreT > 1000) {
       this.scoreT = performance.now();
       $('scores').innerHTML = v.players.map(q => `<span class="sc${q.alive ? '' : ' dead'}" style="--c:${q.nat.color}">${q.nat.name.replace('The ', '')} ${q.kills}</span>`).join('');
+      this.tutTick();
+      if (!$('statsScr').classList.contains('hidden')) this.renderStats($('statsBody'));
       if (this.objs) {
         let cur = false;
         // tick objectives in order, and show only the current one and the next (keeps the corner small)
