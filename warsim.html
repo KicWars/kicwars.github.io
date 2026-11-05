@@ -3642,8 +3642,8 @@ function hitShape(e, x, y, z, h) {
   if (d.cat === 'inf') {
     if (e.k === 'wolf') return {sph: 1, x, y, z: z + .5, r: .48};
     const nat = NATIONS[e.nat === undefined ? 0 : e.nat], T = nat && nat.look === 'toms', bike = nat && nat.look === 'bike' && e.k !== 'sniper' && e.k !== 'rocket';
-    const sc = 1 + (e.vet || 0) * .08, r = .3 * sc * (T ? 1.15 : 1);
-    return {sph: 1, x, y, z: z + (.36 * (T ? .84 : 1) + (bike ? .2 : 0)) * sc, r: r * 1.08};
+    const sc = 1 + (e.vet || 0) * .08, r = .3 * sc * (T ? 1.1 : 1);
+    return {sph: 1, x, y, z: z + (.36 * (T ? .9 : 1) + (bike ? .2 : 0)) * sc, r: r * 1.08};
   }
   const L = {tank: [1.12, .62, .58], ifv: [.95, .55, .45], arty: [1, .55, .45], sam: [.9, .5, .5], destroyer: [2.4, .55, .6], attacksub: [1.7, .3, .3], nukesub: [2.3, .38, .35],
     bomber: [1.6, 1.4, .3], gunship: [1, .6, .35], fpv: [.35, .35, .15], hunter: [.4, .3, .15]}[e.k] || (d.cat === 'air' ? [1.1, 1, .25] : [d.r, d.r * .7, .4]);
@@ -4347,7 +4347,7 @@ function palette(nat) {
   const p = {main: new THREE.Color(c.color).getHex(), dark: new THREE.Color(c.dark).getHex(), look: c.look, key: c.key};
   if (c.look === 'usa') { p.uni = 0x1b2f6b; p.trim = 0xd8202f; p.alt = WHITE; }
   else if (c.look === 'italian') { p.uni = 0xf0f0e8; p.trim = 0x009246; p.alt = 0xce2b37; }
-  else if (c.look === 'toms') { p.uni = 0x24353a; p.trim = 0x19c8b9; p.alt = 0x0f1a1c; }
+  else if (c.look === 'toms') { p.uni = 0x8a7350; p.trim = 0x19c8b9; p.alt = 0x5e4a30; } // desert camo, teal trim
   else if (c.look === 'glasses') { p.uni = 0x274a86; p.trim = 0x4a90ff; p.alt = 0xcfe0ff; }
   else { p.uni = 0x4a5530; p.trim = 0x6b7a42; p.alt = 0x8a7a55; } // Licases: woodland camo
   return p;
@@ -4357,29 +4357,33 @@ function palette(nat) {
 // Every troop is a round blob guy. Body is one smooth sphere; nations and roles differ by colour, face and gear.
 // Facing +X, feet at y=0. BLOB gives the shared proportions so the renderer, hit tests and first person agree.
 const BLOB = {r: .3, cy: .36, bike: .2, eyeY: .44};
-function blobDims(nat) { const T = NATIONS[nat].look === 'toms'; return {w: T ? 1.32 : 1, h: T ? .84 : 1, T}; }
+function blobDims(nat) { const T = NATIONS[nat].look === 'toms'; return {w: T ? 1.18 : 1, h: T ? .9 : 1, T}; } // Toms: a bit shorter and broad-shouldered, not squashed
 function isBiker(kind, nat) { return NATIONS[nat].look === 'bike' && kind !== 'sniper' && kind !== 'rocket'; }
 GEO.blob = new THREE.SphereGeometry(1, 22, 16);
 GEO.blobLo = new THREE.SphereGeometry(1, 10, 7);
 function blobColor(kind, P) {
   if (kind === 'medic') return 0xf4f4ee;
   if (P.look === 'italian') return 0xf3f1ea;
-  if (P.look === 'toms') return 0x2b9e94;
+  if (P.look === 'toms') return 0xc9ad7a; // desert tan
   if (P.look === 'usa') return 0xd8283a;
   if (P.look === 'glasses') return 0x4a86e8;
   return 0x5b6a3a; // Licases: camo green
 }
 function soldierBody(kind, nat, lo) {
   const P = palette(nat), b = new Batch(), D = blobDims(nat), T = D.T, R = BLOB.r, bike = isBiker(kind, nat);
-  const lift = bike ? BLOB.bike : 0, cy = BLOB.cy * D.h + lift, rx = R * (T ? 1.05 : 1), ry = R * D.h, rz = R * D.w;
+  const lift = bike ? BLOB.bike : 0, cy = BLOB.cy * D.h + lift, rx = R * (T ? 1.1 : 1), ry = R * D.h, rz = R * D.w;
   const S = lo ? GEO.blobLo : GEO.blob, body = blobColor(kind, P);
   const sph = (sx, sy, sz, x, y, z, c) => b.add(S, c, x, y, z, sx, sy, sz);
   sph(rx, ry * 1.04, rz, 0, cy, 0, body);                                     // the blob
-  sph(rx * .62, ry * .55, rz * .7, rx * .42, cy - ry * .28, 0, T ? 0x7fd8cf : 0xfff3e2); // lighter belly
+  sph(rx * .62, ry * .55, rz * .7, rx * .42, cy - ry * .28, 0, T ? 0xdcc79a : 0xfff3e2); // lighter belly
   // nation markings wrapped round the body
   if (P.look === 'italian') { b.add(GEO.torus, 0x009246, 0, cy + ry * .18, 0, rx * 1.0, rz * 1.0, ry * .5, Math.PI / 2, 0, 0); b.add(GEO.torus, 0xce2b37, 0, cy - ry * .12, 0, rx * 1.0, rz * 1.0, ry * .5, Math.PI / 2, 0, 0); }
   if (P.look === 'usa') { b.add(GEO.torus, WHITE, 0, cy - ry * .05, 0, rx * 1.0, rz * 1.0, ry * .45, Math.PI / 2, 0, 0); b.add(GEO.torus, 0x1b2f6b, 0, cy - ry * .4, 0, rx * .93, rz * .93, ry * .45, Math.PI / 2, 0, 0); }
-  if (P.look === 'toms') { sph(rx * .5, ry * .42, rz * .36, rx * .55, cy + ry * .1, rz * .33, 0x2fb3a7); sph(rx * .5, ry * .42, rz * .36, rx * .55, cy + ry * .1, -rz * .33, 0x2fb3a7); } // pecs
+  if (P.look === 'toms') { sph(rx * .5, ry * .42, rz * .36, rx * .55, cy + ry * .1, rz * .33, 0xb08f5c); sph(rx * .5, ry * .42, rz * .36, rx * .55, cy + ry * .1, -rz * .33, 0xb08f5c); } // pecs
+  if (P.look === 'toms' && kind !== 'medic') { // desert camo blotches
+    const cm = [0x8a6a42, 0xa88a5a, 0x6e5536, 0xd8c69c];
+    for (let i = 0; i < (lo ? 6 : 14); i++) { const a = i * 2.39996 + 1, yy = Math.sin(i * 1.9) * .8, cr = Math.sqrt(1 - yy * yy); sph(rx * .3, ry * .25, rz * .28, Math.cos(a) * rx * cr * .8, cy + yy * ry * .8, Math.sin(a) * rz * cr * .8, cm[i % 4]); }
+  }
   if (P.look === 'bike' && kind !== 'medic') { // woodland camo blotches all over the blob
     const cm = [0x3c4526, 0x6e5a3a, 0x2c3020, 0x7a8450];
     for (let i = 0; i < (lo ? 6 : 14); i++) { const a = i * 2.39996, yy = Math.sin(i * 1.7) * .8, cr = Math.sqrt(1 - yy * yy); sph(rx * .32, ry * .26, rz * .3, Math.cos(a) * rx * cr * .78, cy + yy * ry * .78, Math.sin(a) * rz * cr * .78, cm[i % 4]); }
@@ -4416,8 +4420,8 @@ function soldierBody(kind, nat, lo) {
   if (kind === 'sniper') for (let i = 0; i < 9; i++) { const a = i * 2.4, yy = cy + ry * (.2 + (i % 3) * .25); b.add(GEO.cone4, 0x4e5a2e, Math.cos(a) * rx * .9 - .05, yy, Math.sin(a) * rz * .9, .05, .14, .05, Math.sin(a) * .6, 0, Math.cos(a) * .6); }
   if (kind === 'scout' && !bike) { b.box(.02, .08, .02, rx * .2, top + .04, rz * .4, 0x222); b.add(GEO.sph, 0x7cf, rx * .2, top + .09, rz * .4, .015, .015, .015); }
   // hands (and bulging Toms biceps) holding the weapon in front
-  const hs = T ? 1.55 : 1, hy = cy - ry * .12, hand = T ? 0x2b9e94 : body;
-  if (T) [-1, 1].forEach(s => sph(.13, .11, .11, .02, cy + ry * .05, s * rz * 1.05, 0x2fb3a7));
+  const hs = T ? 1.55 : 1, hy = cy - ry * .12, hand = T ? 0xc9ad7a : body;
+  if (T) [-1, 1].forEach(s => sph(.13, .11, .11, .02, cy + ry * .05, s * rz * 1.05, 0xb08f5c));
   b.add(S, hand, rx * .78, hy, rz * .55, .07 * hs, .065 * hs, .07 * hs);
   b.add(S, hand, rx * .95, hy + .02, -rz * .2, .065 * hs, .06 * hs, .065 * hs);
   // weapons
@@ -4539,7 +4543,7 @@ function blobFoot(nat) {
     b.add(GEO.blob, C, .01, .24, 0, .075, .07, .072); b.add(GEO.blob, 0x6e5a3a, -.02, .25, -.02, .035, .035, .035); // thick thigh
     return b;
   }
-  const b = new Batch(), T = NATIONS[nat].look === 'toms'; b.add(GEO.blobLo, T ? 0x101415 : 0x26221d, .03, .035, 0, T ? .1 : .085, .045, T ? .08 : .065); return b; }
+  const b = new Batch(), T = NATIONS[nat].look === 'toms'; b.add(GEO.blobLo, T ? 0x5e4a30 : 0x26221d, .03, .035, 0, T ? .1 : .085, .045, T ? .08 : .065); return b; }
 function bikeWheel() { const b = new Batch(); b.add(GEO.torus, 0x101216, 0, 0, 0, .15, .15, .09); for (let i = 0; i < 3; i++) b.box(.29, .008, .008, 0, 0, 0, 0xb0b4b8, 0, 0, i * 1.047); b.cyl(.025, .03, 0, 0, 0, 0x888, Math.PI / 2, 0, 0); return b; }
 
 // Alpha wolf: a bigger, furrier Jethroes blob with ears, snout, fangs, tail and a stars-and-stripes bandana.
@@ -4559,7 +4563,7 @@ function wolfBody() {
 }
 
 // ---------- vehicles (hull + separate turret) ----------
-function camo(P) { return P.look === 'usa' ? 0x54633a : P.look === 'italian' ? 0x7b7f53 : P.look === 'toms' ? 0x2e3f42 : P.look === 'glasses' ? 0x5b6c6e : 0x8c6c44; }
+function camo(P) { return P.look === 'usa' ? 0x54633a : P.look === 'italian' ? 0x7b7f53 : P.look === 'toms' ? 0xb59a6a : P.look === 'glasses' ? 0x5b6c6e : 0x8c6c44; }
 function tracks(b, l, w, h, x) {
   [-1, 1].forEach(s => {
     b.box(l, h, .26, x || 0, h / 2, s * w, 0x1d1e1f);
@@ -9277,7 +9281,7 @@ const VM = {
       b.box(.016, .085, .42, .07, -.06, -.42, 0xd5dadf); b.box(.018, .02, .42, .07, -.02, -.42, 0xf4f6f8);
       b.add(GEO.cone, 0xd5dadf, .07, -.06, -.66, .012, .1, .045, -Math.PI / 2, 0, 0);
       b.box(.03, .14, .03, .07, -.07, -.2, 0x3a3d40); b.box(.04, .05, .12, .07, -.08, -.12, 0x2a1b10);
-      if (Settings.blobs) { b.add(GEO.blob, skin, .07, -.09, -.12, .05 * hs, .045 * hs, .055 * hs); if (T) b.add(GEO.blob, 0x2fb3a7, .12, -.2, .02, .07, .06, .1); }
+      if (Settings.blobs) { b.add(GEO.blob, skin, .07, -.09, -.12, .05 * hs, .045 * hs, .055 * hs); if (T) b.add(GEO.blob, 0xb08f5c, .12, -.2, .02, .07, .06, .1); }
       else { const U = UNIFORM[P.look] || UNIFORM.usa; b.box(.055, .06, .08, .07, -.08, -.12, 0x2a2924); limb(b, [.07, -.09, -.1], [.2, -.34, .2], .038, U[0]); }
     }
     else if (k === 'wolf') { [-1, 1].forEach(s => { b.add(GEO.blob, skin, s * .14, -.12, -.3, .08, .07, .12); for (let i = -1; i <= 1; i++) b.add(GEO.cone, 0xf1f1ec, s * .14 + i * .03, -.12, -.43, .012, .05, .012, -Math.PI / 2, 0, 0); }); }
@@ -9306,7 +9310,7 @@ const VM = {
       } else {
         b.add(GEO.blob, skin, .07, -.12, -.1, .045 * hs, .04 * hs, .05 * hs);   // right mitt on the grip
         b.add(GEO.blob, skin, .02, -.08, -.32, .042 * hs, .038 * hs, .05 * hs);  // left mitt under the barrel
-        if (T) b.add(GEO.blob, 0x2fb3a7, .12, -.2, .02, .07, .06, .1);            // forearm bulge
+        if (T) b.add(GEO.blob, 0xb08f5c, .12, -.2, .02, .07, .06, .1);            // forearm bulge
       }
     }
     this.mesh = new THREE.Mesh(b.geo(), this.mat); this.scene.add(this.mesh);
