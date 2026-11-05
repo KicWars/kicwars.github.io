@@ -168,6 +168,7 @@ body.bigmap #selpanel{visibility:hidden}
 .mini{position:relative;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:4px;cursor:pointer;padding:0;border:1px solid transparent}
 .mini img{width:100%;height:100%;object-fit:contain;display:block}
 .mini i{position:absolute;left:2px;right:2px;bottom:1px;height:3px;background:#39d06f}
+.sqname{font:600 11px system-ui;color:#ffd97a;letter-spacing:.04em;text-transform:uppercase;margin:0 0 4px}
 .queue{display:flex;gap:4px;margin-top:5px;align-items:center}
 .qit{position:relative;width:38px;height:38px;padding:0;background:rgba(255,255,255,.06)}
 .qit img{width:100%;height:100%;object-fit:contain}
@@ -2101,8 +2102,47 @@ Sim.prototype.addUnit = function (k, o, x, y) {
   else if (d.cat === 'sea') { e.sea = true; e.z = d.sub ? -.25 : 0; }
   else e.z = hAt(this.M, x, y);
   this.ents.set(e.id, e); p.pop += d.pop;
+  this.joinSquad(e);
   this.ev({k: 'spawn', id: e.id});
   return e;
+};
+
+// Squads: infantry fight in platoons of 20 with a realistic mix; vehicles, ships and aircraft in sections of 5 of one type.
+const PLATOON = {rifle: 11, mg: 2, rocket: 2, grenadier: 2, sniper: 1, medic: 1, assault: 1}, PLATOON_N = 20, SECTION_N = 5;
+const squadKind = d => d.cat === 'inf' ? 'pl' : d.cat === 'veh' || d.cat === 'sea' || d.cat === 'air' || d.cat === 'heli' ? 'sec' : null;
+const slotOf = k => PLATOON[k] ? k : 'rifle';
+function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+function squadName(e) { if (!e.sq) return ''; return e.d.cat === 'inf' ? ordinal(e.sqn) + ' Platoon' : e.d.n + ' Section ' + e.sqn; }
+Sim.prototype.joinSquad = function (e) {
+  const d = e.d, kind = squadKind(d), p = this.players[e.o];
+  if (!kind || !p || e.k === 'worker' || e.k === 'scout' || e.k === 'xavier' || d.xav || !d.dmg && kind === 'pl') return;
+  const S = {};
+  for (const t of this.ents.values()) if (t.sq && t.o === e.o && t !== e && (kind === 'pl' ? t.d.cat === 'inf' : t.k === e.k)) {
+    const g = S[t.sq] || (S[t.sq] = {n: 0, sqn: t.sqn, c: {}, x: 0, y: 0}); g.n++; g.x += t.x; g.y += t.y; const sl = slotOf(t.k); g.c[sl] = (g.c[sl] || 0) + 1;
+  }
+  const cap = kind === 'pl' ? PLATOON_N : SECTION_N, sl = slotOf(e.k);
+  let best = null, bs = -1e9;
+  for (const id in S) {
+    const g = S[id]; if (g.n >= cap) continue;
+    let sc = g.n * 2 - Math.hypot(g.x / g.n - e.x, g.y / g.n - e.y) * .05; // fill the fullest squad first
+    if (kind === 'pl') sc += (g.c[sl] || 0) < PLATOON[sl] ? 100 : 0;    // and the one that still has a slot for this role
+    if (sc > bs) { bs = sc; best = +id; }
+  }
+  if (best === null) {
+    p.sqN = p.sqN || {}; const key = kind === 'pl' ? 'inf' : e.k;
+    best = this.nextSq = (this.nextSq || 0) + 1; e.sqn = p.sqN[key] = (p.sqN[key] || 0) + 1;
+  } else e.sqn = S[best].sqn;
+  e.sq = best;
+};
+// A squad fights together: when one member is hit, idle squadmates nearby move up to help.
+Sim.prototype.squadAlert = function (t) {
+  if (!t.sq || t.b) return;
+  this.sqT = this.sqT || {}; if (this.sqT[t.sq] > this.t) return; this.sqT[t.sq] = this.t + 3;
+  for (const m of this.ents.values()) {
+    if (m.sq !== t.sq || m === t || m.inside || m.recon || m.stance === 'hold' || m.goal || m.tid || m.task) continue;
+    if (Math.hypot(m.x - t.x, m.y - t.y) > 28) continue;
+    this.go(m, t.x + (this.rnd() - .5) * 3, t.y + (this.rnd() - .5) * 3); m.amove = true;
+  }
 };
 
 Sim.prototype.footprint = function (d, x, y, fn) {
@@ -2212,6 +2252,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'train': { const b = this.ents.get(c.b); if (b && b.o === pi) this.cmdTrain(b, p, c.u); break; }
     case 'cancel': { const b = this.ents.get(c.b); if (b && b.o === pi && b.q[c.i]) this.cancelQ(b, p, c.i); break; }
     case 'rally': { const b = this.ents.get(c.b); if (b && b.o === pi) b.rally = {x: c.x, y: c.y}; break; }
+    case 'autotrain': { const b = this.ents.get(c.b); if (b && b.o === pi && b.d.trains) { b.auto = !!c.on; if (c.u && b.d.trains.includes(c.u)) b.autoK = c.u; } break; }
     case 'research': { const b = this.ents.get(c.b); if (b && b.o === pi && b.d.research) this.cmdResearch(b, p, c.u); break; }
     case 'power': break; // commander powers were removed
     case 'diplo': this.cmdDiplo(c, pi); break;
@@ -2359,6 +2400,20 @@ Sim.prototype.cmdTrain = function (b, p, u) {
   if (p.steel < c[0] || p.fuel < c[1]) { this.notify(p.i, 'Not enough resources', 'bad'); return; }
   p.steel -= c[0]; p.fuel -= c[1];
   b.q.push({u, c});
+};
+Sim.prototype.autoPick = function (b, p) {
+  const T = b.d.trains.filter(k => k !== 'worker' && this.trainable(p, k) && !UNITS[k].hidden);
+  if (!T.length) return null;
+  if (b.autoK && T.includes(b.autoK)) return b.autoK;
+  if (!T.some(k => PLATOON[k])) return T[0];
+  // the fullest unfinished platoon (queued troops count too) and the role it is short of
+  const S = {}; for (const t of this.ents.values()) if (t.sq && t.o === p.i && t.d.cat === 'inf') { const g = S[t.sq] || (S[t.sq] = {n: 0, c: {}}); g.n++; const sl = slotOf(t.k); g.c[sl] = (g.c[sl] || 0) + 1; }
+  let g = null; for (const id in S) if (S[id].n < PLATOON_N && (!g || S[id].n > g.n)) g = S[id];
+  const c = Object.assign({}, g ? g.c : {}); for (const e of this.ents.values()) if (e.b && e.o === p.i && e.q) for (const it of e.q) if (it.u) { const sl = slotOf(it.u); c[sl] = (c[sl] || 0) + 1; }
+  let best = null, bn = -1;
+  for (const k in PLATOON) if (T.includes(k)) { const need = PLATOON[k] - (c[k] || 0); if (need > bn) { bn = need; best = k; } }
+  if (bn <= 0) return T.includes('rifle') ? 'rifle' : T[0]; // specialist slots full or still locked: riflemen fill the platoon
+  return best || T[0];
 };
 Sim.prototype.cancelQ = function (b, p, i) {
   const it = b.q[i];
@@ -2614,6 +2669,7 @@ Sim.prototype.hurt = function (t, dmg, by) {
   t.srcX = undefined;
   if (by !== null && by !== undefined) {
     t.lastBy = by;
+    if (t.sq && by !== t.o) this.squadAlert(t);
     const vp = this.players[t.o]; if (vp && by !== t.o && vp.mood) vp.mood[by] = Math.min(3, (vp.mood[by] || 0) + dmg / (t.b ? 3000 : 1500));
     if (!t.alerted || this.t - t.alerted > 15) {
       t.alerted = this.t;
@@ -3137,6 +3193,11 @@ Sim.prototype.stepBuilding = function (b) {
   const d = b.d, p = this.players[b.o];
   if (b.bp < 1) return;
   if (b.hard > 0 && b.hard < 1) { b.hard = Math.min(1, b.hard + DT / 25); if (b.hard >= 1) { this.notify(p.i, d.n + ' hardened: bunkered in concrete', 'good', b.x, b.y); this.ev({k: 'hard', id: b.id}); } }
+  // auto-train: keep the line busy, filling platoons with the roles they are missing and sections of one vehicle type
+  if (b.auto && b.bp >= 1 && b.q.length < 2 && this.tick % 5 === 0) {
+    const k = this.autoPick(b, p);
+    if (k) { const c = this.costOf(p, UNITS[k], k); if (p.steel >= c[0] && p.fuel >= c[1] && p.pop + UNITS[k].pop <= p.popCap) this.cmdTrain(b, p, k); }
+  }
   // training or research
   if (b.q.length) {
     const it = b.q[0];
@@ -4215,10 +4276,10 @@ function encodeSnap(sim, sendSlow) {
     fl |= (e.vet || 0) << 8;
     out[b + 8] = fl; out[b + 9] = e.tid || 0; out[b + 10] = ((e.tu || 0) % 6.2832) * 1000;
     i++;
-    const sig = e.k + '|' + e.o + '|' + (e.hero || '') + '|' + (e.task ? e.task.type : '');
+    const sig = e.k + '|' + e.o + '|' + (e.hero || '') + '|' + (e.task ? e.task.type : '') + '|' + (e.sq || 0);
     if (e.sent !== sig) {
       e.sent = sig;
-      const m = {id: e.id, k: e.k, o: e.o, hpm: Math.ceil(e.hpm), hero: e.hero || null, task: e.task ? e.task.type : null};
+      const m = {id: e.id, k: e.k, o: e.o, hpm: Math.ceil(e.hpm), hero: e.hero || null, task: e.task ? e.task.type : null, sq: e.sq || 0, sqn: e.sqn || 0};
       if (e.b) { m.b = 1; m.x = e.x; m.y = e.y; m.z = e.z; }
       meta.push(m);
     } else if (e.hpmS !== e.hpm) { e.hpmS = e.hpm; meta.push({id: e.id, hpm: Math.ceil(e.hpm)}); }
@@ -4227,7 +4288,7 @@ function encodeSnap(sim, sendSlow) {
   if (sendSlow) {
     msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, techAll: p.techAll || 0, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, autoRecon: p.autoRecon, autoEco: p.autoEco, ecoK: p.ecoK}));
     msg.bs = [];
-    for (const e of sim.ents.values()) if (e.b) msg.bs.push({id: e.id, bp: e.bp, q: e.q, prog: e.prog, rally: e.rally, cdn: e.nukeCD, g: e.garrison ? e.garrison.length : 0, hd: e.hard || 0});
+    for (const e of sim.ents.values()) if (e.b) msg.bs.push({id: e.id, bp: e.bp, q: e.q, prog: e.prog, rally: e.rally, au: e.auto ? 1 : 0, ak: e.autoK || null, cdn: e.nukeCD, g: e.garrison ? e.garrison.length : 0, hd: e.hard || 0});
     msg.nodes = sim.M.nodes.map(n => [n.amt | 0, n.taken || 0]);
     msg.smokes = sim.smokes;
     msg.over = sim.over;
@@ -4262,7 +4323,7 @@ Mirror.prototype.apply = function (m) {
     let e = this.ents.get(k.id);
     if (!e) { e = {id: k.id, z: 0, h: 0, p: 0, r: 0, hp: 1, st: 0, q: [], tu: 0, garrison: []}; this.ents.set(k.id, e); }
     if (k.k) {
-      e.k = k.k; e.o = k.o; e.hero = k.hero; e.task = k.task ? {type: k.task} : null;
+      e.k = k.k; e.o = k.o; e.hero = k.hero; e.task = k.task ? {type: k.task} : null; e.sq = k.sq || 0; e.sqn = k.sqn || 0;
       e.d = k.b ? BUILDINGS[k.k] : UNITS[k.k];
       if (k.b) { e.b = true; e.x = k.x; e.y = k.y; e.z = k.z; if (e.bp === undefined) e.bp = 0; }
       else { const d = e.d; e.air = d.cat === 'air' || d.cat === 'heli' || d.cat === 'drone'; e.sea = d.cat === 'sea'; }
@@ -4280,7 +4341,7 @@ Mirror.prototype.apply = function (m) {
   }
   for (const id of this.ents.keys()) if (!seen.has(id)) this.ents.delete(id);
   if (m.pl) m.pl.forEach((q, i) => Object.assign(this.players[i], q));
-  if (m.bs) for (const b of m.bs) { const e = this.ents.get(b.id); if (e) { e.bp = b.bp; e.q = b.q; e.prog = b.prog; e.rally = b.rally; e.nukeCD = b.cdn; e.g = b.g; e.garrison = new Array(b.g); e.hard = b.hd; } }
+  if (m.bs) for (const b of m.bs) { const e = this.ents.get(b.id); if (e) { e.bp = b.bp; e.q = b.q; e.prog = b.prog; e.rally = b.rally; e.auto = !!b.au; e.autoK = b.ak; e.nukeCD = b.cdn; e.g = b.g; e.garrison = new Array(b.g); e.hard = b.hd; } }
   if (m.nodes) m.nodes.forEach((n, i) => { this.M.nodes[i].amt = n[0]; this.M.nodes[i].taken = n[1]; });
   if (m.smokes) this.smokes = m.smokes;
   if (m.over) this.over = m.over;
@@ -10372,8 +10433,11 @@ const UI = {
       if (!shift) this.sel.clear();
       for (const u of this.R.visEnts) if (u.k === e.k && u.o === this.g.me) { const p = this.project(u.rx, u.rz, u.ryy); if (p.x > 0 && p.y > 0 && p.x < innerWidth && p.y < innerHeight) this.sel.add(u.id); }
     } else {
-      if (shift) { if (this.sel.has(e.id)) this.sel.delete(e.id); else this.sel.add(e.id); }
-      else { this.sel.clear(); this.sel.add(e.id); }
+      // a click picks the unit's whole platoon or section; click again (slowly) to pick just that one unit
+      const mates = e.sq ? [...this.g.view.ents.values()].filter(u => u.sq === e.sq && u.o === e.o && !u.inside) : [e];
+      const whole = mates.length > 1 && this.sel.size === mates.length && mates.every(u => this.sel.has(u.id));
+      if (shift) { const on = !this.sel.has(e.id); for (const u of mates) on ? this.sel.add(u.id) : this.sel.delete(u.id); }
+      else { this.sel.clear(); if (whole && this.lastClick.id === e.id) this.sel.add(e.id); else for (const u of mates) this.sel.add(u.id); }
     }
     this.lastClick = {t: now, id: e.id};
     this.page = 1; Sfx.ui(); this.refreshHud(true);
@@ -10550,6 +10614,10 @@ const UI = {
       const ud = UNITS[u], c = cost(ud, u), full = p.pop + ud.pop > p.popCap;
       S.push({hk: ud.hk, name: ud.n, img: Thumbs.get(u, nat), cost: c, desc: ud.desc, pop: ud.pop, off: p.steel < c[0] || p.fuel < c[1], why: p.steel < c[0] || p.fuel < c[1] ? 'Not enough resources' : full ? 'Population full: build Housing' : '', act: () => { for (const e of es) if (e.k === b.k) G.issue({c: 'train', b: e.id, u}); Sfx.ui(); }});
     }
+    if (d.trains && d.trains.some(u => u !== 'worker')) {
+      const inf = d.trains.some(u => PLATOON[u]), last = b.q.length ? b.q[b.q.length - 1].u : null, ak = inf ? null : (b.autoK || last || d.trains.find(u => v.trainable(p, u)));
+      S.push({hk: 'Z', name: b.auto ? 'Auto-train: ON' : 'Auto-train', gl: b.auto ? '⟳' : '▶', desc: inf ? 'Keeps training troops to fill platoons of 20 (11 riflemen, 2 MG, 2 rockets, 2 grenadiers, a sniper, a medic and an assault trooper) while you have the resources.' : 'Keeps building ' + (ak ? UNITS[ak].n : 'units') + 's to fill sections of 5. Queue another type first to switch.', act: () => { for (const e of es) if (e.k === b.k) G.issue({c: 'autotrain', b: e.id, on: !b.auto, u: inf ? null : (e.q.length ? e.q[e.q.length - 1].u : ak)}); setTimeout(() => this.refreshHud(true), 150); }});
+    }
     if (d.research) S.push({hk: 'B', name: 'Research tree', gl: '🔬', desc: 'Open the full research tree (F8): three branches that unlock new units and make them stronger.', act: () => this.toggleTech(true)});
     if (d.research) for (const u in UPGRADES) {
       const q = UPGRADES[u], k = p.nat.tr.research || 1, c = [Math.round(q.cost[0] * k), Math.round(q.cost[1] * k)], have = p.ups[u], busy = p.ups['_' + u], lock = q.req && !p.ups[q.req];
@@ -10634,7 +10702,7 @@ const UI = {
     const G = this.g, v = G.view;
     for (const id of [...this.sel]) if (!v.ents.has(id)) this.sel.delete(id);
     const es = [...this.sel].map(i => v.ents.get(i)).filter(Boolean), sp = $('selpanel'), cards = $('cards');
-    const sig = es.map(e => e.id).join(',') + '|' + this.page + '|' + (es[0] ? [es[0].bp >= 1, (es[0].q || []).length, es[0].nukeReady, es[0].k].join() : '') + '|' + (es[0] && es[0].b ? Object.keys(v.players[G.me].ups).join() : '') + '|' + (this.mode ? 1 : 0);
+    const sig = es.map(e => e.id).join(',') + '|' + this.page + '|' + (es[0] ? [es[0].bp >= 1, (es[0].q || []).length, es[0].nukeReady, es[0].k, es[0].auto].join() : '') + '|' + (es[0] && es[0].b ? Object.keys(v.players[G.me].ups).join() : '') + '|' + (this.mode ? 1 : 0);
     const P = v.players[G.me];
     const rich = (P.steel / 20 | 0) + '/' + (P.fuel / 10 | 0);
     if (force || sig !== this.selSig || rich !== this.richSig) {
@@ -10655,7 +10723,7 @@ const UI = {
     if (!es.length) { const adv = this.advice(); sp.innerHTML = '<div><h3>Build</h3><p>Pick a building on the right and place it: the nearest workers go and build it, then return to mining. Or click a unit or drag a box to select. F1 to F4 select groups.</p>' + (adv ? '<p class="adv">💡 <b>Advisor:</b> ' + adv + '</p>' : '') + '</div>'; return; }
     if (es.length === 1) {
       const e = es[0], d = e.d, nat = v.players[e.o].nation, mine = e.o === G.me;
-      let html = `<img class="big-pic" src="${Thumbs.get(e.k, nat)}" alt=""><div style="flex:1;min-width:0"><h3>${d.n}${e.hero ? ' "' + e.hero + '"' : ''}${e.vet ? ' ' + '★'.repeat(e.vet) : ''}</h3>`;
+      let html = `<img class="big-pic" src="${Thumbs.get(e.k, nat)}" alt=""><div style="flex:1;min-width:0"><h3>${d.n}${e.hero ? ' "' + e.hero + '"' : ''}${e.vet ? ' ' + '★'.repeat(e.vet) : ''}</h3>${e.sq ? `<div class="sqname">${squadName(e)}</div>` : ''}`;
       html += `<div class="hpbar"><i style="width:${Math.max(0, e.hp / e.hpm * 100)}%;${e.o !== G.me && !v.friendly(e.o, G.me) ? 'background:#ff5a4a' : ''}"></i></div>`;
       html += `<div class="stats"><span>HP ${Math.ceil(e.hp)}/${Math.ceil(e.hpm)}</span>${d.dmg ? `<span>DMG ${d.dmg}</span><span>RNG ${d.rng}</span>` : ''}${e.kills ? `<span>Kills ${e.kills}</span>` : ''}${d.garrison ? `<span>Inside ${(e.garrison || []).length}/${d.garrison}</span>` : ''}${mine && e.bp < 1 ? `<span>Building ${(e.bp * 100) | 0}%</span>` : ''}</div>`;
       if (mine && e.b && e.q && e.q.length) {
@@ -10671,7 +10739,8 @@ const UI = {
       const nat = P.nation;
       if (this.spKey !== sig) {
         this.spKey = sig;
-        sp.innerHTML = '<div class="multi">' + es.slice(0, 60).map(e => `<button class="mini" data-id="${e.id}"><img src="${Thumbs.get(e.k, nat)}" alt=""><i style="width:${e.hp / e.hpm * 100}%"></i></button>`).join('') + '</div>';
+        const sqs = [...new Set(es.map(e => e.sq ? squadName(e) : ''))].filter(Boolean), sqH = sqs.length && sqs.length <= 3 ? `<div class="sqname">${sqs.join(' · ')} · ${es.length} ${es.length === 1 ? 'unit' : 'units'}</div>` : '';
+        sp.innerHTML = '<div style="flex:1;min-width:0">' + sqH + '<div class="multi">' + es.slice(0, 60).map(e => `<button class="mini" data-id="${e.id}"><img src="${Thumbs.get(e.k, nat)}" alt=""><i style="width:${e.hp / e.hpm * 100}%"></i></button>`).join('') + '</div></div>';
         sp.querySelectorAll('.mini').forEach(b => b.onclick = ev => { const id = +b.dataset.id; if (ev.shiftKey) this.sel.delete(id); else { this.sel.clear(); this.sel.add(id); } this.refreshHud(true); });
       } else sp.querySelectorAll('.mini').forEach(b => { const e = v.ents.get(+b.dataset.id); if (e) b.lastChild.style.width = (e.hp / e.hpm * 100) + '%'; });
     }
