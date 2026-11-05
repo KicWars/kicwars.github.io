@@ -806,6 +806,7 @@ const UNITS = {
   fpv:      {n: 'FPV Bomb Drone', cat: 'drone', arm: 'air', hp: 18, dmg: 130, rng: 18, cd: 1, spd: 13, vis: 13, cost: [55, 25], pop: 0, t: 5, from: 'dronebay', shot: 'drone', splash: 2.6, alt: 2.4, life: 70, r: .3, hk: 'R', desc: 'Suicide drone, hunts armour and buildings. Press F to fly it yourself in first person.'},
   hunter:   {n: 'Hunter Drone', cat: 'drone', arm: 'air', hp: 22, dmg: 70, rng: 20, cd: 1, spd: 19, vis: 15, cost: [70, 40], pop: 0, t: 7, from: 'dronebay', shot: 'drone', splash: 1.6, alt: 6, life: 60, hitsAir: 1, r: .3, hk: 'T', desc: 'Interceptor drone that rams aircraft and enemy drones.'},
   tank:     {n: 'Battle Tank', cat: 'veh', arm: 'heavy', hp: 520, dmg: 62, rng: 10, cd: 2.6, spd: 3.2, vis: 11, cost: [220, 60], pop: 3, t: 16, from: 'factory', shot: 'shell', splash: 1, turret: 1, r: .9, hk: 'R', desc: 'Main battle tank. Rocket troopers and drones are its enemy.'},
+  laser:    {n: 'Directed Energy Tank', cat: 'veh', arm: 'heavy', hp: 760, dmg: 9, rng: 12, cd: .12, spd: 3, vis: 13, cost: [460, 300], pop: 5, t: 34, from: 'factory', shot: 'laser', aa: 1, turret: 1, r: 1, hk: 'P', only: ['toms'], desc: 'Toms end-game tank. A continuous laser beam burns armour, aircraft and infantry from range. Tough and expensive.'},
   ifv:      {n: 'Autocannon IFV', cat: 'veh', arm: 'heavy', hp: 300, dmg: 15, rng: 9, cd: .45, spd: 4.4, vis: 12, cost: [140, 30], pop: 2, t: 11, from: 'factory', shot: 'cannon', aa: 1, turret: 1, r: .75, hk: 'T', desc: 'Fast autocannon. Shreds infantry and drones.'},
   arty:     {n: 'Artillery', cat: 'veh', arm: 'heavy', hp: 190, dmg: 95, rng: 24, minRng: 6, cd: 5.5, spd: 2.4, vis: 9, cost: [200, 70], pop: 3, t: 18, from: 'factory', shot: 'arty', splash: 3, turret: 1, r: .85, hk: 'Y', desc: 'Huge range and splash. Helpless up close.'},
   mlrs:     {n: 'MLRS Rocket Artillery', cat: 'veh', arm: 'heavy', hp: 210, dmg: 34, rng: 27, minRng: 7, cd: 9, spd: 3.1, vis: 10, cost: [240, 90], pop: 3, t: 20, from: 'factory', shot: 'arty', splash: 2.2, salvo: 6, turret: 1, r: .85, hk: 'G', desc: 'Ripple-fires six rockets over a wide area. Devastating against massed troops, slow to reload.'},
@@ -842,7 +843,7 @@ const BUILDINGS = {
   barracks: {n: 'Barracks', hp: 800, s: 5, vis: 8, trains: ['rifle', 'assault', 'rocket', 'sniper', 'medic', 'scout', 'mg', 'grenadier', 'para'], cost: [150, 0], t: 18, hk: 'Y', desc: 'Trains all infantry.'},
   dronebay: {n: 'Drone Bay', hp: 450, s: 4, vis: 9, trains: ['fpv', 'hunter'], cost: [120, 30], t: 14, hk: 'U', desc: 'Builds FPV bomb drones and hunter drones. No population used.'},
   derrick:  {n: 'Oil Derrick', hp: 400, s: 3, vis: 7, oil: 1, cost: [100, 0], t: 12, hk: 'G', desc: 'Build on an oil well for steady fuel.'},
-  factory:  {n: 'War Factory', hp: 1100, s: 6, vis: 8, trains: ['tank', 'ifv', 'arty', 'mlrs', 'sam', 'truck', 'supply'], req: 'barracks', cost: [260, 40], t: 24, hk: 'H', desc: 'Builds armoured vehicles.'},
+  factory:  {n: 'War Factory', hp: 1100, s: 6, vis: 8, trains: ['tank', 'ifv', 'arty', 'mlrs', 'sam', 'truck', 'supply', 'laser'], req: 'barracks', cost: [260, 40], t: 24, hk: 'H', desc: 'Builds armoured vehicles.'},
   airfield: {n: 'Airfield', hp: 1000, s: 8, vis: 12, trains: ['fighter', 'interceptor', 'bomber', 'f16', 'f15', 'f35', 'a10', 'fa18', 'typhoon', 'gunship', 'transport', 'chinook', 'awacs'], req: 'factory', cost: [320, 120], t: 28, hk: 'J', desc: 'Builds aircraft.'},
   yard:     {n: 'Naval Yard', hp: 1100, s: 6, vis: 12, coast: 1, trains: ['destroyer', 'attacksub', 'nukesub', 'lcboat', 'patrolboat', 'hover'], req: 'barracks', cost: [280, 60], t: 24, hk: 'K', desc: 'Must touch the sea. Builds warships and submarines.'},
   lab:      {n: 'Research Lab', hp: 500, s: 4, vis: 7, research: 1, req: 'barracks', cost: [160, 60], t: 18, hk: 'V', desc: 'Upgrades weapons, armour and logistics.'},
@@ -870,6 +871,7 @@ const UPGRADES = {
   arm1: {n: 'Tank Doctrine', tree: 'arm', tier: 1, cost: [170, 60], t: 25, hk: 'G', buff: 1.1, unlock: ['tank', 'sam'], desc: 'Vehicles +10% damage and health. Unlocks Battle Tanks and SAM Trucks.'},
   arm2: {n: 'Heavy Artillery', tree: 'arm', tier: 2, req: 'arm1', cost: [290, 120], t: 35, hk: 'H', buff: 1.1, bld: 1.15, unlock: ['arty', 'mlrs'], desc: 'Vehicles +10% more, buildings +15% health. Unlocks Artillery and MLRS.'},
   arm3: {n: 'War Economy', tree: 'arm', tier: 3, req: 'arm2', cost: [420, 200], t: 45, hk: 'J', buff: 1.15, bld: 1.1, unlock: [], desc: 'Vehicles +15% more, buildings +10% more. Workers carry 50% more, roads are faster and the capital pays 50% more tax.'},
+  arm4: {n: 'Directed Energy', tree: 'arm', tier: 4, req: 'arm3', only: ['toms'], cost: [650, 420], t: 60, hk: 'K', buff: 1.1, unlock: ['laser'], desc: 'The Toms\' secret end-game tech. Vehicles +10% more. Unlocks the Directed Energy Tank: a continuous laser beam that melts armour, aircraft and infantry.'},
   air1: {n: 'Air Superiority', tree: 'air', tier: 1, cost: [200, 100], t: 25, hk: 'U', buff: 1.1, unlock: ['interceptor', 'f15', 'typhoon', 'gunship', 'transport', 'awacs', 'hunter'], desc: 'Aircraft, drones and ships +10% damage and health. Unlocks Interceptors, F-15, Typhoon, Gunships, C-130, AWACS and Hunter drones.'},
   air2: {n: 'Strike Wing', tree: 'air', tier: 2, req: 'air1', cost: [340, 170], t: 35, hk: 'I', buff: 1.1, unlock: ['bomber', 'a10', 'f35'], desc: 'Air and sea +10% more. Unlocks Bombers, the A-10 and the F-35.'},
   air3: {n: 'Strategic Weapons', tree: 'air', tier: 3, req: 'air2', cost: [600, 350], t: 50, hk: 'O', buff: 1.15, unlock: ['nukesub', 'patriot', 'silo'], desc: 'Air and sea +15% more. Unlocks the Nuclear Sub, Patriot batteries and Missile Silos.'},
@@ -897,6 +899,7 @@ const VS = {
   bullet:  {light: 1, heavy: .22, air: .8, sea: .15, bld: .18},
   cannon:  {light: 1, heavy: .5, air: 1, sea: .4, bld: .4},
   flame:   {light: 1.5, heavy: .35, air: 0, sea: 0, bld: 1},
+  laser:   {light: 1.1, heavy: .85, air: 1.4, sea: .8, bld: .7},
   rocket:  {light: .45, heavy: 1.7, air: 1.2, sea: 1, bld: .9},
   sniper:  {light: 2.2, heavy: .1, air: 0, sea: 0, bld: .05},
   shell:   {light: .7, heavy: 1.1, air: 0, sea: 1, bld: 1.3},
@@ -939,6 +942,7 @@ const PWPN = {
             {n: 'Pounce', t: 'leap', cd: 4}],
   tank:    [{n: '120mm Cannon', t: 'proj', dmg: 250, vs: 'shell', spd: 55, g: 2, spl: 1.3, mag: 1, rl: 2.6, sp: .15, ads: .05, kick: 2.5, rng: 70, zoom: .45, snd: 'tank'},
             {n: 'Coax MG', t: 'hit', dmg: 7, vs: 'bullet', rpm: 650, mag: 200, rl: 3, sp: 1.2, ads: .6, kick: .2, rng: 32, crit: 1.5, auto: 1, snd: 'bullet'}],
+  laser:   [{n: 'Directed Energy Beam', t: 'hit', dmg: 9, vs: 'laser', rpm: 480, mag: 240, rl: 4, sp: .25, ads: .1, kick: .05, rng: 50, crit: 1.2, auto: 1, aa: 1, snd: 'laser'}],
   ifv:     [{n: '30mm Autocannon', t: 'proj', dmg: 26, vs: 'cannon', spd: 60, g: 1, spl: .55, rpm: 220, mag: 40, rl: 3, sp: .5, ads: .2, kick: .8, rng: 55, zoom: .55, auto: 1, aa: 1, snd: 'cannon'},
             {n: 'TOW Missile', t: 'msl', dmg: 160, vs: 'rocket', spd: 18, spl: 1.3, cd: 7, rng: 60, guided: 1, snd: 'rocket'}],
   arty:    [{n: '155mm Howitzer', t: 'proj', dmg: 120, vs: 'arty', spd: 26, g: 9, spl: 3, mag: 1, rl: 4, sp: .4, ads: .2, kick: 3, rng: 80, arc: 1, snd: 'arty'},
@@ -2812,10 +2816,10 @@ Sim.prototype.fire = function (a, t) {
     if (Math.abs(angDiff(t.h, from)) > 2.2) dm *= 1.35;
   }
   const dd = Math.hypot(t.x - a.x, t.y - a.y);
-  const fx = ty === 'bullet' || ty === 'sniper' || ty === 'cannon' || ty === 'flame' || ty === 'bite';
+  const fx = ty === 'bullet' || ty === 'sniper' || ty === 'cannon' || ty === 'flame' || ty === 'bite' || ty === 'laser';
   a.st = 2;
   if (d.stealth) { a.revealed = this.t + 2.5; } else if (d.cat === 'inf') a.revealed = this.t + 1.3; // a rifle shot gives the shooter away
-  const speed = {bullet: 90, sniper: 140, cannon: 70, flame: 16, bite: 50, rocket: 18, missile: 26, shell: 36, arty: 15, bomb: 8, torpedo: 7, drone: 30}[ty] || 40;
+  const speed = {bullet: 90, sniper: 140, cannon: 70, laser: 900, flame: 16, bite: 50, rocket: 18, missile: 26, shell: 36, arty: 15, bomb: 8, torpedo: 7, drone: 30}[ty] || 40;
   const fly = ty === 'bomb' ? Math.max(.5, a.z / 11) : dd / speed;
   const vs = t.b ? 'bld' : t.d.arm;
   const s = {t: this.t + fly, tid: t.id, x: t.x, y: t.y, dmg: dm * (VS[ty][vs] || 0), base: dm, sp: d.splash || 0, o: a.o, ty, src: a.id};
@@ -3975,7 +3979,7 @@ Bot.prototype.train = function () {
       else if (r < .85) u = r < .815 ? 'mg' : 'grenadier';
       else if (r < .92) u = 'para';
       else u = 'sniper';
-    } else if (b.k === 'factory') u = I.air > 2 && (c.sam || 0) < Math.min(4, I.air / 2) && r < .6 ? 'sam' : r < .45 ? 'tank' : r < .7 ? 'ifv' : r < .8 ? 'arty' : r < .9 ? 'mlrs' : 'sam';
+    } else if (b.k === 'factory') u = I.air > 2 && (c.sam || 0) < Math.min(4, I.air / 2) && r < .6 ? 'sam' : p.ups.arm4 && r < .3 ? 'laser' : r < .45 ? 'tank' : r < .7 ? 'ifv' : r < .8 ? 'arty' : r < .9 ? 'mlrs' : 'sam';
     else if (b.k === 'dronebay') { if (s.t > this.cfg.start && r < this.cfg.drones * 2) u = r < this.cfg.drones * 1.5 ? 'fpv' : 'hunter'; }
     else if (b.k === 'airfield') {
       const nAir = this.mine.army.filter(e => e.d.cat === 'air').length;
@@ -3995,7 +3999,8 @@ Bot.prototype.train = function () {
 Bot.prototype.research = function () {
   const lab = (this.mine.b.lab || [])[0], p = this.p; this.save = 0;
   if (!lab || lab.bp < 1 || lab.q.length) return;
-  for (const u of ['arm1', 'inf1', 'air1', 'inf2', 'arm2', 'inf3', 'air2', 'arm3', 'air3']) {
+  for (const u of ['arm1', 'inf1', 'air1', 'inf2', 'arm2', 'inf3', 'air2', 'arm3', 'air3', 'arm4']) {
+    if (UPGRADES[u].only && !UPGRADES[u].only.includes(p.nat.key)) continue;
     if (p.ups[u] || p.ups['_' + u] || (UPGRADES[u].req && !p.ups[UPGRADES[u].req])) continue;
     const k = p.nat.tr.research || 1, c = [UPGRADES[u].cost[0] * k, UPGRADES[u].cost[1] * k];
     if (p.steel >= c[0] && p.fuel >= c[1]) this.cmd({c: 'research', b: lab.id, u});
@@ -4584,6 +4589,18 @@ const VEH = {
     t.box(1, .32, .8, -.08, 0, 0, c).box(.5, .22, .7, .3, -.02, 0, c); t.cylX(.06, 1.55, 1.1, .02, 0, 0x2f3331); t.cylX(.09, .28, 1.75, .02, 0, 0x2f3331);
     t.cyl(.14, .14, -.2, .2, .2, DARK); t.box(.3, .06, .9, -.3, .14, 0, P.trim);
     return {h, t, ty: .78};
+  },
+  laser(P) { // Toms directed-energy tank: low angular hull, glowing cyan power cells, twin emitter prongs
+    const c = camo(P), CY = 0x3dfff0, h = new Batch(), t = new Batch();
+    tracks(h, 2.4, .56, .38);
+    h.box(2.4, .3, 1.1, 0, .5, 0, c).add(GEO.wedge, c, 1, .38, 0, .72, .38, 1.1); h.box(.5, .05, .96, -.75, .67, 0, DARK);
+    [-1, 1].forEach(s => { h.box(1.6, .05, .06, 0, .6, s * .56, CY); h.box(.3, .22, .08, -1.0, .52, s * .55, 0x0d3b3a); });
+    t.box(1.1, .3, .9, -.1, 0, 0, c).box(.55, .2, .78, .3, -.02, 0, c); t.box(.5, .1, .5, -.45, .2, 0, 0x0d3b3a);
+    t.add(GEO.ico, CY, -.45, .3, 0, .13, .13, .13);
+    [-1, 1].forEach(s => { t.cylX(.05, 1.5, 1.15, .03, s * .13, 0x2a3a3c); t.cylX(.028, 1.55, 1.17, .03, s * .13, CY); });
+    t.cylX(.04, 1.35, 1.1, .03, 0, 0xe6ffff); t.box(.16, .12, .4, .85, .03, 0, 0x16282a);
+    t.box(.3, .06, .9, -.45, .15, 0, P.trim);
+    return {h, t, ty: .8};
   },
   ifv(P) {
     const c = camo(P), h = new Batch(), t = new Batch();
@@ -6208,6 +6225,7 @@ const Sfx = {
       flame: () => { if (this.limit('pf', 90)) this.noise(.16, 900, .18, 'lowpass', 1, 400); },
       rocket: () => { this.noise(.7, 900, .45, 'bandpass', .7, 4000); this.tone(220, 90, .25, .25, 'sawtooth'); },
       cannon: () => { this.noise(.12, 1400, .45, 'lowpass', 1, 250); this.tone(140, 50, .1, .3, 'square'); },
+      laser: () => { if (this.limit('pl', 70)) { this.tone(1500, 380, .09, .16, 'sawtooth'); this.tone(2300, 900, .06, .08, 'sine'); } },
       tank: () => { this.noise(.9, 700, 1, 'lowpass', 1, 60); this.tone(90, 28, .6, .7, 'sine'); },
       arty: () => { this.noise(1.1, 600, 1, 'lowpass', 1, 50); this.tone(70, 22, .8, .8, 'sine'); },
       missile: () => { this.noise(1, 2500, .35, 'bandpass', 1, 600); },
@@ -6987,7 +7005,7 @@ Renderer.prototype.handle = function (ev, view) {
       Sfx.shot(ev.ty, ax, ay, this);
       break;
     }
-    case 'tracer': { const a = E.get(ev.a); if (a) { this.tracer(a.rx, a.rz + .5, a.ryy, ev.x, ev.z, ev.y, [1, .9, .5]); Sfx.shot(ev.ty, a.x, a.y, this); } break; }
+    case 'tracer': { const a = E.get(ev.a); if (a) { this.tracer(a.rx, a.rz + .5, a.ryy, ev.x, ev.z, ev.y, ev.ty === 'laser' ? [.35, 1, .95] : [1, .9, .5]); Sfx.shot(ev.ty, a.x, a.y, this); } break; }
     case 'boom': {
       const y = ev.z === undefined ? Math.max(0, hAt(M, ev.x, ev.y)) : ev.z;
       if (ev.big) { this.mushroom(ev.x, Math.max(0, hAt(M, ev.x, ev.y)), ev.y); this.paintScar(ev.x, ev.y, 18); Sfx.nuke(); break; }
@@ -7088,6 +7106,11 @@ Renderer.prototype.fxShot = function (ty, ax, ay, az, tx, ty2, tz, d, a, t) {
     this.tracer(ax, ay, az, tx + (r() - .5) * .3, ty2, tz + (r() - .5) * .3, c, ty === 'sniper' ? .22 : .08);
     this.addP(ax, ay, az, 0, 0, 0, ty === 'cannon' ? .5 : .28, .06, 1, .85, .45, true);
     if (r() < .6) this.addP(tx, ty2, tz, (r() - .5), r(), (r() - .5), .18, .15, 1, .8, .4, true);
+  } else if (ty === 'laser') {
+    this.tracer(ax, ay, az, tx, ty2, tz, [.35, 1, .95], .1); this.tracer(ax, ay, az, tx, ty2, tz, [1, 1, 1], .05);
+    this.addP(ax, ay, az, 0, 0, 0, .55, .09, .4, 1, .95, true);
+    this.addP(tx, ty2, tz, (r() - .5) * 2, r() * 1.6, (r() - .5) * 2, .22, .2, .5, 1, .9, true);
+    if (r() < .5) this.addP(tx, ty2, tz, (r() - .5), r() * .5, (r() - .5), .5, .4, 1, .6, .2, true, .9, .3);
   } else if (ty === 'flame') {
     for (let i = 0; i < 6; i++) { const q = r(); this.addP(ax + (tx - ax) * q * .4, ay, az + (tz - az) * q * .4, (tx - ax) * .9 + (r() - .5), (ty2 - ay) * .7 + r() * .6, (tz - az) * .9 + (r() - .5), .25, .32, 1, .5 + r() * .3, .1, true, .9, .95); }
   } else if (ty === 'bite') {
@@ -8388,7 +8411,7 @@ const Direct = {
       if (Settings.assist) { const t = this.assistTarget(g, W, v); if (t) { const dx = t.x - E.x, dy = t.y - E.y, dz = t.z - E.z, L = Math.hypot(dx, dy, dz); v.x = v.x * .3 + dx / L * .7; v.y = v.y * .3 + dy / L * .7; v.z = v.z * .3 + dz / L * .7; const l2 = Math.hypot(v.x, v.y, v.z); v.x /= l2; v.y /= l2; v.z /= l2; } }
       const h = Hit.cast(g.view, E, v, W.rng, this.id, g.me, R);
       if (W.t === 'mel') { if (h.ent && h.d < W.rng) hitsBy.set(h.ent.id, {e: h.ent, n: 1, crit: h.crit, p: h.p}); continue; }
-      if (i < 3 || n === 1) R.tracer(mz.x, mz.z, mz.y, h.p.x, h.p.z, h.p.y, W.vs === 'sniper' ? [1, 1, .85] : [1, .85, .45], W.vs === 'sniper' ? .14 : .07);
+      if (i < 3 || n === 1) R.tracer(mz.x, mz.z, mz.y, h.p.x, h.p.z, h.p.y, W.vs === 'laser' ? [.35, 1, .95] : W.vs === 'sniper' ? [1, 1, .85] : [1, .85, .45], W.vs === 'sniper' ? .14 : W.vs === 'laser' ? .09 : .07);
       if (h.ent) {
         const o = hitsBy.get(h.ent.id) || {e: h.ent, n: 0, crit: false, p: h.p};
         o.n++; o.crit = o.crit || h.crit; hitsBy.set(h.ent.id, o);
@@ -9952,7 +9975,7 @@ const UI = {
     for (const tk in TECH_TREES) {
       const T = TECH_TREES[tk]; h += `<div class="ttree" style="--tc:${T.col}"><h3 style="color:${T.col}"><i>${T.ic}</i>${T.n}</h3>`;
       for (const u in UPGRADES) {
-        const q = UPGRADES[u]; if (q.tree !== tk) continue;
+        const q = UPGRADES[u]; if (q.tree !== tk || (q.only && !q.only.includes(p.nat.key))) continue;
         const c = [Math.round(q.cost[0] * k), Math.round(q.cost[1] * k)], done = p.ups[u] || p.techAll, lab = busyAt(u), lock = q.req && !p.ups[q.req] && !p.techAll;
         const st = done ? 'done' : lab ? 'busy' : lock ? 'lock' : '';
         const prog = lab && lab.q[0].up === u ? Math.min(1, (lab.prog || 0) / q.t) : 0;
@@ -10490,7 +10513,7 @@ const UI = {
     if (d.research) S.push({hk: 'B', name: 'Research tree', gl: '🔬', desc: 'Open the full research tree (F8): three branches that unlock new units and make them stronger.', act: () => this.toggleTech(true)});
     if (d.research) for (const u in UPGRADES) {
       const q = UPGRADES[u], k = p.nat.tr.research || 1, c = [Math.round(q.cost[0] * k), Math.round(q.cost[1] * k)], have = p.ups[u], busy = p.ups['_' + u], lock = q.req && !p.ups[q.req];
-      if (have) continue;
+      if (have || (q.only && !q.only.includes(p.nat.key))) continue;
       S.push({hk: q.hk, name: q.n, gl: '⚙', cost: c, desc: q.desc, off: busy || lock || p.steel < c[0] || p.fuel < c[1], why: busy ? 'Researching' : lock ? 'Requires ' + UPGRADES[q.req].n : '', act: () => G.issue({c: 'research', b: b.id, u})});
     }
     if (d.garrison) S.push({hk: 'B', name: 'Unload', gl: '⇱', desc: 'Send garrisoned infantry back outside.', act: () => G.issue({c: 'unload', b: b.id})});
@@ -10916,6 +10939,7 @@ window.Tension = (() => {
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '5 Nov 2026 (latest)', items: [
+      'Toms only: new end-of-tree research "Directed Energy" (Armour tier 4) unlocks the Directed Energy Tank, a laser beam tank that burns armour, aircraft and infantry.',
       'Campaign: a "Next level" button on the victory screen; the victory screen now scrolls and its buttons sit above the stats.',
       'Stats screen hides economy columns and the steel graph in campaign battles (there is no economy there).',
       'Trenches can be dug in any direction (into slopes, straight down, ahead) with spoil mounds and cover. In-field radar minimap.',
