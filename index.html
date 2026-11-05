@@ -2043,6 +2043,14 @@ Sim.prototype.issue = function (c, pi) {
     case 'pilot': { const e = mine[0]; if (e && !e.b) { if (c.on) { if (!e.pilot) { e.hpm *= PILOT_HP; e.hp *= PILOT_HP; } e.chute = 0; e.pilot = pi + 1; this.clearOrders(e); this.ev({k: 'cry', p: pi, id: e.id}); } else { if (e.pilot) { e.hpm /= PILOT_HP; e.hp = Math.min(e.hp / PILOT_HP, e.hpm); } e.pilot = 0; if (e.air) e.hold = {x: e.x, y: e.y}; } } break; }
     case 'pose': { const e = this.ents.get(c.id); if (e && e.o === pi && e.pilot === pi + 1) { e.x = clamp(c.x, 0, this.N - 1); e.y = clamp(c.y, 0, this.N - 1); e.z = c.z; e.h = c.h; e.p = c.p || 0; e.r = c.r || 0; if (c.tu !== undefined) e.tu = c.tu; if (c.m !== undefined) e.moving = c.m; } break; }
     case 'pfire': this.pilotFire(c, pi); break;
+    case 'streak': { // killstreak reward: an artillery barrage walks across the marked ground after a short warning
+      const e = this.ents.get(c.id); this.streakAt = this.streakAt || {};
+      if (e && e.o === pi && !e.b && this.t - (this.streakAt[pi] || -99) > 8 && isFinite(c.x) && isFinite(c.y)) {
+        this.streakAt[pi] = this.t; (this.strikes = this.strikes || []).push({o: pi, src: e, x: clamp(c.x, 2, this.N - 3), y: clamp(c.y, 2, this.N - 3), at: this.t + 2.5, n: c.big ? 26 : 16, nx: 0});
+        this.ev({k: 'msg', p: pi, text: 'Artillery inbound: take cover or stay clear!', kind: 'gold'}); this.ev({k: 'boom', x: c.x, y: c.y, z: 0, s: .5});
+      }
+      break;
+    }
     case 'phit': this.pilotHit(c, pi); break;
     case 'pnear': this.pilotNear(c, pi); break;
     case 'pproj': this.pilotProj(c, pi); break;
@@ -2723,11 +2731,22 @@ Sim.prototype.explodeDrone = function (a) {
 };
 
 // ---------- main tick ----------
+Sim.prototype.stepStrikes = function () {
+  this.strikes = this.strikes.filter(s => {
+    if (this.t < s.at || this.t < s.nx) return true;
+    s.nx = this.t + .22; s.n--;
+    const a = this.rnd() * 6.283, r = Math.sqrt(this.rnd()) * 7, x = s.x + Math.cos(a) * r, y = s.y + Math.sin(a) * r;
+    this.ev({k: 'boom', x, y, z: Math.max(hAt(this.M, x, y), 0), s: 1.5});
+    this.splash(x, y, 3.4, 110, s.o, 'bomb', s.src && this.ents.has(s.src.id) ? s.src : null);
+    return s.n > 0;
+  });
+};
 Sim.prototype.step = function () {
   if (this.over) { this.t += DT; this.tick++; return; }
   if (this.battle && !this.battle.live) { this.rebuildGrid(); return; } // deploying: the world is frozen
   if (this.battle && this.tick % 10 === 0) this.battleCheck();
   if (this.scen && this.tick % 5 === 0) this.scenStep();
+  if (this.strikes && this.strikes.length) this.stepStrikes();
   this.t += DT; this.tick++;
   this.F.budget = this.N > 170 ? 3 : 5;
   this.rebuildGrid();
@@ -7492,7 +7511,7 @@ const Direct = {
     this.ui = ui; this.e = e; this.id = e.id; this.on = true; this.aboard = null;
     const d = e.d;
     this.mode = this.modeOf(d);
-    this.yaw = e.h; this.pitch = this.mode === 'plane' ? 0 : -.05; this.roll = 0; this.fq = undefined; this.manualFly = false; this.fpP = 0; this.pRate = 0; this.rollRate = 0; this.pullUp = false; this.warnT = 0; this.killStreak = 0; this.confirm = null; this.vz = 0; this.mx = this.my = 0; this.keys = {}; this.mouseDown = false;
+    this.yaw = e.h; this.pitch = this.mode === 'plane' ? 0 : -.05; this.roll = 0; this.fq = undefined; this.manualFly = false; this.fpP = 0; this.pRate = 0; this.rollRate = 0; this.pullUp = false; this.warnT = 0; this.killStreak = 0; this.strikeBank = 0; this.confirm = null; this.vz = 0; this.mx = this.my = 0; this.keys = {}; this.mouseDown = false;
     this.speed = this.mode === 'plane' ? d.spd : this.mode === 'fpv' ? d.spd : 0; this.batt = 1; this.vel = {x: 0, y: 0}; this.hullSpd = 0;
     this.aimYaw = this.yaw; this.aimPitch = 0; this.camYaw = this.yaw; this.camPitch = this.mode === 'plane' ? -.05 : 0;
     this.W = (PWPN[e.k] || []).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0}));
@@ -7636,6 +7655,7 @@ const Direct = {
     if (c === B.ads) { this.toggleAds(); return true; }
     if (c === B.reload) { if ((this.mode === 'plane' || this.mode === 'heli') && this.W[2]) this.tryFire(2, this.ui.g); else this.reload(this.slot); return true; }
     if (c === B.chaff) { this.chaff(); return true; }
+    if (c === 'KeyJ' && this.strikeBank > 0) { const P = this.aimPt; if (!P) { this.msg('Aim at the ground to call artillery', 1.5); return true; } this.strikeBank--; this.ui.g.issue({c: 'streak', id: this.id, x: P.x, y: P.y, big: this.bigStrike ? 1 : 0}); this.bigStrike = false; return true; }
     if (c === B.cycle) { this.cycleLock(); return true; }
     if (c === B.special) { this.special(); return true; }
     if (c === 'KeyH') { document.getElementById('dhelp').classList.toggle('mini'); return true; }
@@ -8220,6 +8240,7 @@ const Direct = {
       if (this.feed.length > 4) this.feed.pop();
       this.hits.push({t: 0, crit: true, kill: true}); Sfx.killDing();
       this.killStreak = (this.killStreak || 0) + 1;
+      if (this.killStreak % 3 === 0) { this.strikeBank = (this.strikeBank || 0) + 1; this.bigStrike = this.killStreak % 9 === 0; this.msg('ARTILLERY READY: aim at the ground and press J' + (this.bigStrike ? ' (BARRAGE)' : ''), 4); }
       const nowK = performance.now(); this.multi = nowK - (this.lastKillT || 0) < 4500 ? (this.multi || 1) + 1 : 1; this.lastKillT = nowK;
       const mk = this.multi >= 5 ? 'UNSTOPPABLE' : this.multi === 4 ? 'RAMPAGE' : this.multi === 3 ? 'TRIPLE KILL' : this.multi === 2 ? 'DOUBLE KILL' : null;
       if (mk) Sfx.tone(520 + this.multi * 120, 900 + this.multi * 160, .3, .14, 'square');
@@ -8442,7 +8463,7 @@ const Direct = {
       c.font = '900 24px system-ui'; c.fillStyle = '#6dc8ff'; c.fillText(a, cx - 50, 96); c.fillStyle = '#ff6a5a'; c.fillText(b, cx + 50, 96);
       c.font = '700 11px system-ui'; c.fillStyle = '#fff'; c.fillText('TEAM DEATHMATCH · first to ' + S.B.tdm, cx, 78); c.fillText(':', cx, 94);
       c.fillStyle = 'rgba(255,255,255,.15)'; c.fillRect(cx - 140, 104, 280, 5); c.fillStyle = '#6dc8ff'; c.fillRect(cx - 140, 104, 140 * a / S.B.tdm, 5); c.fillStyle = '#ff6a5a'; c.fillRect(cx + 140 - 140 * b / S.B.tdm, 104, 140 * b / S.B.tdm, 5);
-      c.textAlign = 'left'; c.font = '700 12px system-ui'; c.fillStyle = '#fff'; c.fillText('Your kills: ' + (this.killStreak || 0) + ' this life', 24, 100);
+      c.textAlign = 'left'; c.font = '700 12px system-ui'; c.fillStyle = '#fff'; c.fillText('Your kills: ' + (this.killStreak || 0) + ' this life' + (this.strikeBank > 0 ? '   ·   ARTILLERY x' + this.strikeBank + ' [J]' : '   ·   artillery in ' + (3 - this.killStreak % 3) + ' kills'), 24, 100);
       c.restore(); return;
     }
     const O = S.obj[S.oi]; if (!O) return;
