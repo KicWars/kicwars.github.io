@@ -2100,12 +2100,14 @@ Sim.prototype.techMult = function (p, br, hp) {
   return m;
 };
 Sim.prototype.hpMult = function (p, d) { return (p.nat.tr.hp || 1) * (d && d.cat === 'air' ? p.nat.tr.air || 1 : 1) * (1 + .05 * this.morale(p)) * this.techMult(p, techBranch(d), true); };
-Sim.prototype.dmgMult = function (p, d) { let m = (p.nat.tr.dmg || 1) * (d ? this.techMult(p, techBranch(d)) : 1); if (p.buffs.forza > this.t) m *= 1.25; if (d && d.cat === 'air') { m *= p.nat.tr.air || 1; if (p.buffs.autosurge > this.t) m *= 1.5; } return m; };
+const UNIT_COST_K = 1.15, DMG_K = .9, AUTO_TRAIN_K = .7; // global nerf: auto-training makes big armies easy, so units cost more, hit a bit softer, and autopilot trains slower
+Sim.prototype.dmgMult = function (p, d) { let m = DMG_K * (p.nat.tr.dmg || 1) * (d ? this.techMult(p, techBranch(d)) : 1); if (p.buffs.forza > this.t) m *= 1.25; if (d && d.cat === 'air') { m *= p.nat.tr.air || 1; if (p.buffs.autosurge > this.t) m *= 1.5; } return m; };
 Sim.prototype.costOf = function (p, def, key) {
   if (p.open && key) return [0, 0]; // "all units unlocked": units are free, buildings are not
   let k = p.nat.tr.cost || 1;
   if (key === 'scout' && p.nat.tr.scoutCost) k *= p.nat.tr.scoutCost;
   if (def.cat === 'air' && p.nat.tr.airCost) k *= p.nat.tr.airCost;
+  if (key && UNITS[key] === def && key !== 'worker') k *= UNIT_COST_K;
   return [Math.round(def.cost[0] * k), Math.round(def.cost[1] * k)];
 };
 
@@ -2439,12 +2441,12 @@ Sim.prototype.trainable = function (p, u) {
 };
 Sim.prototype.techLock = function (p, u) { const t = TECH_OF[u]; return t && !p.ups[t] && !p.open && !p.techAll ? t : null; };
 
-Sim.prototype.cmdTrain = function (b, p, u) {
+Sim.prototype.cmdTrain = function (b, p, u, auto) {
   if (b.bp < 1 || !b.d.trains || !b.d.trains.includes(u) || !this.trainable(p, u) || b.q.length >= 8) return;
   const c = this.costOf(p, UNITS[u], u);
   if (p.steel < c[0] || p.fuel < c[1]) { this.notify(p.i, 'Not enough resources', 'bad'); return; }
   p.steel -= c[0]; p.fuel -= c[1];
-  b.q.push({u, c});
+  b.q.push(auto ? {u, c, auto: 1} : {u, c});
 };
 Sim.prototype.autoPick = function (b, p) {
   const T = b.d.trains.filter(k => k !== 'worker' && this.trainable(p, k) && !UNITS[k].hidden);
@@ -3105,7 +3107,7 @@ Sim.prototype.stepDeputy = function (p) {
     if (b.o !== p.i || !b.b || b.bp < 1 || !b.d.trains || b.q.length || b.d.trains.every(u => u === 'worker')) continue;
     const k = this.autoPick(b, p); if (!k) continue;
     const c = this.costOf(p, UNITS[k], k);
-    if (p.steel >= c[0] + 120 && p.fuel >= c[1] + 20 && p.pop + UNITS[k].pop <= p.popCap) { this.cmdTrain(b, p, k); trained++; }
+    if (p.steel >= c[0] + 120 && p.fuel >= c[1] + 20 && p.pop + UNITS[k].pop <= p.popCap) { this.cmdTrain(b, p, k, true); trained++; }
   }
   if (this.tick % 300 === 147 && p.steel > 700) for (const b of this.ents.values()) if (b.o === p.i && b.b && b.d.research && b.bp >= 1 && !b.q.length) {
     const k = p.nat.tr.research || 1; let best = null, bc = 1e9;
@@ -3268,9 +3270,9 @@ Sim.prototype.stepBuilding = function (b) {
   if (b.bp < 1) return;
   if (b.hard > 0 && b.hard < 1) { b.hard = Math.min(1, b.hard + DT / 25); if (b.hard >= 1) { this.notify(p.i, d.n + ' hardened: bunkered in concrete', 'good', b.x, b.y); this.ev({k: 'hard', id: b.id}); } }
   // auto-train: keep the line busy, filling platoons with the roles they are missing and sections of one vehicle type
-  if (b.auto && b.bp >= 1 && b.q.length < 2 && this.tick % 5 === 0) {
+  if (b.auto && b.bp >= 1 && !b.q.length && this.tick % 5 === 0) {
     const k = this.autoPick(b, p);
-    if (k) { const c = this.costOf(p, UNITS[k], k); if (p.steel >= c[0] && p.fuel >= c[1] && p.pop + UNITS[k].pop <= p.popCap) this.cmdTrain(b, p, k); }
+    if (k) { const c = this.costOf(p, UNITS[k], k); if (p.steel >= c[0] + 100 && p.fuel >= c[1] + 10 && p.pop + UNITS[k].pop <= p.popCap) this.cmdTrain(b, p, k, true); }
   }
   // training or research
   if (b.q.length) {
@@ -3288,7 +3290,7 @@ Sim.prototype.stepBuilding = function (b) {
       const ud = UNITS[it.u];
       if (p.pop + ud.pop > p.popCap) { if (this.tick % 150 === 0) this.notify(p.i, 'Population capped: build Housing', 'bad'); }
       else {
-        b.prog += DT / (p.nat.tr.train || 1);
+        b.prog += DT / (p.nat.tr.train || 1) * (it.auto ? AUTO_TRAIN_K : 1);
         if (b.prog >= ud.t) { b.q.shift(); b.prog = 0; this.spawnFrom(b, it.u, p); }
       }
     }
@@ -10942,7 +10944,7 @@ const UI = {
     }
     if (d.trains && d.trains.some(u => u !== 'worker')) {
       const inf = d.trains.some(u => PLATOON[u]), last = b.q.length ? b.q[b.q.length - 1].u : null, ak = inf ? null : (b.autoK || last || d.trains.find(u => v.trainable(p, u)));
-      S.push({hk: 'Z', name: b.auto ? 'Auto-train: ON' : 'Auto-train', gl: b.auto ? '⟳' : '▶', desc: inf ? 'Keeps training troops to fill platoons of 20 (11 riflemen, 2 MG, 2 rockets, 2 grenadiers, a sniper, a medic and an assault trooper) while you have the resources.' : 'Keeps building ' + (ak ? UNITS[ak].n : 'units') + 's to fill sections of 5. Queue another type first to switch.', act: () => { for (const e of es) if (e.k === b.k) G.issue({c: 'autotrain', b: e.id, on: !b.auto, u: inf ? null : (e.q.length ? e.q[e.q.length - 1].u : ak)}); setTimeout(() => this.refreshHud(true), 150); }});
+      S.push({hk: 'Z', name: b.auto ? 'Auto-train: ON' : 'Auto-train', gl: b.auto ? '⟳' : '▶', desc: inf ? 'Keeps training troops to fill platoons of 20 (11 riflemen, 2 MG, 2 rockets, 2 grenadiers, a sniper, a medic and an assault trooper) while you have the resources. Auto-trained units take about 40% longer and it keeps 100 steel spare.' : 'Keeps building ' + (ak ? UNITS[ak].n : 'units') + 's to fill sections of 5, about 40% slower than queuing by hand. Queue another type first to switch.', act: () => { for (const e of es) if (e.k === b.k) G.issue({c: 'autotrain', b: e.id, on: !b.auto, u: inf ? null : (e.q.length ? e.q[e.q.length - 1].u : ak)}); setTimeout(() => this.refreshHud(true), 150); }});
     }
     if (d.research) S.push({hk: 'B', name: 'Research tree', gl: '🔬', desc: 'Open the full research tree (F8): three branches that unlock new units and make them stronger.', act: () => this.toggleTech(true)});
     if (d.research) for (const u in UPGRADES) {
