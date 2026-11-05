@@ -874,6 +874,9 @@ const UNITS = {
   fpv:      {n: 'FPV Bomb Drone', cat: 'drone', arm: 'air', hp: 18, dmg: 130, rng: 18, cd: 1, spd: 13, vis: 13, cost: [55, 25], pop: 0, t: 5, from: 'dronebay', shot: 'drone', splash: 2.6, alt: 2.4, life: 70, r: .3, hk: 'R', desc: 'Suicide drone, hunts armour and buildings. Press F to fly it yourself in first person.'},
   hunter:   {n: 'Hunter Drone', cat: 'drone', arm: 'air', hp: 22, dmg: 70, rng: 20, cd: 1, spd: 19, vis: 15, cost: [70, 40], pop: 0, t: 7, from: 'dronebay', shot: 'drone', splash: 1.6, alt: 6, life: 60, hitsAir: 1, r: .3, hk: 'T', desc: 'Interceptor drone that rams aircraft and enemy drones.'},
   tank:     {n: 'Battle Tank', cat: 'veh', arm: 'heavy', hp: 520, dmg: 62, rng: 10, cd: 2.6, spd: 3.2, vis: 11, cost: [220, 60], pop: 3, t: 16, from: 'factory', shot: 'shell', splash: 1, turret: 1, r: .9, hk: 'R', desc: 'Main battle tank. Rocket troopers and drones are its enemy.'},
+  ltank:    {n: 'Light Tank', cat: 'veh', arm: 'heavy', hp: 300, dmg: 40, rng: 11, cd: 1.7, spd: 4.6, vis: 16, cost: [170, 40], pop: 3, t: 14, from: 'factory', shot: 'shell', splash: .8, turret: 1, r: .8, vsc: .82, arcOnly: 1, desc: 'Fast scout tank: quick autoloader, thin armour. Flank and spot.'},
+  htank:    {n: 'Heavy Tank', cat: 'veh', arm: 'heavy', hp: 920, dmg: 82, rng: 11, cd: 3.4, spd: 2.2, vis: 11, cost: [320, 90], pop: 4, t: 22, from: 'factory', shot: 'shell', splash: 1.2, turret: 1, r: 1.05, vsc: 1.18, arcOnly: 1, desc: 'Slow, huge armour and a heavy gun. Leads the push onto a point.'},
+  td:       {n: 'Tank Destroyer', cat: 'veh', arm: 'heavy', hp: 400, dmg: 110, rng: 14, cd: 3.8, spd: 3, vis: 12, cost: [240, 70], pop: 3, t: 18, from: 'factory', shot: 'shell', splash: .8, turret: 1, r: .9, vsc: .96, arcOnly: 1, desc: 'Long-range hard-hitting gun, slow turret and light armour. Snipe from cover.'},
   laser:    {n: 'Directed Energy Tank', cat: 'veh', arm: 'heavy', hp: 760, dmg: 9, rng: 12, cd: .12, spd: 3, vis: 13, cost: [460, 300], pop: 5, t: 34, from: 'factory', shot: 'laser', aa: 1, turret: 1, r: 1, hk: 'P', only: ['toms'], desc: 'Toms end-game tank. A continuous laser beam burns armour, aircraft and infantry from range. Tough and expensive.'},
   ifv:      {n: 'Autocannon IFV', cat: 'veh', arm: 'heavy', hp: 300, dmg: 15, rng: 9, cd: .45, spd: 4.4, vis: 12, cost: [140, 30], pop: 2, t: 11, from: 'factory', shot: 'cannon', aa: 1, turret: 1, r: .75, hk: 'T', desc: 'Fast autocannon. Shreds infantry and drones.'},
   arty:     {n: 'Artillery', cat: 'veh', arm: 'heavy', hp: 190, dmg: 95, rng: 24, minRng: 6, cd: 5.5, spd: 2.4, vis: 9, cost: [200, 70], pop: 3, t: 18, from: 'factory', shot: 'arty', splash: 3, turret: 1, r: .85, hk: 'Y', desc: 'Huge range and splash. Helpless up close.'},
@@ -1009,6 +1012,11 @@ const PWPN = {
             {n: 'Heal Burst', t: 'heal', cd: 8, rng: 4, dmg: 45}],
   wolf:    [{n: 'Bite', t: 'mel', dmg: 38, vs: 'bite', rpm: 110, rng: 2.4, crit: 1.3, sp: 0, snd: 'bite'},
             {n: 'Pounce', t: 'leap', cd: 4}],
+  ltank:   [{n: '76mm Autoloader', t: 'proj', dmg: 150, vs: 'shell', spd: 60, g: 2, spl: 1, mag: 3, rl: 4.5, sp: .2, ads: .05, kick: 1.6, rng: 65, zoom: .5, snd: 'tank'},
+            {n: 'Coax MG', t: 'hit', dmg: 7, vs: 'bullet', rpm: 650, mag: 200, rl: 3, sp: 1.2, ads: .6, kick: .2, rng: 32, crit: 1.5, auto: 1, snd: 'bullet'}],
+  htank:   [{n: '128mm Cannon', t: 'proj', dmg: 330, vs: 'shell', spd: 50, g: 2, spl: 1.5, mag: 1, rl: 3.6, sp: .15, ads: .05, kick: 3.4, rng: 70, zoom: .45, snd: 'tank'},
+            {n: 'Coax MG', t: 'hit', dmg: 7, vs: 'bullet', rpm: 650, mag: 200, rl: 3, sp: 1.2, ads: .6, kick: .2, rng: 32, crit: 1.5, auto: 1, snd: 'bullet'}],
+  td:      [{n: '105mm L/70 Gun', t: 'proj', dmg: 380, vs: 'shell', spd: 75, g: 1.4, spl: 1, mag: 1, rl: 3.8, sp: .08, ads: .03, kick: 3, rng: 90, zoom: .3, snd: 'tank'}],
   tank:    [{n: '120mm Cannon', t: 'proj', dmg: 250, vs: 'shell', spd: 55, g: 2, spl: 1.3, mag: 1, rl: 2.6, sp: .15, ads: .05, kick: 2.5, rng: 70, zoom: .45, snd: 'tank'},
             {n: 'Coax MG', t: 'hit', dmg: 7, vs: 'bullet', rpm: 650, mag: 200, rl: 3, sp: 1.2, ads: .6, kick: .2, rng: 32, crit: 1.5, auto: 1, snd: 'bullet'}],
   laser:   [{n: 'Directed Energy Beam', t: 'hit', dmg: 9, vs: 'laser', rpm: 480, mag: 240, rl: 4, sp: .25, ads: .1, kick: .05, rng: 50, crit: 1.2, auto: 1, aa: 1, snd: 'laser'}],
@@ -1139,20 +1147,23 @@ BATTLES.push(
     comp: ['rifle', 'sniper', 'mg', 'rifle', 'rocket', 'assault', 'rifle', 'scout', 'grenadier', 'rifle']});
 // Arcade battles (in the spirit of arcade air and ground realistic-lite): two teams, endless respawns, tickets.
 // Air: shoot down planes and destroy the enemy's ground targets. Ground: hold the capture points, kill tanks.
-const AIR_CLASSES = ['fighter', 'f16', 'interceptor', 'typhoon', 'fa18', 'a10', 'bomber'], TANK_CLASSES = ['tank', 'ifv', 'sam', 'mlrs'];
+const AIR_CLASSES = ['fighter', 'f16', 'interceptor', 'typhoon', 'fa18', 'a10', 'bomber'], TANK_CLASSES = ['tank', 'htank', 'ltank', 'td', 'ifv', 'sam'];
 BATTLES.push(
-  {n: 'Air Battle: Island Skies', arc: 'air', team: 7, map: 2, seed: 41, size: 128, foe: 'toms', tickets: 1e9, tix: 2400, sea: [0, 1], obj: [], land: [], def: [], classes: AIR_CLASSES,
+  {n: 'Air Battle: Island Skies', arc: 'air', team: 9, map: 2, seed: 41, size: 240, foe: 'toms', tickets: 1e9, tix: 2400, sea: [0, 1], obj: [], land: [], def: [], classes: AIR_CLASSES,
     comp: ['fighter', 'f16', 'interceptor', 'typhoon', 'fa18', 'a10', 'fighter', 'bomber'],
-    blurb: 'Arcade air battle over an archipelago: 8 planes a side, respawn as any jet. Shooting down planes and destroying enemy tanks, trucks and AA on the ground drains their tickets. First to zero loses.'},
-  {n: 'Air Battle: Desert Strike', arc: 'air', team: 7, map: 6, seed: 23, size: 128, foe: 'jethroes', tickets: 1e9, tix: 2400, sea: [0, 1], obj: [], land: [], def: [], classes: AIR_CLASSES,
+    blurb: 'Arcade air battle over a big archipelago: 10 planes a side, respawn as any jet. Shooting down planes and destroying enemy tanks, trucks and AA on the ground drains their tickets. First to zero loses.'},
+  {n: 'Air Battle: Desert Strike', arc: 'air', team: 9, map: 6, seed: 23, size: 240, foe: 'jethroes', tickets: 1e9, tix: 2400, sea: [0, 1], obj: [], land: [], def: [], classes: AIR_CLASSES,
     comp: ['f16', 'fighter', 'a10', 'interceptor', 'typhoon', 'bomber', 'fa18', 'fighter'],
     blurb: 'Arcade air battle above the desert. Strafe the enemy armour columns, dogfight their fighters, and keep your own convoys alive.'},
-  {n: 'Tank Battle: Domination', arc: 'ground', team: 7, map: 6, seed: 29, size: 96, foe: 'dhruvs', tickets: 1e9, tix: 1500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
-    comp: ['tank', 'tank', 'ifv', 'tank', 'sam', 'ifv', 'tank', 'mlrs'],
-    blurb: 'Arcade tank battle: 8 tanks a side fight over three capture points, A, B and C. Hold more points than the enemy and their tickets bleed away; every tank kill costs them too. 3 kills in one life earns you a strike plane.'},
-  {n: 'Tank Battle: Highland Pass', arc: 'ground', team: 7, map: 3, seed: 37, size: 96, foe: 'valentinos', tickets: 1e9, tix: 1500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
-    comp: ['tank', 'ifv', 'tank', 'tank', 'sam', 'ifv', 'mlrs', 'tank'],
-    blurb: 'Domination in the hills: hull-down on the ridges, flank through the valleys. Three points, tickets, endless respawns.'});
+  {n: 'Tank Battle: Desert Ridge', arc: 'ground', team: 11, map: 6, seed: 29, size: 160, foe: 'dhruvs', tickets: 1e9, tix: 2500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
+    comp: ['tank', 'htank', 'ltank', 'tank', 'td', 'tank', 'htank', 'ltank', 'td', 'tank', 'sam'],
+    blurb: 'Arcade tank battle in the desert: 12 vehicles a side (medium, heavy and light tanks, tank destroyers, SPAA) fight over three capture points, A, B and C. Hold more points than the enemy and their tickets bleed away; every tank kill costs them too. 3 kills in one life earns you a strike plane.'},
+  {n: 'Tank Battle: Highland Pass', arc: 'ground', team: 11, map: 3, seed: 37, size: 160, foe: 'valentinos', tickets: 1e9, tix: 2500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
+    comp: ['tank', 'td', 'ltank', 'htank', 'tank', 'td', 'tank', 'ltank', 'htank', 'ifv', 'sam'],
+    blurb: 'Domination in the hills: hull-down on the ridges, flank through the valleys. Three points, tickets, endless respawns.'},
+  {n: 'Tank Battle: Steppe Fields', arc: 'ground', team: 11, map: 1, seed: 53, size: 160, foe: 'jethroes', tickets: 1e9, tix: 2500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
+    comp: ['tank', 'ltank', 'htank', 'td', 'tank', 'ltank', 'tank', 'htank', 'td', 'ifv', 'sam'],
+    blurb: 'Wide open farmland and forests, 12 against 12. Light tanks race for the far points, heavies hold the centre and tank destroyers snipe from the treelines.'});
 const BAT_CLASSES = ['rifle', 'mg', 'rocket', 'assault', 'sniper', 'medic', 'grenadier'];
 const batClasses = B => B && B.classes || BAT_CLASSES;
 // the Toms' special swaps the pilot's guns for this blade for a few seconds (sent as weapon slot 9)
@@ -1934,7 +1945,7 @@ Sim.prototype.arcSetup = function (B) {
   const S = this.scen = {B, arc: B.arc, tdm: 0, oi: 0, prog: 0, tickets: 1e9, nextWave: 1e9, waves: 0, queue: [], obj: [], land: [], fwd: {x: H[0].x, y: H[0].y}, reinT: 1e9, att: 0, def: 0, spawnI: 0, tix: [B.tix, B.tix], caps: [], gt: [[], []], strike: {}, streak: {}};
   const mx = (H[0].x + H[1].x) / 2, my = (H[0].y + H[1].y) / 2, ax = H[1].x - H[0].x, ay = H[1].y - H[0].y, L = Math.hypot(ax, ay) || 1, px = -ay / L, py = ax / L;
   const land = (x, y) => { for (let t = 0; t < 60; t++) { const a = t * 2.4, r = t * .6, qx = clamp(x + Math.cos(a) * r, 5, N - 6), qy = clamp(y + Math.sin(a) * r, 5, N - 6); if (this.landOk(qx, qy)) return {x: qx, y: qy}; } return {x, y}; };
-  if (!air) ['A', 'B', 'C'].forEach((n, i) => { const o = (i - 1) * N * .26, q = land(mx + px * o, my + py * o); S.caps.push({n, x: q.x, y: q.y, r: 6, own: -1, prog: 0}); });
+  if (!air) ['A', 'B', 'C'].forEach((n, i) => { const o = (i - 1) * N * .26, q = land(mx + px * o, my + py * o); S.caps.push({n, x: q.x, y: q.y, r: 8, own: -1, prog: 0}); });
   else for (const o of [0, 1]) { // ground targets: an armour column, trucks and AA on each side
     const bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45;
     ['tank', 'tank', 'tank', 'truck', 'truck', 'truck', 'sam', 'ifv', 'tank', 'truck'].forEach((k, i) => { const q = land(bx + px * (i - 4.5) * 3.2, by + py * (i - 4.5) * 3.2); const e = this.addUnit(k, o, q.x, q.y); e.gt = 1; e.stance = 'hold'; e.h = Math.atan2(-ay * (o ? -1 : 1), -ax * (o ? -1 : 1)); e.sq = 0; S.gt[o].push(k); });
@@ -6285,6 +6296,24 @@ function airGear(k) {
   };
 
   // =================== IFV (Bradley / CV90) ===================
+  // arcade tank family, built on the detailed MBT: the renderer scales them (d.vsc) and these add their own armour and guns
+  VEH.htank = function (P) { // heavy: side skirts, cheek armour on the turret, a thick sleeved gun with a muzzle brake
+    const v = VEH.tank(P), c = camo(P), cd = shade(c, .82);
+    v.h.box(1.9, .2, .04, -.02, .47, .65, cd).box(1.9, .2, .04, -.02, .47, -.65, cd);
+    v.t.box(.42, .26, .18, .32, -.02, .42, cd).box(.42, .26, .18, .32, -.02, -.42, cd).box(.5, .08, .7, -.35, .2, 0, cd);
+    v.t.cylX(.075, .55, 1.15, .02, 0, 0x2f3331); v.t.box(.2, .13, .17, 1.9, .02, 0, 0x2f3331);
+    return v;
+  };
+  VEH.ltank = function (P) { // light: smaller (scaled down), with a stowage rack and a slim gun
+    const v = VEH.tank(P), c = camo(P);
+    v.t.box(.34, .1, .62, -.45, .08, 0, shade(c, .7)); v.h.box(.3, .1, .5, -.9, .6, 0, 0x4a4436);
+    return v;
+  };
+  VEH.td = function (P) { // tank destroyer: same hull, very long gun with a big muzzle brake, low armoured roof
+    const v = VEH.tank(P), c = camo(P);
+    v.t.cylX(.05, 1.0, 2.0, .02, 0, 0x2f3331); v.t.box(.22, .14, .16, 2.55, .02, 0, 0x2f3331); v.t.box(.7, .05, .7, -.1, .2, 0, shade(c, .85));
+    return v;
+  };
   VEH.ifv = function (P) {
     const c = camo(P), cd = shade(c, .78), cl = shade(c, 1.1), h = new Batch(), t = new Batch(), hub = shade(c, .9);
     runningGear(h, {z: .47, w: .22, wx: [-.7, -.42, -.14, .14, .42, .68], wy: .12, wr: .1, rear: [-.92, .22, .1], front: [.9, .26, .12], hub, driveFront: true});
@@ -7231,18 +7260,19 @@ Renderer.prototype.drawUnit = function (e, dt, tint) {
     const mk = () => VEH[k](palette(nat));
     let parts = this._vp && this._vp[key];
     if (!parts) { parts = mk(); this._vp = this._vp || {}; this._vp[key] = parts; }
-    this.put(key, () => { const hb = new Batch(); hb.parts = parts.h.parts.filter(p => !p.gear); return hb.geo(); }, 24, null, x, y + bob, z, h, tilt + pitch, roll, 1, tint);
-    if (parts.h.run) this.drawRunningGear(e, key, parts.h.run, x, y + bob, z, h, tilt + pitch, roll, tint);
+    const vs = d.vsc || 1;
+    this.put(key, () => { const hb = new Batch(); hb.parts = parts.h.parts.filter(p => !p.gear); return hb.geo(); }, 24, null, x, y + bob, z, h, tilt + pitch, roll, vs, tint);
+    if (parts.h.run) { _gs.setScalar(vs); this.drawRunningGear(e, key, parts.h.run, x, y + bob, z, h, tilt + pitch, roll, tint); _gs.setScalar(1); }
     if (parts.t) {
       const c = Math.cos(e.ry), s = Math.sin(e.ry), tx = parts.tx || 0;
       const ang = e.d.turret ? (e.rtu === undefined ? e.ry : e.rtu) : e.ry;
-      const tX = x + c * tx, tY = y + parts.ty + bob, tZ = z + s * tx;
+      const tX = x + c * tx * vs, tY = y + parts.ty * vs + bob, tZ = z + s * tx * vs;
       const B = e.d.turret && splitBarrel(parts);
       const launcher = !B && (k === 'sam' || k === 'mlrs'); // box launchers elevate as a whole
-      this.put(key + '|t', () => (B ? B.t : parts.t).geo(), 24, null, tX, tY, tZ, -ang, launcher ? Math.max(0, e.rtp || 0) * 1.4 : 0, 0, 1, tint);
+      this.put(key + '|t', () => (B ? B.t : parts.t).geo(), 24, null, tX, tY, tZ, -ang, launcher ? Math.max(0, e.rtp || 0) * 1.4 : 0, 0, vs, tint);
       if (B) { // the barrel pivots at its trunnion and elevates to where the gun is aimed
         const ca = Math.cos(ang), sa = Math.sin(ang);
-        this.put(key + '|b', () => B.b.geo(), 24, null, tX + ca * B.px, tY + B.py, tZ + sa * B.px, -ang, e.rtp || 0, 0, 1, tint);
+        this.put(key + '|b', () => B.b.geo(), 24, null, tX + ca * B.px * vs, tY + B.py * vs, tZ + sa * B.px * vs, -ang, e.rtp || 0, 0, vs, tint);
       }
     }
   } else {
@@ -8619,7 +8649,7 @@ const Direct = {
     this.mv = Math.abs(this.hullSpd) > .2;
     p.z = sea ? (d.sub ? -.25 : 0) : d.amph ? Math.max(0, hAt(M, p.x, p.y)) : hAt(M, p.x, p.y);
     // turret traverses toward where you look, at a limited speed (feels heavy, still precise)
-    const trav = e.k === 'tank' ? 2.2 : e.k === 'arty' ? 1 : 2.6;
+    const trav = e.k === 'tank' ? 2.2 : e.k === 'htank' ? 1.5 : e.k === 'td' ? 1.1 : e.k === 'ltank' ? 3 : e.k === 'arty' ? 1 : 2.6;
     if (d.turret || sea) this.turret += clamp(angDiff(this.turret, this.camYaw), -trav * dt, trav * dt); else this.turret = p.h;
     p.tu = this.turret; p.p = 0; p.r = 0;
     p.tp = (p.tp || 0) + (clamp(this.camPitch, -.17, .4) - (p.tp || 0)) * Math.min(1, dt * 4); // gun elevation follows the crosshair
@@ -10333,7 +10363,7 @@ const UI = {
   openBat() {
     $('menu').classList.add('hidden'); $('batScr').classList.remove('hidden');
     const sel = $('batNat'); if (!sel.options.length) sel.innerHTML = NATIONS.map((n, i) => `<option value="${i}">${n.name}</option>`).join('');
-    $('batList').innerHTML = BATTLES.map((B, i) => `<button class="camplv" data-i="${i}"><b>${B.n}</b><span>${B.blurb}</span><span class="small">${B.arc ? (B.team + 1) + ' vs ' + (B.team + 1) + (B.arc === 'air' ? ' planes' : ' tanks') + ' · ' + B.tix + ' tickets' : B.tdm ? (B.team + 1) + ' vs ' + (B.team + 1) + ' · first to ' + B.tdm + ' kills' : B.obj.length + ' objectives · ' + B.tickets + ' reinforcements'} · enemy: ${NATIONS.find(n => n.key === B.foe).name}</span></button>`).join('');
+    $('batList').innerHTML = BATTLES.map((B, i) => `<button class="camplv" data-i="${i}"><b>${B.n}</b><span>${B.blurb}</span><span class="small">${B.arc ? (B.team + 1) + ' vs ' + (B.team + 1) + (B.arc === 'air' ? ' planes' : ' vehicles') + ' · ' + B.tix + ' tickets' : B.tdm ? (B.team + 1) + ' vs ' + (B.team + 1) + ' · first to ' + B.tdm + ' kills' : B.obj.length + ' objectives · ' + B.tickets + ' reinforcements'} · enemy: ${NATIONS.find(n => n.key === B.foe).name}</span></button>`).join('');
     $('batList').querySelectorAll('button').forEach(b => b.onclick = () => this.batLaunch(+b.dataset.i));
   },
   batLaunch(i) {
