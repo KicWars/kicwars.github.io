@@ -303,7 +303,7 @@ body.dying #gl{filter:grayscale(.85) brightness(.6) contrast(1.15);transition:fi
 #gl{transition:filter .6s}
 #over{overflow:auto;align-items:flex-start}#over .mcard{margin:auto}#oStats{max-height:42vh;overflow:auto;border-top:1px solid rgba(255,255,255,.1);padding-top:8px}
 #logScr{align-items:flex-start;overflow:auto;justify-content:center;background:rgba(5,8,12,.86);backdrop-filter:blur(10px)}#logScr .mcard{margin:auto}#logList{max-height:58vh;overflow:auto;display:flex;flex-direction:column;gap:12px;padding-right:6px}#logList h3{margin:0 0 4px;font-size:13px;letter-spacing:.06em;color:var(--acc)}#logList ul{margin:0;padding-left:18px;font-size:13px;line-height:1.5;color:#d6dee3}
-body.cbDeut{filter:url(#cbDeut)}
+body.cbDeut #gl,body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img{filter:url(#cbDeut)} /* per canvas, not on body: Safari drops a body filter when blurred panels are open */
 </style>
 </head>
 <body>
@@ -1938,11 +1938,16 @@ Sim.prototype.arcSetup = function (B) {
   else for (const o of [0, 1]) { // ground targets: an armour column, trucks and AA on each side
     const bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45;
     ['tank', 'tank', 'tank', 'truck', 'truck', 'truck', 'sam', 'ifv', 'tank', 'truck'].forEach((k, i) => { const q = land(bx + px * (i - 4.5) * 3.2, by + py * (i - 4.5) * 3.2); const e = this.addUnit(k, o, q.x, q.y); e.gt = 1; e.stance = 'hold'; e.h = Math.atan2(-ay * (o ? -1 : 1), -ax * (o ? -1 : 1)); e.sq = 0; S.gt[o].push(k); });
+    // bases for the bombers to level, and a home airfield: a low pass over it repairs and rearms you
+    const bb = {x: H[o].x + (mx - H[o].x) * .25, y: H[o].y + (my - H[o].y) * .25};
+    for (const sd of [-1, 0, 1]) { const q = land(bb.x + px * sd * 13, bb.y + py * sd * 13); const b = this.addBuilding('bunker', o, Math.round(q.x), Math.round(q.y), true); if (b) { b.base = 1; b.hp = b.hpm = 2600; } }
+    const af = land(H[o].x, H[o].y); const A = this.addBuilding('airfield', o, Math.round(af.x), Math.round(af.y), true); if (A) { A.hp = A.hpm = 1e6; A.field = 1; S.field = S.field || []; S.field[o] = {x: A.x, y: A.y}; }
   }
 };
 Sim.prototype.arcLoss = function (t, by) {
   const S = this.scen, o = t.o; if (o !== 0 && o !== 1) return;
-  const air = S.arc === 'air', cost = air ? (t.gt ? 12 : t.air ? 30 : 8) : (t.air ? 12 : 16);
+  const air = S.arc === 'air', cost = t.base ? 120 : air ? (t.gt ? 12 : t.air ? 30 : 8) : (t.air ? 12 : 16);
+  if (t.base) this.ev({k: 'msg', p: 0, text: (o === 0 ? 'Our base was destroyed' : 'Enemy base destroyed') + ': −120 tickets', kind: o === 0 ? 'bad' : 'good', x: t.x, y: t.y});
   S.tix[o] = Math.max(0, S.tix[o] - cost);
   if (t.pilot) { S.streak[o + ':' + (t.pilot - 1)] = 0; }
   const killer = by === 0 || by === 1 ? by : null;
@@ -1963,6 +1968,15 @@ Sim.prototype.arcStep = function () {
       if (d && !(n[0] && n[1])) { C.prog = clamp(C.prog + Math.sign(d) * Math.min(3, Math.abs(d)) * .035, -1, 1); if (Math.abs(C.prog) >= 1 && C.own !== (d > 0 ? 0 : 1)) { C.own = d > 0 ? 0 : 1; this.ev({k: 'msg', p: 0, text: (C.own === 0 ? 'We captured ' : 'The enemy captured ') + 'point ' + C.n, kind: C.own === 0 ? 'good' : 'bad', x: C.x, y: C.y}); } else if (C.own !== -1 && Math.sign(C.prog) !== (C.own === 0 ? 1 : -1)) C.own = -1; }
     }
     if (this.tick % 10 === 0) { const a = S.caps.filter(C => C.own === 0).length, b = S.caps.filter(C => C.own === 1).length; if (a > b) S.tix[1] = Math.max(0, S.tix[1] - (a - b) * 1.1); if (b > a) S.tix[0] = Math.max(0, S.tix[0] - (b - a) * 1.1); }
+  }
+  if (this.tick % 5 === 0) for (const e of this.ents.values()) {
+    if (e.b || e.gt || (e.o !== 0 && e.o !== 1) || e.hp >= e.hpm) continue;
+    if (!air && !e.air && !e.moving && this.t - (e.hurtT || -99) > 6) { e.hp = Math.min(e.hpm, e.hp + e.hpm * .025); e.repairing = this.t; } // field repair: stop out of the fight and the crew patch the tank up
+    if (air && e.air && S.field && S.field[e.o]) { const F = S.field[e.o]; if (Math.hypot(e.x - F.x, e.y - F.y) < 10 && e.z - Math.max(0, hAt(this.M, e.x, e.y)) < 7) { e.hp = Math.min(e.hpm, e.hp + e.hpm * .08); e.repairing = this.t; if (e.pilot && (!e.rearmT || this.t - e.rearmT > 2)) { e.rearmT = this.t; this.ev({k: 'rearm', id: e.id, p: e.pilot - 1}); } } }
+  }
+  if (!air && this.tick % 10 === 0) { // WT-style strike aircraft: a side with kill streaks calls in an attacker now and then
+    S.airT = S.airT || [90, 120];
+    for (const o of [0, 1]) if (this.t > S.airT[o]) { S.airT[o] = this.t + 100 + this.rnd() * 40; if (![...this.ents.values()].some(e => e.o === o && e.air && !e.pilot)) { const e = this.arcSpawn(o, this.rnd() < .5 ? 'a10' : 'fa18'); if (e) { e.strike = 1; this.ev({k: 'msg', p: 0, text: o === 0 ? 'Friendly strike aircraft inbound' : 'ENEMY AIRCRAFT INBOUND: SPAA to the front!', kind: o === 0 ? 'good' : 'bad', x: e.x, y: e.y}); } } }
   }
   // keep each side's team topped up (you are one of team 0)
   const isFighter = e => !e.b && !e.gt && (air ? e.air : !e.air && e.d.cat === 'veh') && !e.inside;
@@ -1989,6 +2003,7 @@ Sim.prototype.arcStep = function () {
   if (this.tick % 20 === 0) for (const e of this.ents.values()) {
     if (e.b || e.pilot || e.o > 1 || e.o < 0 || e.gt || e.inside) continue;
     if ((e.tid && this.ents.get(e.tid)) || e.goal) continue;
+    if (air && (e.k === 'bomber' || e.k === 'a10') || e.strike) { let best = null, bd = 1e9; for (const t of this.ents.values()) if (t.o === 1 - e.o && (t.base || t.gt || (!air && !t.air && !t.b))) { const d = Math.hypot(t.x - e.x, t.y - e.y) - (t.base ? 30 : 0); if (d < bd) { bd = d; best = t; } } if (best) { this.cmdMove([e], best.x, best.y, true, false); continue; } }
     if (air || e.air) { const en = H[1 - e.o], f = .3 + this.rnd() * .6; this.cmdMove([e], clamp(H[e.o].x + (en.x - H[e.o].x) * f + (this.rnd() - .5) * N * .5, 4, N - 5), clamp(H[e.o].y + (en.y - H[e.o].y) * f + (this.rnd() - .5) * N * .5, 4, N - 5), true, false); continue; }
     let best = null, bd = 1e9; for (const C of S.caps) { if (C.own === e.o && Math.abs(C.prog) >= 1 && this.rnd() < .8) continue; const d = Math.hypot(C.x - e.x, C.y - e.y) + this.rnd() * 20; if (d < bd) { bd = d; best = C; } }
     if (!best) best = S.caps[Math.floor(this.rnd() * S.caps.length)];
@@ -2864,7 +2879,7 @@ Sim.prototype.hurt = function (t, dmg, by) {
 };
 
 Sim.prototype.kill = function (t, by) {
-  if (this.scen && this.scen.arc && !t.b && t.hp > -1e8) this.arcLoss(t, by);
+  if (this.scen && this.scen.arc && (!t.b || t.base) && t.hp > -1e8) this.arcLoss(t, by);
   t.hp = 0;
   const p = this.players[t.o];
   this.ents.delete(t.id);
@@ -6643,12 +6658,12 @@ const Sfx = {
     (T[ty] || T.bullet)();
   },
   hitTick(crit) { if (this.limit('ht', 35)) this.tone(crit ? 2400 : 1700, crit ? 2600 : 1500, .05, crit ? .16 : .1, 'triangle'); },
-  killDing() { this.tone(1320, 1320, .09, .14, 'triangle'); setTimeout(() => this.tone(1760, 1760, .16, .14, 'triangle'), 70); },
+  killDing() { this.noise(.07, 2600, .22, 'bandpass', 4); }, // a dry click, no chime
   reload() { this.noise(.05, 3000, .12, 'bandpass', 3); setTimeout(() => this.noise(.06, 2200, .14, 'bandpass', 3), 260); },
-  empty() { if (this.limit('em', 180)) this.tone(2200, 1900, .03, .06, 'square'); },
+  empty() { if (this.limit('em', 180)) this.noise(.03, 3200, .08, 'bandpass', 5); },
   ouch() { if (this.limit('ou', 120)) { this.noise(.12, 300, .4, 'lowpass', 1); this.tone(200, 90, .12, .2, 'sine'); } },
   whiz() { if (this.limit('wz', 150)) this.noise(.18, 3500, .12, 'bandpass', 6, 900); },
-  beep(f) { if (this.limit('bp' + f, 220)) this.tone(f, f, .08, .07, 'square'); },
+  beep(f) { if (this.limit('bp' + f, 220)) this.noise(.04, f * 1.5, .06, 'bandpass', 4); },
   boom(x, y, R, s) {
     const g = this.gainAt(x, y, R); if (g <= .02 || !this.limit('boom', 60)) return;
     this.noise(.8 + s * .4, 600, Math.min(1, .75 * g * s), 'lowpass', 1, 50);
@@ -6665,10 +6680,10 @@ const Sfx = {
   },
   jet() { this.noise(3.5, 300, .7, 'bandpass', .6, 2600); },
   howl() { if (this.limit('h', 1500)) { this.tone(300, 700, .8, .14, 'sine'); setTimeout(() => this.tone(700, 260, 1.4, .14, 'sine'), 700); } },
-  ui() { if (this.limit('u', 40)) this.tone(900, 620, .05, .05, 'square'); },
-  ack() { if (this.limit('a', 90)) { this.tone(520, 780, .07, .06, 'triangle'); } },
-  bad() { if (this.limit('x', 300)) this.tone(190, 130, .2, .1, 'square'); },
-  good() { if (this.limit('g', 300)) { this.tone(660, 660, .1, .07, 'triangle'); setTimeout(() => this.tone(990, 990, .16, .07, 'triangle'), 90); } },
+  ui() { if (this.limit('u', 40)) this.noise(.025, 2400, .06, 'bandpass', 3); },
+  ack() { if (this.limit('a', 90)) this.noise(.04, 1600, .08, 'bandpass', 3); },
+  bad() { if (this.limit('x', 300)) this.noise(.12, 400, .1, 'lowpass', 1); },
+  good() { if (this.limit('g', 300)) this.noise(.05, 1900, .08, 'bandpass', 3); },
   alarm() { if (this.limit('al', 6000)) { this.tone(880, 620, .2, .1, 'square'); setTimeout(() => this.tone(880, 620, .2, .1, 'square'), 240); } },
 };
 </script>
@@ -8317,7 +8332,7 @@ const Direct = {
     if (c === B.ads) { this.toggleAds(); return true; }
     if (c === B.reload) { if ((this.mode === 'plane' || this.mode === 'heli') && this.W[2]) this.tryFire(2, this.ui.g); else this.reload(this.slot); return true; }
     if (c === B.chaff) { this.chaff(); return true; }
-    if (c === 'KeyJ' && this.strikeBank > 0) { const P = this.aimPt; if (!P) { this.msg('Aim at the ground to call artillery', 1.5); return true; } this.strikeBank--; this.ui.g.issue({c: 'streak', id: this.id, x: P.x, y: P.y, big: this.bigStrike ? 1 : 0}); this.bigStrike = false; return true; }
+    if (c === 'KeyJ' && this.strikeBank > 0) { const P = this.aimPt; if (!P) { this.msg('Aim at the ground to call artillery', 1.5); return true; } this.strikeBank--; if (this.ui.g.sim && this.ui.g.sim.scen && this.ui.g.sim.scen.arc) this.artT = performance.now() + 60000; this.ui.g.issue({c: 'streak', id: this.id, x: P.x, y: P.y, big: this.bigStrike ? 1 : 0}); this.bigStrike = false; return true; }
     if (c === B.cycle) { this.cycleLock(); return true; }
     if (c === B.special) { this.special(); return true; }
     if (c === 'KeyH') { document.getElementById('dhelp').classList.toggle('mini'); return true; }
@@ -8444,6 +8459,10 @@ const Direct = {
     this.e = e; this.g = g;
     if (e.d.spy) this.spyHud(e, g);
     if (this.cut) { this.cutStep(dt, g, e); return; }
+    { const S = g.sim && g.sim.scen; if (S && S.arc === 'ground' && this.mode === 'vehicle') { // arcade tanks: artillery support on a cooldown, field repair when you stop
+      if (!this.strikeBank && performance.now() > (this.artT || 0)) { this.strikeBank = 1; this.msg('ARTILLERY READY: aim at the ground and press J', 3); }
+      if (e.repairing && g.view.t - e.repairing < 1 && e.hp < e.hpm) { this.repT = (this.repT || 0) - dt; if (this.repT <= 0) { this.repT = .8; this.msg('REPAIRING ' + Math.round(e.hp / e.hpm * 100) + '%  (stay still)', .9); } }
+    } }
     if (this.jump === 'plane' && this.planeStep(dt, g, e)) return;
     if (this.knifeEnd && performance.now() > this.knifeEnd) { this.sheatheKnife(); this.msg('Knife away', .8); }
     const k = this.keys, B = Settings.binds, M = g.view.M;
@@ -9030,9 +9049,9 @@ const Direct = {
       if (this.killStreak % 3 === 0) { this.strikeBank = (this.strikeBank || 0) + 1; this.bigStrike = this.killStreak % 9 === 0; this.msg('ARTILLERY READY: aim at the ground and press J' + (this.bigStrike ? ' (BARRAGE)' : ''), 4); }
       const nowK = performance.now(); this.multi = nowK - (this.lastKillT || 0) < 4500 ? (this.multi || 1) + 1 : 1; this.lastKillT = nowK;
       const mk = this.multi >= 5 ? 'UNSTOPPABLE' : this.multi === 4 ? 'RAMPAGE' : this.multi === 3 ? 'TRIPLE KILL' : this.multi === 2 ? 'DOUBLE KILL' : null;
-      if (mk) Sfx.tone(520 + this.multi * 120, 900 + this.multi * 160, .3, .14, 'square');
+      if (mk) Sfx.noise(.09, 2200, .2, 'bandpass', 3);
       this.confirm = {t: nowK, big: mk || (ev.air ? 'ENEMY DOWNED' : ev.b ? 'TARGET DESTROYED' : UNITS[ev.kk] && UNITS[ev.kk].cat !== 'inf' ? 'VEHICLE DESTROYED' : this.lastCritK ? 'HEADSHOT' : 'ENEMY DOWN'), sub: who + ' ' + n, n: this.killStreak};
-      if (ev.air) Sfx.tone(660, 990, .25, .12, 'triangle');
+      if (ev.air) Sfx.noise(.12, 1400, .18, 'bandpass', 2);
     } else if (ev.k === 'ouch' && ev.id === this.id) {
       const a = Math.atan2(ev.y - this.pose.y, ev.x - this.pose.x);
       this.dmgDir.push({a, t: 0, s: Math.min(1, ev.dmg / 30)}); Sfx.ouch();
@@ -9263,8 +9282,14 @@ const Direct = {
           if (sp) { const px = clamp(sp.x, 30, w - 30), py = clamp(sp.y, 140, h - 120); c.fillStyle = col; c.globalAlpha = .9; c.beginPath(); c.moveTo(px, py - 11); c.lineTo(px + 9, py); c.lineTo(px, py + 11); c.lineTo(px - 9, py); c.closePath(); c.fill(); c.globalAlpha = 1; c.fillStyle = '#000'; c.font = '900 11px system-ui'; c.fillText(C.n, px, py + 4); c.fillStyle = col; c.font = '700 10px system-ui'; c.fillText((d | 0) + ' m', px, py + 24); }
         });
       }
+      const mark = (x, y, z, txt, col) => { const sp = this.toScreen(x, y, z), d = Math.hypot(x - this.pose.x, y - this.pose.y) * 10; if (!sp) return; const px = clamp(sp.x, 30, w - 30), py = clamp(sp.y, 140, h - 120); c.fillStyle = col; c.font = '800 10px system-ui'; c.textAlign = 'center'; c.fillRect(px - 16, py - 8, 32, 14); c.fillStyle = '#000'; c.fillText(txt, px, py + 3); c.fillStyle = col; c.fillText((d | 0) + ' m', px, py + 18); };
+      if (S.arc === 'air') {
+        const v = this.ui.g.view; if (S.field && S.field[0]) mark(S.field[0].x, S.field[0].y, Math.max(0, hAt(v.M, S.field[0].x, S.field[0].y)) + 1, 'AIRFIELD', '#6dc8ff');
+        for (const t of v.ents.values()) if (t.base && t.o === 1) mark(t.x, t.y, Math.max(0, hAt(v.M, t.x, t.y)) + 2, 'BASE', '#ff6a5a');
+      }
       const st = S.streak[this.ui.g.me + ':' + this.ui.g.me] || 0;
-      c.textAlign = 'left'; c.font = '700 12px system-ui'; c.fillStyle = '#fff'; c.fillText(S.arc === 'ground' ? 'Kills this life: ' + st + (st < 3 ? ' · 3 earns a strike plane' : ' · STRIKE PLANE EARNED') : 'Planes −30 tickets · ground targets −12', 24, 100);
+      c.textAlign = 'left'; c.font = '700 12px system-ui'; c.fillStyle = '#fff'; c.fillText(S.arc === 'ground' ? 'Kills this life: ' + st + (st < 3 ? ' · 3 earns a strike plane' : ' · STRIKE PLANE EARNED') : 'Planes −30 · ground targets −12 · bases −120', 24, 100);
+      c.font = '600 11px system-ui'; c.fillStyle = '#c9d4da'; c.fillText(S.arc === 'ground' ? (this.strikeBank > 0 ? 'J: ARTILLERY READY' : 'Artillery in ' + Math.max(0, Math.ceil(((this.artT || 0) - performance.now()) / 1000)) + 's') + ' · stop to repair' : 'Low pass over your AIRFIELD to repair and rearm · bomb their BASES', 24, 118);
       c.restore(); return;
     }
     if (S.tdm) {
@@ -10506,6 +10531,7 @@ const UI = {
       case 'out': { this.addAlert(`${v.players[ev.p].name} has fallen!`, ev.p === me ? 'bad' : 'gold'); if (ev.p === me) this.showOver(false); break; }
       case 'over': this.showOver(ev.wins ? ev.wins.includes(me) : v.players[me].team === ev.team); break;
       case 'diplo': if (this.diploOpen) this.renderDiplo(); break;
+      case 'rearm': if (ev.p === me && Direct.on && Direct.id === ev.id) { for (const W of Direct.W) if (W && W.w) { W.ammo = W.w.mag || 1; W.rl = 0; } if (!Direct.rearmMsg || performance.now() - Direct.rearmMsg > 3000) { Direct.rearmMsg = performance.now(); Direct.msg('AIRFIELD: repairing and rearming', 1.8); } } break;
       case 'scenYou': if (ev.p === me && this.scen) { const u = v.ents.get(ev.id); if (u) { if (Direct.on) Direct.exit(); this.showScenSpawn(false); Direct.enter(this, u); } } break;
       case 'scenCap': if (this.scen) { Sfx.good(); if (Direct.on) Direct.msg('OBJECTIVE ' + String.fromCharCode(65 + ev.i) + ' CAPTURED', 2.5); } break;
       case 'nuke': { const mine = v.friendly(ev.o, me); this.nukes.push({id: ev.id, until: performance.now() + ev.d * 1000, mine, x: ev.x, y: ev.y}); this.addAlert(mine ? 'ICBM launched!' : 'WARNING: enemy ICBM launched!', 'bad', ev.x, ev.y); break; }
