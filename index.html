@@ -8753,6 +8753,7 @@ const WarRoom = {
     const g = ui.g, nat = g.view.players[g.me].nation;
     if (!this.R || this.nat !== nat) { this.R = this.build(nat); this.nat = nat; }
     this.ui = ui; this.on = true; this.x = -.3; this.z = 3.6; this.yaw = -Math.PI / 2; this.pitch = -.42; this.focus = null; this.keys = {}; this.texT = 0;
+    for (const id of ['deploy', 'pause', 'diplo', 'techScr', 'statsScr']) $(id).classList.add('hidden'); // nothing else may cover the room
     document.body.classList.add('warroom'); $('warHud').classList.remove('hidden');
     ui.R.post = () => this.render();
     this.drawSign();
