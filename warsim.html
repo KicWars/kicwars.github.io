@@ -789,7 +789,16 @@ const NATIONS = [
   {key: 'toms', name: 'The Toms', leader: 'Big Tom', color: '#19c8b9', dark: '#0d3b3a', look: 'toms',
    blurb: 'Health +12% · Damage +8% · Costs +12% · F-16, F-15, F-35, nuclear sub',
    tr: {hp: 1.12, dmg: 1.08, cost: 1.12}, power: 'salvo'},
+  {key: 'charlies', name: 'The Charlies', leader: 'Charlie Prime', color: '#2fa84f', dark: '#c4262e', look: 'charlie',
+   blurb: 'Aircraft +20% damage and health, cost −15% · Research −20% · Every jet in the game · Colourblind: no pilot licence, so you cannot fly planes yourself',
+   tr: {air: 1.2, airCost: .85, research: .8}, power: 'autosurge'},
 ];
+// The Xaviers are not a team: a few friendly healers wander every war. Kept off the NATIONS list (index -1) so menus never show them.
+NATIONS[-1] = {key: 'xaviers', name: 'The Xaviers', leader: 'Xavier', color: '#ffe9a8', dark: '#f4f4ee', look: 'xavier', blurb: '', tr: {}, power: null};
+function xavPlayer() {
+  return {i: -1, name: 'The Xaviers', nation: -1, nat: NATIONS[-1], team: -99, bot: null, open: false, steel: 0, fuel: 0, pop: 0, popCap: 99, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0,
+    buffs: {}, reveal: 0, spawn: null, rel: {}, relT: {}, offers: [], mood: {}, str: 0, intel: [], autoRecon: false, ecoK: 1, neutral: 1};
+}
 
 // arm: light | heavy | air | sea | bld. dmg per shot, cd seconds, rng world units, spd units/sec.
 const UNITS = {
@@ -798,6 +807,7 @@ const UNITS = {
   assault:  {n: 'Assault Trooper', cat: 'inf', arm: 'light', hp: 130, dmg: 10, rng: 3.5, cd: .35, spd: 3.1, vis: 10, cost: [90, 10], pop: 1, t: 9, from: 'barracks', shot: 'flame', r: .4, hk: 'T', desc: 'Flamethrower. Melts infantry and bunkers up close.'},
   rocket:   {n: 'Rocket Trooper', cat: 'inf', arm: 'light', hp: 65, dmg: 34, rng: 10, cd: 2.8, spd: 2.5, vis: 11, cost: [80, 20], pop: 1, t: 10, from: 'barracks', shot: 'rocket', aa: 1, r: .35, hk: 'Y', desc: 'Kills tanks and helicopters. Poor against infantry.'},
   sniper:   {n: 'Sniper', cat: 'inf', arm: 'light', hp: 45, dmg: 55, rng: 15, cd: 3.5, spd: 2.5, vis: 17, cost: [90, 25], pop: 1, t: 12, from: 'barracks', shot: 'sniper', stealth: 7, r: .35, hk: 'U', desc: 'Stealthy, very long range. One shot, one soldier.'},
+  xavier:   {n: 'Xavier', cat: 'inf', arm: 'light', hp: 500, dmg: 0, rng: 0, cd: 1, spd: 2.7, vis: 12, cost: [0, 0], pop: 0, t: 1, from: 'barracks', shot: null, heal: 14, r: .4, hidden: 1, desc: 'A friendly healer. Cannot attack or be attacked; heals everyone, on every side.'},
   medic:    {n: 'Medic', cat: 'inf', arm: 'light', hp: 60, dmg: 0, rng: 0, cd: 1, spd: 3, vis: 10, cost: [70, 15], pop: 1, t: 8, from: 'barracks', shot: null, heal: 8, r: .35, hk: 'G', desc: 'Heals nearby infantry automatically.'},
   mg:       {n: 'Machine Gunner', cat: 'inf', arm: 'light', hp: 95, dmg: 5, rng: 9, cd: .22, spd: 2.3, vis: 11, cost: [85, 10], pop: 1, t: 9, from: 'barracks', shot: 'bullet', aa: 1, r: .38, hk: 'J', desc: 'Belt-fed machine gun. A wall of bullets that pins down infantry.'},
   grenadier: {n: 'Grenadier', cat: 'inf', arm: 'light', hp: 75, dmg: 26, rng: 11, cd: 2.4, spd: 2.6, vis: 11, cost: [85, 15], pop: 1, t: 9, from: 'barracks', shot: 'shell', splash: 1.8, r: .36, hk: 'K', desc: 'Grenade launcher. Splash damage against groups and light vehicles.'},
@@ -819,12 +829,12 @@ const UNITS = {
   transport: {n: 'C-130 Transport', cat: 'air', arm: 'air', hp: 420, dmg: 0, rng: 0, cd: 1, spd: 11, vis: 16, cost: [260, 90], pop: 3, t: 18, from: 'airfield', alt: 12, turn: 1, r: 1.2, carry: 10, fill: 'para', hk: 'K', desc: 'Arrives with 10 paratroopers aboard. Fly it over the target and Unload (B): they jump.'},
   chinook:  {n: 'Chinook', cat: 'heli', arm: 'air', hp: 400, dmg: 0, rng: 0, cd: 1, spd: 7.5, vis: 14, cost: [220, 80], pop: 3, t: 16, from: 'airfield', alt: 6, r: 1.2, carry: 10, hk: 'L', desc: 'Twin-rotor transport helicopter. Carries 10 infantry and drops them anywhere.'},
   awacs:    {n: 'AWACS', cat: 'air', arm: 'air', hp: 360, dmg: 0, rng: 0, cd: 1, spd: 9, vis: 40, cost: [280, 120], pop: 3, t: 20, from: 'airfield', alt: 14, turn: .9, r: 1.2, radar: 60, hk: 'H', desc: 'Flying radar: huge vision, spots every aircraft within 60 m for your whole army.'},
-  fighter:  {n: 'Fighter', cat: 'air', arm: 'air', hp: 240, dmg: 30, rng: 13, cd: .9, spd: 15, vis: 16, cost: [230, 100], pop: 3, t: 18, from: 'airfield', shot: 'cannon', aa: 1, alt: 11, turn: 1.7, r: .9, hk: 'R', notNation: ['toms'], desc: 'Fast multirole jet, guns on air and ground.'},
-  interceptor: {n: 'Interceptor', cat: 'air', arm: 'air', hp: 200, dmg: 70, rng: 18, cd: 2.2, spd: 19, vis: 18, cost: [240, 120], pop: 3, t: 18, from: 'airfield', shot: 'missile', aa: 1, noGround: 1, alt: 13, turn: 1.6, r: .9, hk: 'T', notNation: ['toms'], desc: 'Air-to-air missiles only. Kills bombers.'},
-  bomber:   {n: 'Bomber', cat: 'air', arm: 'air', hp: 420, dmg: 170, rng: 1.6, cd: .45, spd: 10, vis: 12, cost: [320, 170], pop: 4, t: 26, from: 'airfield', shot: 'bomb', splash: 3.4, noAir: 1, alt: 12, turn: .9, r: 1.3, hk: 'Y', notNation: ['toms'], desc: 'Drops sticks of bombs on anything below.'},
-  f16:      {n: 'F-16 Fighting Falcon', cat: 'air', arm: 'air', hp: 280, dmg: 36, rng: 14, cd: .85, spd: 16, vis: 17, cost: [250, 110], pop: 3, t: 18, from: 'airfield', shot: 'cannon', aa: 1, alt: 11, turn: 1.9, r: .9, hk: 'R', only: ['toms'], desc: 'Agile multirole fighter. Guns on everything.'},
-  f15:      {n: 'F-15 Eagle', cat: 'air', arm: 'air', hp: 340, dmg: 85, rng: 22, cd: 2, spd: 20, vis: 22, cost: [290, 140], pop: 3, t: 22, from: 'airfield', shot: 'missile', aa: 1, noGround: 1, alt: 14, turn: 1.6, r: 1, hk: 'T', only: ['toms'], desc: 'Air superiority. Longest missile range in the sky.'},
-  f35:      {n: 'F-35 Lightning II', cat: 'air', arm: 'air', hp: 300, dmg: 190, rng: 1.8, cd: .6, spd: 15, vis: 20, cost: [340, 190], pop: 4, t: 28, from: 'airfield', shot: 'bomb', splash: 3, noAir: 1, stealth: 9, alt: 12, turn: 1.5, r: 1, hk: 'Y', only: ['toms'], desc: 'Stealth striker. Invisible to AA until almost overhead.'},
+  fighter:  {n: 'Fighter', cat: 'air', arm: 'air', hp: 240, dmg: 30, rng: 13, cd: .9, spd: 15, vis: 16, cost: [230, 100], pop: 3, t: 18, from: 'airfield', shot: 'cannon', aa: 1, alt: 11, turn: 1.7, r: .9, hk: 'R', notNation: ['toms', 'charlies'], desc: 'Fast multirole jet, guns on air and ground.'},
+  interceptor: {n: 'Interceptor', cat: 'air', arm: 'air', hp: 200, dmg: 70, rng: 18, cd: 2.2, spd: 19, vis: 18, cost: [240, 120], pop: 3, t: 18, from: 'airfield', shot: 'missile', aa: 1, noGround: 1, alt: 13, turn: 1.6, r: .9, hk: 'T', notNation: ['toms', 'charlies'], desc: 'Air-to-air missiles only. Kills bombers.'},
+  bomber:   {n: 'Bomber', cat: 'air', arm: 'air', hp: 420, dmg: 170, rng: 1.6, cd: .45, spd: 10, vis: 12, cost: [320, 170], pop: 4, t: 26, from: 'airfield', shot: 'bomb', splash: 3.4, noAir: 1, alt: 12, turn: .9, r: 1.3, hk: 'Y', notNation: ['toms', 'charlies'], desc: 'Drops sticks of bombs on anything below.'},
+  f16:      {n: 'F-16 Fighting Falcon', cat: 'air', arm: 'air', hp: 280, dmg: 36, rng: 14, cd: .85, spd: 16, vis: 17, cost: [250, 110], pop: 3, t: 18, from: 'airfield', shot: 'cannon', aa: 1, alt: 11, turn: 1.9, r: .9, hk: 'R', only: ['toms', 'charlies'], desc: 'Agile multirole fighter. Guns on everything.'},
+  f15:      {n: 'F-15 Eagle', cat: 'air', arm: 'air', hp: 340, dmg: 85, rng: 22, cd: 2, spd: 20, vis: 22, cost: [290, 140], pop: 3, t: 22, from: 'airfield', shot: 'missile', aa: 1, noGround: 1, alt: 14, turn: 1.6, r: 1, hk: 'T', only: ['toms', 'charlies'], desc: 'Air superiority. Longest missile range in the sky.'},
+  f35:      {n: 'F-35 Lightning II', cat: 'air', arm: 'air', hp: 300, dmg: 190, rng: 1.8, cd: .6, spd: 15, vis: 20, cost: [340, 190], pop: 4, t: 28, from: 'airfield', shot: 'bomb', splash: 3, noAir: 1, stealth: 9, alt: 12, turn: 1.5, r: 1, hk: 'Y', only: ['toms', 'charlies'], desc: 'Stealth striker. Invisible to AA until almost overhead.'},
   a10:      {n: 'A-10 Thunderbolt II', cat: 'air', arm: 'air', hp: 560, dmg: 48, rng: 11, cd: .7, spd: 11, vis: 14, cost: [270, 110], pop: 3, t: 22, from: 'airfield', shot: 'cannon', alt: 9, turn: 1.4, r: 1.1, hk: 'I', desc: 'Flying tank. GAU-8 cannon and Mavericks wreck armour. Tough and slow.'},
   fa18:     {n: 'F/A-18 Super Hornet', cat: 'air', arm: 'air', hp: 320, dmg: 34, rng: 14, cd: .85, spd: 15.5, vis: 17, cost: [260, 120], pop: 3, t: 20, from: 'airfield', shot: 'cannon', aa: 1, alt: 11, turn: 1.85, r: .95, hk: 'O', desc: 'Carrier multirole. Gun, Sidewinders and a stick of bombs.'},
   typhoon:  {n: 'Eurofighter Typhoon', cat: 'air', arm: 'air', hp: 300, dmg: 85, rng: 21, cd: 2, spd: 19.5, vis: 21, cost: [290, 140], pop: 3, t: 22, from: 'airfield', shot: 'missile', aa: 1, noGround: 1, alt: 13, turn: 2.05, r: .95, hk: 'J', desc: 'Agile delta-wing dogfighter. Meteor and IRIS-T missiles.'},
@@ -888,10 +898,10 @@ const POWERS = {
   dronestorm: {n: 'Drone Swarm', cd: 80, fuel: 60, tgt: 1, r: 5, desc: 'Launches eight FPV bomb drones from your capital at the target.', hk: '5'},
   sprint:    {n: 'Peloton Sprint', cd: 70, fuel: 30, r: 0, nat: 1, desc: 'All infantry move 60% faster for 15 seconds.', hk: '6'},
   satellite: {n: 'Recon Satellite', cd: 80, fuel: 40, r: 0, nat: 1, desc: 'Reveals the whole map for 15 seconds.', hk: '6'},
+  autosurge: {n: 'Autopilot Surge', cd: 70, fuel: 40, r: 0, nat: 1, desc: 'All aircraft deal 50% more damage for 15 seconds.', hk: '6'},
   forza:     {n: 'Forza!', cd: 70, fuel: 40, r: 0, nat: 1, desc: 'All units deal 25% more damage for 12 seconds.', hk: '6'},
   howl:      {n: 'Howl of the Pack', cd: 75, fuel: 40, r: 0, nat: 1, desc: 'All infantry become alpha wolves for 18 seconds.', hk: '6'},
   salvo:     {n: 'Cruise Missile Salvo', cd: 80, fuel: 80, tgt: 1, r: 6, nat: 1, desc: 'Eight cruise missiles from the fleet, anywhere on the map.', hk: '6'},
-  bribe:     {n: 'Golden Bribe', cd: 80, fuel: 60, tgt: 1, r: 6, nat: 1, desc: 'Up to six enemy infantry in the area defect to you.', hk: '6'},
 };
 
 // Damage multiplier by shot type against armour class.
@@ -1712,7 +1722,31 @@ function Sim(opts) {
   });
   for (const p of this.players) if (p.ecoK > 1) { p.steel += 700; p.fuel += 250; } else if (p.ecoK < 1) { p.steel -= 150; }
   if (opts.battle) this.setupBattle(opts.battle); else if (opts.scen) this.setupScen(opts.scen); else for (const p of this.players) this.setupPlayer(p);
+  this.addXaviers();
 }
+// A couple of Xaviers wander every war: invulnerable, unarmed, and they heal anyone nearby on any side.
+Sim.prototype.addXaviers = function () {
+  this.players[-1] = xavPlayer();
+  const r = mulberry(this.seed * 17 + 3), N = this.N, n = 2 + (r() < .5 ? 1 : 0);
+  for (let i = 0, tries = 0; i < n && tries < 600; tries++) {
+    const x = N * (.22 + r() * .56), y = N * (.22 + r() * .56);
+    if (this.landOk(x, y)) { const e = this.addUnit('xavier', -1, x, y); e.xav = 1; e.wr = mulberry(e.id * 7 + 1); i++; }
+  }
+};
+Sim.prototype.stepXav = function (e) {
+  e.hp = e.hpm;
+  if (this.tick % 10 === e.id % 10) this.near(e.x, e.y, 8, t => {
+    if (t === e || t.b || t.xav || t.hp >= t.hpm) return;
+    t.hp = Math.min(t.hpm, t.hp + (t.d.cat === 'inf' ? 14 : 7)); this.ev({k: 'heal', a: e.id, t: t.id});
+  });
+  if (!e.wr) e.wr = mulberry(e.id * 7 + 1);
+  if (!e.goal && (e.wanderT || 0) <= this.t) { // stroll to a nearby spot, preferring places where people are hurt
+    e.wanderT = this.t + 3 + e.wr() * 5;
+    let hx = 0, hy = 0, hn = 0; this.near(e.x, e.y, 22, t => { if (!t.b && !t.xav && t.hp < t.hpm * .8) { hx += t.x; hy += t.y; hn++; } });
+    const a = e.wr() * 6.28, d = 3 + e.wr() * 9, tx = hn ? hx / hn : e.x + Math.cos(a) * d, ty = hn ? hy / hn : e.y + Math.sin(a) * d;
+    if (this.landOk(tx, ty)) this.go(e, tx, ty);
+  }
+};
 
 // Campaign battle: no bases. Find the stretch of land between the two spawns with the most ground, mark the two deploy zones and place the enemy army.
 Sim.prototype.landOk = function (x, y) {
@@ -2045,12 +2079,13 @@ Sim.prototype.techMult = function (p, br, hp) {
   for (const k in UPGRADES) { const q = UPGRADES[k]; if (!p.ups[k]) continue; if (br === 'bld') { if (hp && q.bld) m *= q.bld; } else if (q.tree === br) m *= q.buff; }
   return m;
 };
-Sim.prototype.hpMult = function (p, d) { return (p.nat.tr.hp || 1) * (1 + .05 * this.morale(p)) * this.techMult(p, techBranch(d), true); };
-Sim.prototype.dmgMult = function (p, d) { let m = (p.nat.tr.dmg || 1) * (d ? this.techMult(p, techBranch(d)) : 1); if (p.buffs.forza > this.t) m *= 1.25; return m; };
+Sim.prototype.hpMult = function (p, d) { return (p.nat.tr.hp || 1) * (d && d.cat === 'air' ? p.nat.tr.air || 1 : 1) * (1 + .05 * this.morale(p)) * this.techMult(p, techBranch(d), true); };
+Sim.prototype.dmgMult = function (p, d) { let m = (p.nat.tr.dmg || 1) * (d ? this.techMult(p, techBranch(d)) : 1); if (p.buffs.forza > this.t) m *= 1.25; if (d && d.cat === 'air') { m *= p.nat.tr.air || 1; if (p.buffs.autosurge > this.t) m *= 1.5; } return m; };
 Sim.prototype.costOf = function (p, def, key) {
   if (p.open && key) return [0, 0]; // "all units unlocked": units are free, buildings are not
   let k = p.nat.tr.cost || 1;
   if (key === 'scout' && p.nat.tr.scoutCost) k *= p.nat.tr.scoutCost;
+  if (def.cat === 'air' && p.nat.tr.airCost) k *= p.nat.tr.airCost;
   return [Math.round(def.cost[0] * k), Math.round(def.cost[1] * k)];
 };
 
@@ -2210,7 +2245,7 @@ Sim.prototype.issue = function (c, pi) {
       this.ev({k: 'deployed', p: pi, id: u.id});
       break;
     }
-    case 'pilot': { const e = mine[0]; if (e && !e.b) { if (c.on) { if (!e.pilot) { e.hpm *= PILOT_HP; e.hp *= PILOT_HP; } e.chute = 0; e.pilot = pi + 1; this.clearOrders(e); this.ev({k: 'cry', p: pi, id: e.id}); } else { if (e.pilot) { e.hpm /= PILOT_HP; e.hp = Math.min(e.hp / PILOT_HP, e.hpm); } e.pilot = 0; if (e.air) e.hold = {x: e.x, y: e.y}; } } break; }
+    case 'pilot': { const e = mine[0]; if (e && c.on && this.players[pi].nat.key === 'charlies' && (e.d.cat === 'air' || e.d.cat === 'heli')) break; if (e && !e.b) { if (c.on) { if (!e.pilot) { e.hpm *= PILOT_HP; e.hp *= PILOT_HP; } e.chute = 0; e.pilot = pi + 1; this.clearOrders(e); this.ev({k: 'cry', p: pi, id: e.id}); } else { if (e.pilot) { e.hpm /= PILOT_HP; e.hp = Math.min(e.hp / PILOT_HP, e.hpm); } e.pilot = 0; if (e.air) e.hold = {x: e.x, y: e.y}; } } break; }
     case 'pose': { const e = this.ents.get(c.id); if (e && e.o === pi && e.pilot === pi + 1) { e.x = clamp(c.x, 0, this.N - 1); e.y = clamp(c.y, 0, this.N - 1); e.z = c.z; e.h = c.h; e.p = c.p || 0; e.r = c.r || 0; if (c.tu !== undefined) e.tu = c.tu; if (c.m !== undefined) e.moving = c.m; } break; }
     case 'pfire': this.pilotFire(c, pi); break;
     case 'streak': { // killstreak reward: an artillery barrage walks across the marked ground after a short warning
@@ -2419,6 +2454,7 @@ Sim.prototype.usePower = function (p, k, x, y) {
     case 'sprint': p.buffs.sprint = this.t + 15; this.notify(p.i, 'Peloton Sprint!', 'good'); break;
     case 'satellite': p.reveal = this.t + 15; break;
     case 'forza': p.buffs.forza = this.t + 12; break;
+    case 'autosurge': p.buffs.autosurge = this.t + 15; break;
     case 'howl':
       for (const e of [...this.ents.values()]) if (e.o === p.i && !e.b && e.d.cat === 'inf' && e.k !== 'worker' && !e.inside && e.k !== 'wolf') this.toWolf(e, 18);
       break;
@@ -2506,7 +2542,7 @@ Sim.prototype.near = function (x, y, r, fn) {
   }
 };
 
-Sim.prototype.friendly = function (a, b) { const p = this.players[a]; return p.team === this.players[b].team || !!(p.rel && p.rel[b]); };
+Sim.prototype.friendly = function (a, b) { if (a === -1 || b === -1) return true; const p = this.players[a]; return p.team === this.players[b].team || !!(p.rel && p.rel[b]); };
 
 Sim.prototype.inSmoke = function (e) {
   for (const s of this.smokes) if (Math.hypot(e.x - s.x, e.y - s.y) < s.r) return true;
@@ -2528,6 +2564,7 @@ Sim.prototype.targetable = function (a, e, from) {
 
 Sim.prototype.canHit = function (a, t) {
   const d = a.d;
+  if (t.xav) return false;
   if (t.b) return !d.noGround && !d.seaOnly;
   if (t.air) { if (!d.aa && !d.hitsAir) return false; if (d.noAir) return false; }
   else { if (d.noGround) return false; }
@@ -2566,6 +2603,7 @@ Sim.prototype.acquire = function (e) {
 
 // ---------- damage ----------
 Sim.prototype.hurt = function (t, dmg, by) {
+  if (t.xav) return;
   t.hurtT = this.t;
   if (t.hp <= 0) return;
   if (t.b && t.hard >= 1) dmg *= .35;                       // hardened: rebuilt underground in reinforced concrete
@@ -3216,6 +3254,7 @@ Sim.prototype.spawnFrom = function (b, k, p) {
 
 Sim.prototype.stepUnit = function (e) {
   const d = e.d, p = this.players[e.o];
+  if (e.xav) this.stepXav(e);
   if (e.inside) { const T = this.ents.get(e.inside); if (T && !T.b) { e.x = T.x; e.y = T.y; } else if (!T) e.inside = 0; return; }
   if (e.recon && !e.pilot && this.tick % 10 === e.id % 10) this.stepRecon(e);
   if (e.reconNext && this.t > e.reconNext && !e.recon) { e.reconNext = 0; if (p.autoRecon) { this.clearOrders(e); this.sendRecon(p, 1, true); } }
@@ -3977,11 +4016,11 @@ Bot.prototype.train = function () {
     else if (b.k === 'airfield') {
       const nAir = this.mine.army.filter(e => e.d.cat === 'air').length;
       if (nAir < this.cfg.maxAir && s.t > this.cfg.start && r < this.cfg.air * 2) {
-        const opts = (p.nat.key === 'toms' ? ['f16', 'f15', 'f35', 'gunship'] : ['fighter', 'interceptor', 'bomber', 'gunship']).concat(['a10', 'fa18', 'typhoon']);
+        const opts = (p.nat.key === 'toms' || p.nat.key === 'charlies' ? ['f16', 'f15', 'f35', 'gunship'] : ['fighter', 'interceptor', 'bomber', 'gunship']).concat(['a10', 'fa18', 'typhoon']);
         u = opts[(r / (this.cfg.air * 2) * opts.length) | 0];
       }
     } else if (b.k === 'yard') u = !c.nukesub && p.nat.key === 'toms' ? 'nukesub' : (r < .5 ? 'destroyer' : 'attacksub');
-    if (u && !s.trainable(p, u)) u = {barracks: r < .7 ? 'rifle' : 'rocket', factory: 'ifv', airfield: p.nat.key === 'toms' ? 'f16' : 'fighter', dronebay: 'fpv', yard: 'destroyer'}[b.k]; // not researched yet: a basic unit instead
+    if (u && !s.trainable(p, u)) u = {barracks: r < .7 ? 'rifle' : 'rocket', factory: 'ifv', airfield: p.nat.key === 'toms' || p.nat.key === 'charlies' ? 'f16' : 'fighter', dronebay: 'fpv', yard: 'destroyer'}[b.k]; // not researched yet: a basic unit instead
     if (!u || !s.trainable(p, u)) continue;
     const cc = s.costOf(p, UNITS[u], u);
     if (this.save && p.steel - cc[0] < this.save && this.rnd() < .65 && this.mine.army.length > 6) continue; // saving for research
@@ -4203,6 +4242,7 @@ function Mirror(o) {
     const nat = NATIONS[p.nation];
     return {i, name: p.name || nat.name, nation: p.nation, nat, team: p.team === undefined ? i : p.team, open: !!p.open, steel: 0, fuel: 0, pop: 0, popCap: 15, ups: {}, cds: {}, alive: true, kills: 0, losses: 0, built: 0, buffs: {}, reveal: 0, spawn: this.M.spawns[i], rel: {}, relT: {}, offers: [], mood: {}, str: 0, bot: p.bot, intel: [], autoRecon: false};
   });
+  this.players[-1] = xavPlayer();
 }
 Mirror.prototype.friendly = Sim.prototype.friendly;
 Mirror.prototype.canPlace = Sim.prototype.canPlace;
@@ -4348,6 +4388,8 @@ function palette(nat) {
   if (c.look === 'usa') { p.uni = 0x1b2f6b; p.trim = 0xd8202f; p.alt = WHITE; }
   else if (c.look === 'italian') { p.uni = 0xf0f0e8; p.trim = 0x009246; p.alt = 0xce2b37; }
   else if (c.look === 'toms') { p.uni = 0x24353a; p.trim = 0x19c8b9; p.alt = 0x0f1a1c; }
+  else if (c.look === 'charlie') { p.uni = 0x2f8f48; p.trim = 0xd8202f; p.alt = 0xe8c228; } // red on green: they picked it themselves
+  else if (c.look === 'xavier') { p.uni = 0xf6f3e8; p.trim = 0xffd86b; p.alt = 0xffffff; }
   else if (c.look === 'glasses') { p.uni = 0x274a86; p.trim = 0x4a90ff; p.alt = 0xcfe0ff; }
   else { p.uni = 0x4a5530; p.trim = 0x6b7a42; p.alt = 0x8a7a55; } // Licases: woodland camo
   return p;
@@ -4362,7 +4404,7 @@ function isBiker(kind, nat) { return NATIONS[nat].look === 'bike' && kind !== 's
 GEO.blob = new THREE.SphereGeometry(1, 22, 16);
 GEO.blobLo = new THREE.SphereGeometry(1, 10, 7);
 function blobColor(kind, P) {
-  if (kind === 'medic') return 0xf4f4ee;
+  if (kind === 'medic' || kind === 'xavier') return 0xf4f4ee;
   if (P.look === 'italian') return 0xf3f1ea;
   if (P.look === 'toms') return 0x2b9e94;
   if (P.look === 'usa') return 0xd8283a;
@@ -4385,7 +4427,8 @@ function soldierBody(kind, nat, lo) {
     for (let i = 0; i < (lo ? 6 : 14); i++) { const a = i * 2.39996, yy = Math.sin(i * 1.7) * .8, cr = Math.sqrt(1 - yy * yy); sph(rx * .32, ry * .26, rz * .3, Math.cos(a) * rx * cr * .78, cy + yy * ry * .78, Math.sin(a) * rz * cr * .78, cm[i % 4]); }
   }
   if (kind === 'worker') b.add(GEO.torus, 0xffa726, 0, cy - ry * .05, 0, rx * 1.0, rz * 1.0, ry * .5, Math.PI / 2, 0, 0); // hi-vis band
-  if (kind === 'medic') { b.box(.02, .14, .05, rx * .99, cy, 0, 0xd8202f); b.box(.02, .05, .14, rx * .99, cy, 0, 0xd8202f); }
+  if (kind === 'xavier') b.add(GEO.torus, 0xffe27a, 0, cy + ry * 1.3, 0, rx * .55, rx * .55, ry * .3, Math.PI / 2, 0, 0); // halo
+  if (kind === 'medic' || kind === 'xavier') { b.box(.02, .14, .05, rx * .99, cy, 0, 0xd8202f); b.box(.02, .05, .14, rx * .99, cy, 0, 0xd8202f); }
   // face: big round eyes, pupils looking ahead, a little mouth
   const ey = cy + ry * .3, ex = rx * .8;
   if (T) { // wraparound sunglasses, square jaw grin
@@ -7075,7 +7118,7 @@ Renderer.prototype.rubble = function (ev) {
   (this.burning = this.burning || []).push({x: ev.x, y: hAt(this.view.M, ev.x, ev.y), z: ev.y, s, t: 0});
 };
 Renderer.prototype.flyby = function (x, y, a, off, o) {
-  const nat = this.view.players[o] ? this.view.players[o].nation : 0, key = (NATIONS[nat].key === 'toms' ? 'f35' : 'fighter');
+  const nat = this.view.players[o] ? this.view.players[o].nation : 0, key = (NATIONS[nat].key === 'toms' || NATIONS[nat].key === 'charlies' ? 'f35' : 'fighter');
   const c = Math.cos(a), s = Math.sin(a);
   (this.jets = this.jets || []).push({x: x - c * 60 - s * off, z: y - s * 60 + c * off, y: Math.max(hAt(this.view.M, x, y), 0) + 11, vx: c * 26, vz: s * 26, a, t: 0, key: key + '|' + nat, k: key, nat});
 };
@@ -7736,7 +7779,10 @@ const Direct = {
   pose: {x: 0, y: 0, z: 0, h: 0, p: 0, r: 0, tu: 0}, look: 'off', mouseX: 0, mouseY: 0, mouseDown: false,
   hits: [], nums: [], dmgDir: [], feed: [], lockT: 0,
 
-  canPilot(e) { return e && !e.b && e.d.cat !== undefined; },
+  canPilot(e) {
+    if (e && !e.b && (e.d.cat === 'air' || e.d.cat === 'heli')) { const g = UI.g, q = g && g.view.players[g.me]; if (q && q.nat.key === 'charlies') { UI.addAlert("Charlies are colourblind: no pilot's licence. Your pilots fly themselves.", 'bad'); return false; } }
+    return e && !e.b && e.d.cat !== undefined;
+  },
 
   modeOf(d) { return d.cat === 'drone' ? 'fpv' : d.cat === 'air' ? 'plane' : d.cat === 'heli' ? 'heli' : d.cat === 'sea' ? 'ship' : d.cat === 'veh' ? 'vehicle' : 'soldier'; },
 
@@ -10926,6 +10972,8 @@ window.Tension = (() => {
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '5 Nov 2026 (latest)', items: [
+      'New nation: the Charlies. Air-tech specialists: every jet in the game, aircraft +20% damage and health and 15% cheaper, faster research, Autopilot Surge power. But they are colourblind, so they have no pilot licence and cannot fly planes themselves.',
+      'The Xaviers: two or three friendly healers wander every war. They cannot attack or be attacked and heal everyone nearby on any side.',
       'Toms only: new end-of-tree research "Directed Energy" (Armour tier 4) unlocks the Directed Energy Tank, a laser beam tank that burns armour, aircraft and infantry.',
       'Campaign: a "Next level" button on the victory screen; the victory screen now scrolls and its buttons sit above the stats.',
       'Stats screen hides economy columns and the steel graph in campaign battles (there is no economy there).',
