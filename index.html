@@ -1655,10 +1655,10 @@ function digCells(M, N, x, y, amt, o) { // returns [[i, h], ...] of changed cell
     const cx = Math.round(x) + i, cy = Math.round(y) + j; if (cx < 2 || cy < 2 || cx >= N - 2 || cy >= N - 2) continue;
     const d = Math.hypot(cx - x, cy - y); if (d > R) continue;
     const q = cy * N + cx; if (M.occ[q] || M.water[q] || M.h0[q] < .35) continue;
-    const lo = Math.max(.15, M.h0[q] - DIG_MAX), nh = Math.max(lo, M.h[q] - amt * (1 - d / R * .6));
+    const lo = Math.max(.15, M.h0[q] - DIG_MAX), hOld = M.h[q], nh = Math.max(lo, M.h[q] - amt * (1 - d / R * .6));
     if (nh >= M.h[q] - .001) continue;
     M.h[q] = nh; M.dug[q] = M.h0[q] - nh; M.digO[q] = o + 1; M.tree[q] = 0; if (M.dug[q] > .5) M.block[q] = 0;
-    out.push([q, Math.round(nh * 1000) / 1000]);
+    out.push([q, Math.round(nh * 1000) / 1000, Math.round((hOld - nh) * 1000) / 1000]);
   }
   return out;
 }
@@ -2151,7 +2151,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'gather': { const n = this.M.nodes[c.n]; if (n) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'gather', node: n.id}; } break; }
     case 'build': this.cmdBuild(mine, p, c.b, c.x, c.y, !!c.q); break;
     case 'harden': this.cmdHarden(p, c.id); break;
-    case 'pdig': { const a = this.ents.get(c.id); if (!a || a.o !== pi || a.pilot !== pi + 1 || a.d.cat !== 'inf' || (a.digT || 0) > this.t) break; if (Math.hypot(c.x - a.x, c.y - a.y) > 4.2) break; a.digT = this.t + .22; this.digAt(+c.x, +c.y, pi, .2); break; }
+    case 'pdig': { const a = this.ents.get(c.id); if (!a || a.o !== pi || a.pilot !== pi + 1 || a.d.cat !== 'inf' || (a.digT || 0) > this.t) break; if (Math.hypot(c.x - a.x, c.y - a.y) > 4.2) break; a.digT = this.t + .22; this.digAt(+c.x, +c.y, pi, .2, {x: +c.dx || 0, y: +c.dy || 0}); break; }
     case 'digline': { // workers dig a trench or tunnel along a line, a few strikes per cell, in order
       const n = Math.ceil(Math.hypot(c.x2 - c.x1, c.y2 - c.y1)), cells = [];
       for (let i = 0; i <= n; i++) cells.push([c.x1 + (c.x2 - c.x1) * i / Math.max(1, n), c.y1 + (c.y2 - c.y1) * i / Math.max(1, n)]);
@@ -2958,9 +2958,21 @@ Sim.prototype.stepAutoEco = function (p) {
   }
 };
 
-Sim.prototype.digAt = function (x, y, o, amt) {
+Sim.prototype.digAt = function (x, y, o, amt, dir) {
   const c = digCells(this.M, this.N, x, y, amt || .22, o);
   if (!c.length) return false;
+  // spoil: half the earth you dig out is thrown up ahead of the trench as a parapet (cover on the enemy side)
+  const dl = dir ? Math.hypot(dir.x, dir.y) : 0;
+  if (dl > .1) {
+    const M = this.M, N = this.N; let V = 0; for (const e of c) V += e[2] || 0;
+    const ux = dir.x / dl, uy = dir.y / dl, px = x + ux * 2.1, py = y + uy * 2.1, S = V * .55;
+    for (let k = -1; k <= 1; k++) {
+      const cx = Math.round(px - uy * k), cy = Math.round(py + ux * k); if (cx < 2 || cy < 2 || cx >= N - 2 || cy >= N - 2) continue;
+      const q = cy * N + cx; if (M.occ[q] || M.water[q] || M.block[q] || M.h0[q] < .35 || M.dug[q] > .05) continue;
+      const nh = Math.min(M.h[q] + S / 3, M.h0[q] + .55); if (nh <= M.h[q] + .001) continue;
+      M.h[q] = nh; M.dug[q] = M.h0[q] - nh; M.digO[q] = o + 1; M.tree[q] = 0; c.push([q, Math.round(nh * 1000) / 1000, 0]);
+    }
+  }
   this.ev({k: 'dig2', c, o, x: Math.round(x), y: Math.round(y)});
   this.coverDirty = true; if (this.tick % 20 === 0) this.F.flush();
   return true;
@@ -2992,7 +3004,7 @@ Sim.prototype.rebuildCover = function () {
     for (let j = Math.floor(b.y - r); j <= Math.ceil(b.y + r); j++) for (let i = Math.floor(b.x - r); i <= Math.ceil(b.x + r); i++)
       if (i >= 0 && j >= 0 && i < N && j < N && Math.abs(i - b.x) <= r && Math.abs(j - b.y) <= r) C[j * N + i] = b.o + 1;
   }
-  const M = this.M; if (M.dug) for (let i = 0; i < N * N; i++) if (M.dug[i] >= TRENCH_D) C[i] = M.digO[i];
+  const M = this.M; if (M.dug) for (let i = 0; i < N * N; i++) if (M.dug[i] >= TRENCH_D || M.dug[i] <= -.18) C[i] = M.digO[i];
 };
 Sim.prototype.coverMul = function (t, ty) {
   if (t.b || t.air || t.d.cat !== 'inf' || !this.M.cover) return 1;
@@ -6466,7 +6478,7 @@ Renderer.prototype.flushDig = function () {
   const M = this.view.M, N = this.view.N, pos = this.terrain.geometry.attributes.position, q = this.tc.width / N, g = this.tg;
   const seen = new Set(); let bx0 = N, by0 = N, bx1 = 0, by1 = 0; const tun = this.tunnels = this.tunnels || new Set();
   for (const [i] of Q) { if (seen.has(i)) continue; seen.add(i); pos.setY(i, M.h[i]);
-    const x = i % N, y = (i / N) | 0, d = M.dug ? M.dug[i] : 0, k = Math.min(1, d / DIG_MAX);
+    const x = i % N, y = (i / N) | 0, d = M.dug ? M.dug[i] : 0, k = clamp(d / DIG_MAX, 0, 1);
     g.fillStyle = `rgba(${86 - k * 40 | 0},${66 - k * 34 | 0},${46 - k * 26 | 0},.9)`; g.beginPath(); g.arc(x * q, y * q, q * .85, 0, 6.3); g.fill();
     if (d >= TUNNEL_D) tun.add(i); else tun.delete(i);
     if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; }
@@ -8280,10 +8292,17 @@ const Direct = {
     if (this.look === 'free' || this.aboard) return;
     if (this.shovel) { // dig at the crosshair, within arm's reach
       this.digCd = (this.digCd || 0) - dt;
-      if (pri && this.digCd <= 0 && this.aimPt) {
-        this.digCd = .26; const a = this.aimPt, d = Math.hypot(a.x - this.pose.x, a.y - this.pose.y);
-        if (d < 4 && Math.abs(a.z - hAt(g.view.M, a.x, a.y)) < .4) { g.issue({c: 'pdig', id: this.id, x: a.x, y: a.y}); VM.fired({kick: 2.5}); Sfx.ui(); this.kick = 1; }
-        else this.msg('Look at the ground right in front of you to dig', .9);
+      if (pri && this.digCd <= 0) {
+        // dig where you point: into the ground, a wall or slope in reach, straight down when looking at your boots, otherwise a cut ahead of you
+        this.digCd = .26; const M = g.view.M, p = this.pose, fw = this.fw || {x: Math.cos(this.yaw), y: Math.sin(this.yaw)}, fl = Math.hypot(fw.x, fw.y) || 1, dx = fw.x / fl, dy = fw.y / fl;
+        let tx, ty;
+        if (this.pitch < -.85) { tx = p.x; ty = p.y; }
+        else if (this.aimPt && Math.hypot(this.aimPt.x - p.x, this.aimPt.y - p.y) < 4.2) { tx = this.aimPt.x; ty = this.aimPt.y; }
+        else { tx = p.x + dx * 1.8; ty = p.y + dy * 1.8; }
+        g.issue({c: 'pdig', id: this.id, x: tx, y: ty, dx: this.pitch < -.85 ? 0 : dx, dy: this.pitch < -.85 ? 0 : dy}); VM.fired({kick: 2.5}); Sfx.ui(); this.kick = 1;
+        const dep = M.dug ? M.dug[Math.round(p.y) * g.view.N + Math.round(p.x)] : 0, cat = dep >= TUNNEL_D ? 2 : dep >= TRENCH_D ? 1 : 0;
+        if (cat > (this.digCat || 0)) this.msg(cat === 2 ? 'Tunnel: hidden from anyone not right beside you' : 'Trench: troops in cover take half damage. Keep digging, or stand behind the parapet', 2.2);
+        this.digCat = cat;
       }
       return;
     }
@@ -8627,6 +8646,7 @@ const Direct = {
     }
     { const p = g.view.players[g.me], S = PSPECIAL[p.nat.key]; if (S) { const left = Math.max(0, (p.specT || 0) - g.view.t); c.font = '700 12px system-ui'; c.fillStyle = left > 0 ? 'rgba(255,255,255,.5)' : '#ffd23a'; c.fillText(Settings.keyName(Settings.binds.special) + ': ' + S.n + (left > 0 ? ' (' + Math.ceil(left) + 's)' : ' READY'), 24, h - 22); } }
     // aircraft HUD
+    this.drawRadar(c, w, h);
     if (this.mode === 'plane') this.drawFlightHud(c, w, h);
     if (fp && !this.aboard && (this.mode === 'vehicle' || this.mode === 'ship') && !(W && W.arc && !this.direct)) this.drawGunsight(c, w, h);
     if (!this.helpSeen) { this.helpSeen = 1; }
@@ -8830,6 +8850,49 @@ const Direct = {
     const s = this.toScreen(x, y, Math.max(hAt(M, x, y), 0)); if (!s) return;
     c.strokeStyle = '#7dff8a'; c.lineWidth = 2; c.beginPath(); c.arc(s.x, s.y, 12, 0, 6.2832); c.moveTo(s.x, s.y - 18); c.lineTo(s.x, s.y + 18); c.moveTo(s.x - 18, s.y); c.lineTo(s.x + 18, s.y); c.stroke();
     c.fillStyle = '#7dff8a'; c.font = '700 11px system-ui'; c.textAlign = 'center'; c.fillText('BOMB IMPACT', s.x, s.y + 32);
+  },
+  // Mini-map while you are in the field: a round, heading-up radar. Friends are always shown; enemies only while they are actually visible to you.
+  radarTex() {
+    const M = this.ui.g.view.M, N = this.ui.g.view.N, now = performance.now();
+    if (this._rt && this._rtM === M && now - this._rtT < 4000) return this._rt;
+    const cv = this._rt && this._rtM === M ? this._rt : document.createElement('canvas'); cv.width = cv.height = N; const g2 = cv.getContext('2d'), im = g2.createImageData(N, N), d = im.data;
+    for (let i = 0; i < N * N; i++) {
+      const h = M.h[i], o = i * 4, k = Math.min(1, Math.max(0, (h + .2) / 5)); let r, g, b;
+      if (M.water[i]) { r = 30; g = 70 + Math.max(-30, h * 15); b = 125; }
+      else if (M.block[i]) { r = 96; g = 94; b = 90; }
+      else { const bio = M.bio[i]; if (bio === 1) { r = 205 - k * 40; g = 185 - k * 40; b = 125; } else if (bio === 2) { r = 232; g = 236; b = 244; } else if (bio === 4) { r = 135 - k * 25; g = 130 - k * 25; b = 120; } else if (bio === 3) { r = 82; g = 102; b = 72; } else { r = 74 + k * 70; g = 128 + k * 40; b = 62 + k * 40; } }
+      if (M.road[i]) { r = 196; g = 176; b = 136; }
+      if (M.tree[i]) { r = 34; g = 84; b = 40; }
+      if (M.dug && M.dug[i] > .25) { r = 92; g = 70; b = 48; }
+      d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = 255;
+    }
+    g2.putImageData(im, 0, 0); this._rt = cv; this._rtM = M; this._rtT = now; return cv;
+  },
+  drawRadar(c, w, h) {
+    const g = this.ui.g, v = g.view, p = this.pose, N = v.N, me = g.me, U = Math.max(.8, Math.min(1.4, h / 800));
+    const Rr = 84 * U, cx = w - Rr - 18 * U, cy = Rr + 52 * U, range = this.mode === 'plane' ? 95 : this.mode === 'vehicle' || this.mode === 'heli' ? 60 : 42, s = Rr / range;
+    const yaw = this.mode === 'soldier' ? this.yaw : p.h;
+    c.save();
+    c.beginPath(); c.arc(cx, cy, Rr, 0, 6.2832); c.clip();
+    c.fillStyle = '#0b1218'; c.fillRect(cx - Rr, cy - Rr, Rr * 2, Rr * 2);
+    c.translate(cx, cy); c.rotate(-Math.PI / 2 - yaw);
+    c.imageSmoothingEnabled = false; c.drawImage(this.radarTex(), -p.x * s, -p.y * s, N * s, N * s);
+    // objective of an assault battle
+    const S = g.sim && g.sim.scen; if (S && S.obj && S.obj[S.oi] && !S.tdm) { const O = S.obj[S.oi], ox = (O.x - p.x) * s, oy = (O.y - p.y) * s, od = Math.hypot(ox, oy), k = od > Rr - 8 ? (Rr - 8) / od : 1; c.strokeStyle = '#ffd23a'; c.lineWidth = 2; c.beginPath(); c.arc(ox * k, oy * k, 6, 0, 6.2832); c.stroke(); c.fillStyle = '#ffd23a'; c.fillRect(ox * k - 1.5, oy * k - 1.5, 3, 3); }
+    for (const t of g.R.visEnts || []) {
+      if (t.id === this.id) continue;
+      const x = (t.rx - p.x) * s, y = (t.ryy - p.y) * s; if (x * x + y * y > Rr * Rr) continue;
+      const mine = v.friendly(t.o, me);
+      c.fillStyle = mine ? '#4fc3ff' : '#ff4a3a';
+      if (t.b) c.fillRect(x - 2.5, y - 2.5, 5, 5); else if (t.air) { c.beginPath(); c.moveTo(x, y - 3.5); c.lineTo(x + 3, y + 3); c.lineTo(x - 3, y + 3); c.closePath(); c.fill(); } else { c.beginPath(); c.arc(x, y, mine ? 2.2 : 2.8, 0, 6.2832); c.fill(); }
+    }
+    c.restore();
+    // you: arrow at the centre, always pointing up
+    c.save(); c.translate(cx, cy); c.fillStyle = 'rgba(255,255,255,.12)'; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, Rr, -Math.PI / 2 - .5, -Math.PI / 2 + .5); c.closePath(); c.fill();
+    c.fillStyle = '#fff'; c.strokeStyle = '#000'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, -6.5); c.lineTo(5, 5); c.lineTo(0, 2.2); c.lineTo(-5, 5); c.closePath(); c.fill(); c.stroke(); c.restore();
+    c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 2.5; c.beginPath(); c.arc(cx, cy, Rr, 0, 6.2832); c.stroke(); c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = 1; c.beginPath(); c.arc(cx, cy, Rr + 1.5, 0, 6.2832); c.stroke();
+    // north tick
+    const na = -Math.PI - yaw; c.font = '800 ' + (11 * U | 0) + 'px system-ui'; c.textAlign = 'center'; c.fillStyle = '#fff'; c.fillText('N', cx + Math.cos(na) * (Rr - 9), cy + Math.sin(na) * (Rr - 9) + 4);
   },
   drawFlightHud(c, w, h) {
     const p = this.pose, cx = w / 2, cy = h / 2, M = this.ui.g.view.M, G = '#7dff8a';
