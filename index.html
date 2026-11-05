@@ -8373,7 +8373,8 @@ const Direct = {
       return;
     }
     if (pri) this.tryFire(this.slot, g);
-    if (sec && this.W.length > 1) { const s = this.slot === 0 ? 1 : 0; const W = this.W[s].w; if (this.mode === 'soldier' && W.mag && W.mag > 1 && W.t === 'hit') { if (this.slot !== s) { this.slot = s; VM.build(e, g.view.players[e.o].nation, s); } } else this.tryFire(s, g, true); }
+    const altEdge = this.altWas; this.altWas = sec;
+    if (sec && this.W.length > 1) { const s = this.slot === 0 ? 1 : 0; const W = this.W[s].w; if (this.mode === 'soldier' && W.mag && (s === 0 || W.mag > 1 && W.t === 'hit')) { if (!altEdge) { this.slot = s; VM.build(e, g.view.players[e.o].nation, s); } } else this.tryFire(s, g, true); }
     if (this.salvo > 0) { this.salvoT -= dt; if (this.salvoT <= 0) { this.salvo--; this.salvoT = .09; this.fireProj(this.W[1].w, 1, g); } }
   },
   tryFire(s, g, secondary) {
