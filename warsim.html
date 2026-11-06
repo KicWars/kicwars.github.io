@@ -8969,6 +8969,7 @@ const Direct = {
   toggleAds() {
     if (this.e && this.e.k === 'arty') { this.direct = !this.direct; this.msg(this.direct ? 'Direct fire: shells fly straight at the crosshair' : 'Indirect fire: shells arc onto the aim point', 1.6); return; }
     if (this.mode === 'soldier' || this.mode === 'vehicle' || this.mode === 'ship' || this.mode === 'heli') this.ads = !this.ads;
+    else if (this.mode === 'plane' && !this.W.some(s => s.w.t === 'bomb')) this.toggleViewLock(); // right click: target lock
     else if (this.mode === 'plane' && this.W.some(s => s.w.t === 'bomb')) { this.bsight = !this.bsight; this.msg(this.bsight ? 'BOMBSIGHT: drop when the target is under the cross' : 'Bombsight off', 1.4); } },
 
   // ---------- per-frame ----------
@@ -9174,10 +9175,12 @@ const Direct = {
       if (!T || T.hp <= 0) { this.vLock = 0; this.msg('Target lost', 1.2); }
       else {
         const tx = T.rx === undefined ? T.x : T.rx, ty = T.ryy === undefined ? T.y : T.ryy, tz = T.rz === undefined ? T.z : T.rz, D = Math.hypot(tx - p.x, ty - p.y, tz - p.z);
-        if (D > 260) { this.vLock = 0; this.msg('Target out of range', 1.2); }
-        else { const ld = D / (vc * 4), th = T.ry === undefined ? T.h : T.ry, sp = T.sp || T.d.spd || 0, lx = tx + Math.cos(th) * sp * ld, ly = ty + Math.sin(th) * sp * ld;
-          const wy = Math.atan2(ly - p.y, lx - p.x), wp = Math.atan2(tz - p.z, Math.hypot(lx - p.x, ly - p.y)), kk = Math.min(1, (1 / 60) * 10);
-          this.camYaw += angDiff(this.camYaw, wy) * kk; this.camPitch += (clamp(wp, -1.3, 1.3) - this.camPitch) * kk; }
+        if (D > 450) { this.vLock = 0; this.msg('Target out of range', 1.2); }
+        else { // War Thunder arcade target lock: the camera holds the target in the middle, the plane flies at the lead point for your guns
+          const kk = 1 - Math.exp(-dt * 9), cy2 = Math.atan2(ty - p.y, tx - p.x), cp2 = Math.atan2(tz - p.z, Math.hypot(tx - p.x, ty - p.y));
+          this.camYaw += angDiff(this.camYaw, cy2) * kk; this.camPitch += (clamp(cp2, -1.3, 1.3) - this.camPitch) * kk;
+          const ls = leadShift(T.ry === undefined ? T.h : T.ry, T.rp || T.p || 0, T.sp || T.d.spd || 0, D / GUN_V);
+          this.leadAim = {yaw: Math.atan2(ty + ls.y - p.y, tx + ls.x - p.x), pitch: Math.atan2(tz + ls.z - p.z, Math.hypot(tx + ls.x - p.x, ty + ls.y - p.y))}; }
       }
     }
     if (this.fq === undefined || this.fqId !== e.id) {
@@ -9211,12 +9214,12 @@ const Direct = {
       aCmd = -this.stY * aS * 1.4; rollCmd = this.stX * 3.4;
     } else {
       // instructor (arcade-style): never lets you fly into the ground or stall; the camera stays where you look
-      let aimP = this.camPitch; const agl = p.z - ground, slow = Math.max(V.length(), .1) / vc;
+      const LA = this.vLock && this.leadAim; let aimP = LA ? LA.pitch : this.camPitch; const agl = p.z - ground, slow = Math.max(V.length(), .1) / vc;
       if (Settings.flightAssist) {
         aimP = Math.max(aimP, reqP); // hug the ground as low as you like: it only lifts you over what is actually ahead
         if (slow < .55 && !this.landing) { aimP = Math.min(aimP, .08); this.throttle = 1; this.instrT = performance.now(); }
       }
-      A.set(Math.cos(this.camYaw) * Math.cos(aimP), Math.sin(this.camYaw) * Math.cos(aimP), Math.sin(aimP));
+      const aimY = LA ? LA.yaw : this.camYaw; A.set(Math.cos(aimY) * Math.cos(aimP), Math.sin(aimY) * Math.cos(aimP), Math.sin(aimP));
       const aF = A.dot(F), aL = A.dot(L), aU = A.dot(U), lat = Math.hypot(aL, aU), w = clamp(lat * 5, 0, 1);
       const fwd = aF > .2; // target ahead: roll at most 90 degrees and pitch up or down; behind: roll lift toward it (loop / split-S)
       rollCmd = -clamp(Math.atan2(aL, fwd ? Math.abs(aU) : aU) * 3.5, -3.2, 3.2) * w; rollCmd -= (this.rollR || 0) * 2.5 * (1 - w); // aligned: wings back to level
@@ -9364,7 +9367,7 @@ const Direct = {
     const R = g.R, cam = R.cam, p = this.pose, fp = this.firstPerson() || this.mode === 'fpv';
     let yaw, pitch;
     if (this.mode === 'soldier' || this.mode === 'fpv') { yaw = this.yaw; pitch = this.pitch; }
-    else if (this.mode === 'plane') { yaw = fp ? p.h : this.camYaw; pitch = fp ? p.p : this.camPitch; }
+    else if (this.mode === 'plane') { const hl = fp && this.vLock; yaw = fp && !hl ? p.h : this.camYaw; pitch = fp && !hl ? p.p : this.camPitch; }
     else { yaw = this.camYaw; pitch = this.camPitch; }
     // recoil moves the view; it recovers smoothly
     pitch += this.recoilP; yaw += this.recoilY;
@@ -9436,16 +9439,16 @@ const Direct = {
   // War Thunder style target view: L locks the camera onto the enemy plane nearest your crosshair; mouse-aim then chases it
   // ---------- planes: War Thunder style view lock ----------
   toggleViewLock() {
-    if (this.vLock) { this.vLock = 0; this.msg('View lock off', 1); return; }
+    if (this.vLock) { this.vLock = 0; this.leadAim = null; this.msg('Target lock off', 1); return; }
     const v = this.ui.g.view, me = this.ui.g.me; let best = null, ba = 1e9;
     for (const t of v.ents.values()) {
       if (!t.air || t.id === this.id || v.friendly(t.o, me) || t.o < 0) continue;
       if (!(this.ui.g.R.isVisible(t.x, t.y) || (t.revealed || 0) > v.t || (v.players[me].reveal || 0) > v.t)) continue;
-      const a = this.angTo(t); if (a.dd > 220) continue;
-      const sc = a.ang + a.dd / 600; if (sc < ba) { ba = sc; best = t; }
+      const a = this.angTo(t, this.fw); if (a.dd > 450 || a.ang > 1.2) continue;
+      const sc = a.ang + a.dd / 900; if (sc < ba) { ba = sc; best = t; }
     }
     if (!best) { this.msg('No enemy aircraft to lock: put one near your crosshair', 1.5); Sfx.bad(); return; }
-    this.vLock = best.id; this.msg('VIEW LOCKED: ' + best.d.n + '  (L to release)', 1.8); Sfx.ui();
+    this.vLock = best.id; this.leadAim = null; this.msg('TARGET LOCKED: ' + best.d.n + '  (' + Settings.keyName(Settings.binds.vlock || 'KeyL') + ' or right click to release)', 1.8); Sfx.beep(1200);
   },
   cycleLock() {
     const v = this.g.view, me = this.g.me, list = [];
@@ -9847,6 +9850,7 @@ const Direct = {
     if (W && W.arc && this.aimPt) this.drawArc(c, W);
     // bomb impact predictor
     if (this.mode === 'plane' && this.W.some(s => s.w.t === 'bomb')) this.drawBombPip(c);
+    if (this.mode === 'plane' && !this.bsight) this.drawAirMarks(c, w, h);
     // ammo, weapon, health bar (bottom right)
     if (S && W) {
       c.textAlign = 'right'; c.font = '800 30px system-ui'; c.fillStyle = 'rgba(255,255,255,.95)'; c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = 4;
@@ -10127,6 +10131,36 @@ const Direct = {
     const p = this.toScreen(this.aimPt.x, this.aimPt.y, this.aimPt.z); if (p) { c.beginPath(); c.arc(p.x, p.y, 16, 0, 6.2832); c.stroke(); }
     c.fillStyle = '#fff'; c.font = '700 12px system-ui'; c.textAlign = 'center'; c.fillText(sol === null && !this.direct ? 'OUT OF RANGE' : (Math.hypot(this.aimPt.x - mz.x, this.aimPt.y - mz.y) * 10 | 0) + ' m', innerWidth / 2, innerHeight / 2 + 40);
   },
+  // War Thunder arcade: a marker with the range over every enemy plane, edge arrows for ones off screen, and the target-lock box with its lead circle
+  drawAirMarks(c, w, h) {
+    const g = this.ui.g, v = g.view, me = g.me, p = this.pose, P = v.players[me], fmt = d => d >= 100 ? (d / 100).toFixed(1) + ' km' : Math.round(d * 10 / 10) * 10 + ' m';
+    const list = [];
+    for (const t of v.ents.values()) { if (!t.air || t.id === this.id || t.inside || t.hp <= 0 || t.o < 0 || v.friendly(t.o, me)) continue; if (!(t.seenByMe || (t.revealed || 0) > v.t || (P.reveal || 0) > v.t)) continue;
+      const tx = t.rx === undefined ? t.x : t.rx, ty = t.ryy === undefined ? t.y : t.ryy, tz = t.rz === undefined ? (t.z || 0) : t.rz, d = Math.hypot(tx - p.x, ty - p.y, tz - p.z); if (d > 600) continue; list.push({t, tx, ty, tz, d}); }
+    list.sort((a, b) => a.d - b.d);
+    c.save(); c.textAlign = 'center';
+    list.forEach((q, i) => {
+      const lock = q.t.id === this.vLock, sp = this.toScreen(q.tx, q.ty, q.tz), on = sp && sp.x > 0 && sp.y > 0 && sp.x < w && sp.y < h;
+      if (on) {
+        const s2 = lock ? 20 : 9; c.strokeStyle = lock ? '#ff3b30' : 'rgba(255,90,74,.95)'; c.lineWidth = lock ? 2.5 : 1.6;
+        if (lock) { const L2 = 7; for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { c.beginPath(); c.moveTo(sp.x + sx * s2, sp.y + sy * (s2 - L2)); c.lineTo(sp.x + sx * s2, sp.y + sy * s2); c.lineTo(sp.x + sx * (s2 - L2), sp.y + sy * s2); c.stroke(); } }
+        else { c.beginPath(); c.moveTo(sp.x - s2, sp.y - s2 - 6); c.lineTo(sp.x + s2, sp.y - s2 - 6); c.lineTo(sp.x, sp.y - 6); c.closePath(); c.stroke(); }
+        c.font = (lock ? '800 12px' : '700 11px') + ' system-ui'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.7)'; const txt = (lock || i < 3 ? q.t.d.n + '  ' : '') + fmt(q.d);
+        c.strokeText(txt, sp.x, sp.y - s2 - 10); c.fillStyle = lock ? '#ffd0cc' : '#ffb3a8'; c.fillText(txt, sp.x, sp.y - s2 - 10);
+        if (lock) { // lead circle: put your guns here
+          const ls = leadShift(q.t.ry === undefined ? q.t.h : q.t.ry, q.t.rp || q.t.p || 0, q.t.sp || q.t.d.spd || 0, q.d / GUN_V), ps = this.toScreen(q.tx + ls.x, q.ty + ls.y, q.tz + ls.z);
+          if (ps) { c.strokeStyle = '#ffffff'; c.lineWidth = 2; c.beginPath(); c.arc(ps.x, ps.y, 8, 0, 6.283); c.stroke(); c.globalAlpha = .45; c.beginPath(); c.moveTo(sp.x, sp.y); c.lineTo(ps.x, ps.y); c.stroke(); c.globalAlpha = 1; }
+        }
+      } else if (lock || i < 4) { // off screen: an arrow on the edge pointing at it
+        let dx, dy; if (sp) { dx = sp.x - w / 2; dy = sp.y - h / 2; } else { const R2 = g.R, cam = R2.cam, v3 = new THREE.Vector3(q.tx, q.tz, q.ty).applyMatrix4(cam.matrixWorldInverse); dx = v3.x; dy = -v3.y; if (Math.hypot(dx, dy) < .01) dy = 1; }
+        const a = Math.atan2(dy, dx), r = Math.min(w, h) * .42, ex = w / 2 + Math.cos(a) * r, ey = h / 2 + Math.sin(a) * r;
+        c.fillStyle = lock ? '#ff3b30' : 'rgba(255,90,74,.85)'; c.beginPath(); c.moveTo(ex + Math.cos(a) * 12, ey + Math.sin(a) * 12); c.lineTo(ex + Math.cos(a + 2.4) * 9, ey + Math.sin(a + 2.4) * 9); c.lineTo(ex + Math.cos(a - 2.4) * 9, ey + Math.sin(a - 2.4) * 9); c.closePath(); c.fill();
+        c.font = '700 10px system-ui'; c.fillText(fmt(q.d), ex - Math.cos(a) * 16, ey - Math.sin(a) * 16 + 3);
+      }
+    });
+    if (!this.vLock && list.length && list[0].d < 450) { c.font = '600 11px system-ui'; c.fillStyle = 'rgba(255,255,255,.6)'; c.fillText(Settings.keyName(Settings.binds.vlock || 'KeyL') + ' / right click: lock camera on the nearest enemy', w / 2, h - 150); }
+    c.restore();
+  },
   bombImpact() { // where a bomb dropped now would land (same fall as the server's bombs)
     const p = this.pose, v = this.vel || {x: 0, y: 0, z: 0}, M = this.ui.g.view.M;
     let x = p.x, y = p.y, z = p.z - .3, vx = v.x, vy = v.y, vz = (v.z || 0) - 1, t = 0;
@@ -10204,7 +10238,7 @@ const Direct = {
       if (ap) { c.save(); c.strokeStyle = '#ffd45a'; c.beginPath(); c.arc(ap.x, ap.y, 15, 0, 6.2832); c.stroke(); c.fillStyle = '#ffd45a'; c.fillRect(ap.x - 1.5, ap.y - 1.5, 3, 3); c.restore(); }
     }
     // lead pipper: the nearest enemy aircraft ahead, with where your rounds will meet it
-    if (this.firstPerson() && this.e && this.e.d.shot === 'cannon') {
+    if (this.mode !== 'plane' && this.firstPerson() && this.e && this.e.d.shot === 'cannon') {
       let bt = null, bd = 1e9;
       for (const t of this.ui.g.R.visEnts || []) {
         if (!t.air || t.id === this.id || this.ui.g.view.friendly(t.o, this.ui.g.me)) continue;
@@ -12468,6 +12502,8 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Planes, War Thunder arcade style: every enemy plane has a marker with its range (m / km), with arrows at the screen edge for ones off screen.',
+      'Target lock (L or right click): the camera locks onto the enemy nearest your aim and holds it in the middle, in cockpit view too. Your plane flies at the lead circle so your guns hit. Press again to release.',
       'Takeoff and landing: in Air Battles you can start on the runway (or in the air, your choice on the spawn screen). W throttles up, A/D steer, look up to take off. Throttle back near your airfield to land: the gear comes down, touch down gently and stop there to repair and rearm.',
       'Missile lock reworked, War Thunder style: a seeker circle where you aim, a yellow ring filling as it locks, a growl that speeds up and a solid tone when locked.',
       'Sound: engine noise for planes, tanks, helicopters and boats that rises with throttle, and sound now always switches on with your first click or key press.',
