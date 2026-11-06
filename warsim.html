@@ -2352,7 +2352,7 @@ Sim.prototype.setupSandbox = function () {
 };
 // Operation Red Star (work in progress): one Soviet bomber that flies a slow circle while the crew walk around inside it.
 Sim.prototype.setupRedstar = function () {
-  this.rs = {t: 0, fuel: 100, hull: 100, off: 0, drift: 0, inp: 0, lit: 0, beams: [], lights: null, lockOn: 0, lockT: 0, jamF: .5, jamT: .5, jamP: 0, sig: 0, storm: 0, stormT: 0, flT: 3, door: 0, doorP: 0, leaks: [], hurt: {}, seat: {}, hold: {}, spent: {}, sched: null, bullets: [], fighters: [], gcd: {}, seq: 1, state: 'fly', kills: 0, bf: null};
+  this.rs = {t: 0, fuel: 100, hull: 100, off: 0, drift: 0, inp: 0, lit: 0, beams: [], lights: null, lockOn: 0, lockT: 0, jamF: .5, jamT: .5, jamP: 0, sig: 0, storm: 0, stormT: 0, flT: 3, door: 0, doorP: 0, leaks: [], hurt: {}, seat: {}, hold: {}, spent: {}, sched: null, bullets: [], fighters: [], gcd: {}, seq: 1, state: 'fly', kills: 0, bf: null, vod: {}, rub: {}, roul: null};
   this.rsEnemy = this.players.length - 1; this.redstar = 1; this.rsS = 0; const R0 = this.M.rsRoute[0], b = this.addUnit('bomber', 0, R0[0], R0[1]); b.z = RS_ALT; b.rs = 1; b.h = 0; this.rsB = b;
 };
 // ---------- Operation Red Star: mission director, systems, fighters, crew states ----------
@@ -2371,12 +2371,14 @@ Sim.prototype.rsHurt = function (pi) {
 Sim.prototype.rsPub = function () {
   const R = this.rs;
   return {t: Math.round(R.t), fuel: Math.round(R.fuel), hull: Math.round(R.hull), off: +R.off.toFixed(1), lit: +R.lit.toFixed(2), lockOn: R.lockOn, lockT: Math.round(R.lockT), jamP: +R.jamP.toFixed(2), sig: +R.sig.toFixed(2), storm: R.storm, door: R.door, doorP: +R.doorP.toFixed(2),
-    leaks: R.leaks.map(l => ({id: l.id, x: l.x, z: l.z, k: l.k, n: l.n, p: +l.p.toFixed(2)})), hurt: R.hurt, seat: R.seat, beams: R.beams, grace: R.grace || 0, bf: R.bf ? {st: R.bf.st, p: +R.bf.p.toFixed(2), rider: R.bf.rider} : null, state: R.state, fighters: R.fighters.length, kills: R.kills};
+    leaks: R.leaks.map(l => ({id: l.id, x: l.x, z: l.z, k: l.k, n: l.n, p: +l.p.toFixed(2)})), hurt: R.hurt, seat: R.seat, beams: R.beams, grace: R.grace || 0, bf: R.bf ? {st: R.bf.st, p: +R.bf.p.toFixed(2), rider: R.bf.rider} : null, state: R.state, fighters: R.fighters.length, kills: R.kills, vod: Object.fromEntries(Object.entries(R.vod).map(([k, v]) => [k, +v.toFixed(2)])), rub: R.rub, roul: R.roul && R.t - R.roul.t0 < 5.5 ? {id: R.roul.id, rt: +(R.t - R.roul.t0).toFixed(1), i: R.roul.i, n: R.roul.n, bet: R.roul.bet, p: R.roul.p} : null};
 };
 Sim.prototype.rsStep = function () {
   const R = this.rs, B = this.rsB, dt = .1, n = this.players.length - 1, rso = this.rso || {}, rnd = () => this.rnd();
   if (!R || !B || R.state === 'lost' || R.state === 'won') return;
   R.t += dt; const T = R.t, hd = this.rsHd || 0;
+  for (const k of Object.keys(R.vod)) { R.vod[k] = Math.max(0, R.vod[k] - dt / 40); if (!R.vod[k]) delete R.vod[k]; } // vodka wears off
+  if (R.roul && !R.roul.paid && T - R.roul.t0 >= 3) { const q = R.roul, col = q.n === 0 ? 'green' : RS_RED.has(q.n) ? 'red' : 'black', win = col === q.bet; q.paid = 1; if (win) R.rub[q.p] += 20; this.rsMsg(this.players[q.p].name + ' bet on ' + q.bet + ': ' + q.n + ' ' + col + (win ? '. Wins 20 roubles!' : '. Loses.'), 0); }
   const humans = []; for (let i = 0; i < n; i++) humans.push(i);
   const dmgK = {train: .6, std: 1, brutal: 1.4}[rso.diff] || 1;
   // --- director
@@ -2652,6 +2654,11 @@ Sim.prototype.issue = function (c, pi) {
     case 'harden': this.cmdHarden(p, c.id); break;
     case 'rsseat': { const R = this.rs; if (!R) break; const sid = c.id; if (!sid) { delete R.seat[pi]; break; } const S2 = RS_SEATS[sid], cw = this.crew && this.crew[pi]; if (!S2 || !cw || Math.hypot(cw.x - S2.x, cw.z - S2.z) > 1.7) break; if (Object.keys(R.seat).some(k => R.seat[k] === sid && +k !== pi)) break; const hs = R.hurt[pi]; if (hs && hs.st !== 'hurt') break; if (sid === 'pilot' && this.players[pi].nat.key === 'charlies') break; R.seat[pi] = sid; break; }
     case 'rshold': { const R = this.rs; if (R) R.hold[pi] = c.id ? {id: String(c.id), t: this.t} : null; break; }
+    case 'rslounge': { const R = this.rs, cw = this.crew && this.crew[pi]; if (!R || !cw || (R.hurt[pi] && R.hurt[pi].st !== 'hurt') || R.seat[pi]) break; const nm = this.players[pi].name; // the crew lounge, shared: everyone sees the drinking and the wheel
+      if (c.a === 'vodka' && Math.hypot(cw.x + 9.75, cw.z - 1.15) < 1.3) { const v = R.vod[pi] || 0; if (v >= 5) { this.rsMsg('The bottle says no. Sober up first.', 0, pi); break; } R.vod[pi] = v + 1;
+        this.rsMsg(['Na zdorovye! Warm all the way down.', 'Another one. The engines sound friendlier.', 'The floor is moving. Or is that the aircraft?', 'You feel ready to fly this thing yourself.', 'Comrade... which one of the two pilots is real?'][v], 0, pi); for (let i = 0; i < this.players.length - 1; i++) if (i !== pi) this.rsMsg(nm + (v >= 3 ? ' is very drunk.' : ' downs a shot of vodka.'), 0, i); }
+      else if (c.a === 'roul' && Math.hypot(cw.x + 12.25, cw.z - 1.15) < 1.3) { const rb = R.rub[pi] === undefined ? 100 : R.rub[pi]; if (rb < 10 || (R.roul && R.t - R.roul.t0 < 3.4)) break; R.rub[pi] = rb - 10; const i = (this.rnd() * 37) | 0; R.roul = {id: R.seq++, t0: R.t, i, n: RS_WHEEL[i], bet: c.black ? 'black' : 'red', p: pi, paid: 0}; }
+      break; }
     case 'rsctl': { const R = this.rs; if (R && R.seat[pi] === 'pilot') R.inp = clamp(+c.v || 0, -1, 1); break; }
     case 'rsjam': { const R = this.rs; if (R && R.seat[pi] === 'radio') R.jamF = clamp(+c.f || 0, 0, 1); break; }
     case 'rsfire': { const R = this.rs, sid = R && R.seat[pi], S2 = sid && RS_SEATS[sid], B = this.rsB; if (!S2 || !S2.gun || !B || (R.gcd[pi] || 0) > this.t) break; R.gcd[pi] = this.t + .1; const wy = +c.yaw || 0, wp = clamp(+c.pitch || 0, -1, 1), hd = this.rsHd || 0, sx = S2.x * .2, sz = S2.z * .2, ox = B.x + Math.cos(hd) * sx - Math.sin(hd) * sz, oy = B.y + Math.sin(hd) * sx + Math.cos(hd) * sz, oz = B.z + 1, dx = Math.cos(wy) * Math.cos(wp), dy = Math.sin(wy) * Math.cos(wp), dz = Math.sin(wp), sp = 38, vB = this.rsV || {x: 0, y: 0}; R.bullets.push({x: ox, y: oy, z: oz, vx: dx * sp + vB.x, vy: dy * sp + vB.y, vz: dz * sp, t: 0}); this.ev({k: 'rstr', x0: ox, y0: oy, z0: oz, x1: ox + dx * 16, y1: oy + dy * 16, z1: oz + dz * 16, c: 'g'}); break; }
@@ -9982,7 +9989,7 @@ const Direct = {
   crewMove(dt, e) { // walk, sit at stations, work on problems, and the effects of being hurt
     const A = this.aboard, I = this.interior(), k = this.keys, B = Settings.binds, g = this.ui.g, V = g.view, me = g.me, R = V.rs || {}, hs = (R.hurt || {})[me], sid = (R.seat || {})[me], cr = V.crew || {};
     A.yaw += this.lookX; A.pitch = clamp(A.pitch - this.lookY, -1.3, 1.3); const now = performance.now() / 1000;
-    this.vodka = Math.max(0, (this.vodka || 0) - dt / 40); const vd = this.vodka; if (vd) { A.yaw += Math.sin(now * .6) * dt * .1 * vd; A.pitch += Math.sin(now * .83) * dt * .05 * vd; } // drunk: the view wanders, even at the guns
+    { const tv = ((V.rs || {}).vod || {})[me] || 0; this.vodka = (this.vodka || 0) + (tv - (this.vodka || 0)) * Math.min(1, dt * 2); } const vd = this.vodka; const RR = V.rs || {}; this.roubles = (RR.rub || {})[me] === undefined ? 100 : RR.rub[me]; if (vd) { A.yaw += Math.sin(now * .6) * dt * .1 * vd; A.pitch += Math.sin(now * .83) * dt * .05 * vd; } // drunk: the view wanders, even at the guns
     const lockedOut = !!(hs && (hs.st === 'down' || hs.st === 'out')); this.crewDown = lockedOut; this.crewHurt = !!hs;
     g.R.rsBeams(R.beams || []);
     const edgeE = this.crewE; this.crewE = false;
@@ -10013,22 +10020,17 @@ const Direct = {
     for (const kk of Object.keys(R.hurt || {})) { if (+kk === me) continue; const cc = cr[kk], h2 = R.hurt[kk]; if (cc && h2.st !== 'out' && Math.hypot(cc.x - px, cc.z - pz) < 1.7) tgt = {id: 'treat:' + kk, hold: 1, text: 'Hold E: treat ' + ((V.players[kk] && V.players[kk].name) || 'your crewmate') + ' (' + Math.round(h2.p * 100) + '%)'}; }
     if (!tgt && !lockedOut) for (const s2 of Object.keys(RS_SEATS)) { const S = RS_SEATS[s2]; if (Math.hypot(S.x - px, S.z - pz) < 1.4) { const taken = Object.keys(R.seat || {}).some(q => R.seat[q] === s2); if (s2 === 'pilot' && V.players[me] && V.players[me].nat.key === 'charlies') { tgt = {id: 'nopilot', hold: 1, text: "Charlies are colourblind: no pilot's seat. Any other seat is yours."}; break; } if (!taken) tgt = {id: 'seat:' + s2, text: 'E: take the ' + RS_NAMES[s2] + ' seat'}; break; } }
     if (!tgt && !lockedOut && pz > .55) { // the crew lounge: roulette and vodka, just for you (not shared with the crew)
-      const ro = this.roul, purse = this.roubles === undefined ? (this.roubles = 100) : this.roubles;
-      if (Math.hypot(-12.25 - px, 1.15 - pz) < 1.05) tgt = {id: 'roul', loc: 1, text: ro && now - ro.t0 < 3.4 ? 'Spinning...' : purse < 10 ? 'You are broke, comrade (' + purse + ' roubles)' : 'E: bet 10 on red · Shift+E: bet on black (' + purse + ' roubles)'};
-      else if (Math.hypot(-9.75 - px, 1.15 - pz) < 1.0) tgt = {id: 'vodka', loc: 1, text: (this.vodka || 0) >= 5 ? 'You have had enough, comrade' : 'E: drink a shot of vodka'};
+      const ro = R.roul, purse = this.roubles;
+      if (Math.hypot(-12.25 - px, 1.15 - pz) < 1.05) tgt = {id: 'roul', loc: 1, text: ro && ro.rt < 3.4 ? 'Spinning...' : purse < 10 ? 'You are broke, comrade (' + purse + ' roubles)' : 'E: bet 10 on red · Shift+E: bet on black (' + purse + ' roubles)'};
+      else if (Math.hypot(-9.75 - px, 1.15 - pz) < 1.0) tgt = {id: 'vodka', loc: 1, text: ((R.vod || {})[me] || 0) > 4 ? 'You have had enough, comrade' : 'E: drink a shot of vodka'};
     }
     this.rsPrompt = drop ? null : tgt;
     if (tgt && tgt.hold && k.KeyE && !lockedOut) { this.holdT = (this.holdT || 0) - dt; if (this.rsHoldId !== tgt.id || this.holdT <= 0) { this.rsHoldId = tgt.id; this.holdT = .25; g.issue({c: 'rshold', id: tgt.id}); } }
     else if (this.rsHoldId) { this.rsHoldId = null; g.issue({c: 'rshold', id: null}); }
-    if (edgeE && tgt && tgt.loc) this.rsLounge(tgt.id, k[B.sprint], now);
+    if (edgeE && tgt && tgt.loc) this.rsLounge(tgt.id, k[B.sprint]);
     else if (edgeE && tgt && !tgt.hold) g.issue({c: 'rsseat', id: tgt.id.slice(5)});
   },
-  rsLounge(id, black, now) {
-    if (id === 'vodka') { if ((this.vodka || 0) >= 5) { this.ui.addAlert('The bottle says no. Sober up first.', 'rs'); return; } this.vodka = (this.vodka || 0) + 1; Sfx.beep(140);
-      this.ui.addAlert(['Na zdorovye! Warm all the way down.', 'Another one. The engines sound friendlier.', 'The floor is moving. Or is that the aircraft?', 'You feel ready to fly this thing yourself.', 'Comrade... which one of the two pilots is real?'][this.vodka - 1], 'rs'); return; }
-    if (id === 'roul') { const ro = this.roul; if ((ro && now - ro.t0 < 3.4) || this.roubles < 10) return; this.roubles -= 10; const i = (Math.random() * 37) | 0, n = RS_WHEEL[i];
-      this.roul = {t0: now, i, n, bet: black ? 'black' : 'red', paid: false}; Sfx.beep(520); }
-  },
+  rsLounge(id, black) { this.ui.g.issue({c: 'rslounge', a: id, black: black ? 1 : 0}); Sfx.beep(id === 'vodka' ? 140 : 520); },
   drawCutHud(c, w, h) { // the ending: letterbox, a caption, the white flash, then the end card
     const t = this.dropT - .8, te = t - 7, bar = Math.min(1, t) * h * .1; c.save(); c.textAlign = 'center';
     c.fillStyle = '#000'; c.fillRect(0, 0, w, bar); c.fillRect(0, h - bar, w, bar);
@@ -10117,8 +10119,8 @@ const Direct = {
     for (const k of Object.keys(cr)) {
       const c = cr[k]; if (+k === me || V.t - c.t > 3) continue;
       let m = I.others[k]; if (!m) { m = I.others[k] = new THREE.Mesh(I.body, I.mat); m.position.set(c.x, 0, c.z); I.scene.add(m); }
-      m.position.x += (c.x - m.position.x) * .35; m.position.z += (c.z - m.position.z) * .35; const hh = V.rs && V.rs.hurt && V.rs.hurt[k], dn = hh && (hh.st === 'down' || hh.st === 'out'); m.rotation.order = 'YZX'; m.rotation.set(0, -c.yaw, dn ? -1.45 : 0); m.position.y = dn ? .1 : (V.rs && V.rs.bf && V.rs.bf.rider === +k && V.rs.bf.st !== 'none' ? (this.bombY === undefined ? .66 : this.bombY) + .45 : 0);
-      const v = this._cv.set(m.position.x, .8, m.position.z).project(C); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) this.crewTags.push({x: v.x, y: v.y, n: (V.players[k] && V.players[k].name) || 'Crew'});
+      m.position.x += (c.x - m.position.x) * .35; m.position.z += (c.z - m.position.z) * .35; const hh = V.rs && V.rs.hurt && V.rs.hurt[k], dn = hh && (hh.st === 'down' || hh.st === 'out'); m.rotation.order = 'YZX'; const vk = ((V.rs || {}).vod || {})[k] || 0; m.rotation.set(0, -c.yaw, dn ? -1.45 : vk > 1 ? Math.sin(performance.now() / 700 + +k) * .05 * Math.min(4, vk) : 0); m.position.y = dn ? .1 : (V.rs && V.rs.bf && V.rs.bf.rider === +k && V.rs.bf.st !== 'none' ? (this.bombY === undefined ? .66 : this.bombY) + .45 : 0);
+      const v = this._cv.set(m.position.x, .8, m.position.z).project(C); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) this.crewTags.push({x: v.x, y: v.y, n: ((V.players[k] && V.players[k].name) || 'Crew') + (vk >= 3 ? ' (drunk)' : vk >= 1.5 ? ' (tipsy)' : '')});
     }
   },
   toggleAboard() {
@@ -10908,16 +10910,17 @@ const Direct = {
   drawLounge(c, w, h, now) { // vodka haze and the roulette wheel (local to you)
     const vd = this.vodka || 0;
     if (vd > .05) { c.fillStyle = 'rgba(255,190,110,' + Math.min(.16, vd * .035) + ')'; c.fillRect(0, 0, w, h); const gx = Math.sin(now * 1.1) * 10 * vd; c.fillStyle = 'rgba(255,255,255,' + Math.min(.45, vd * .1) + ')'; c.fillRect(w / 2 - 1.5 + gx, h / 2 - 1.5 + gx * .3, 3, 3); }
-    const ro = this.roul; if (!ro) return; const t = now - ro.t0; if (t > 5.5) { this.roul = null; return; }
-    const red = RS_RED.has(ro.n), col = ro.n === 0 ? 'green' : red ? 'red' : 'black', win = col === ro.bet;
-    if (t > 3 && !ro.paid) { ro.paid = true; if (win) this.roubles += 20; Sfx.beep(win ? 880 : 200); }
+    const g = this.ui.g, V = g.view, ro = (V.rs || {}).roul, A = this.aboard; if (!ro || !A) return; if (ro.p !== g.me && this.interior().roomAt(A.x, A.z) !== 'Crew lounge') return;
+    if (!this.rlS || this.rlS.id !== ro.id) this.rlS = {id: ro.id, s: now - ro.rt}; const t = now - this.rlS.s; if (t > 5.5) return;
+    const red = RS_RED.has(ro.n), col = ro.n === 0 ? 'green' : red ? 'red' : 'black', win = col === ro.bet, who = ro.p === g.me ? 'You' : (V.players[ro.p] && V.players[ro.p].name) || 'Crew', rb = ((V.rs.rub || {})[ro.p]);
+    if (t > 3 && !this.rlS.done) { this.rlS.done = 1; Sfx.beep(win ? 880 : 200); }
     const R0 = Math.min(w, h) * .17, cx = w / 2, cy = h * .42, sg = Math.PI * 2 / 37, p = Math.min(1, t / 3), rot = (-Math.PI / 2 - ro.i * sg - Math.PI * 10) * (1 - Math.pow(1 - p, 3));
     c.save(); c.shadowBlur = 0; c.fillStyle = '#4a3420'; c.beginPath(); c.arc(cx, cy, R0 * 1.08, 0, 7); c.fill();
     for (let i = 0; i < 37; i++) { const a = rot + i * sg, n = RS_WHEEL[i]; c.fillStyle = n === 0 ? '#2a9a40' : RS_RED.has(n) ? '#c23030' : '#151515'; c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, R0, a - sg / 2, a + sg / 2); c.fill();
       c.save(); c.translate(cx + Math.cos(a) * R0 * .86, cy + Math.sin(a) * R0 * .86); c.rotate(a + Math.PI / 2); c.fillStyle = '#fff'; c.font = '700 ' + Math.max(8, R0 * .07 | 0) + 'px system-ui'; c.textAlign = 'center'; c.fillText(n, 0, 3); c.restore(); }
     c.fillStyle = '#6b4a2a'; c.beginPath(); c.arc(cx, cy, R0 * .55, 0, 7); c.fill(); c.fillStyle = '#d8b040'; c.beginPath(); c.arc(cx, cy, R0 * .1, 0, 7); c.fill();
     c.fillStyle = '#fff'; c.beginPath(); c.moveTo(cx, cy - R0 * 1.02); c.lineTo(cx - 8, cy - R0 * 1.2); c.lineTo(cx + 8, cy - R0 * 1.2); c.fill(); if (p >= 1) { c.beginPath(); c.arc(cx, cy - R0 * .72, R0 * .045, 0, 7); c.fill(); }
-    c.textAlign = 'center'; c.font = '800 20px system-ui'; c.shadowColor = '#000'; c.shadowBlur = 4; c.fillText(t < 3 ? 'Bet 10 on ' + ro.bet + '...' : ro.n + ' ' + col + (win ? ': you win 20 roubles!' : ': you lose') + ' (' + this.roubles + ' left)', cx, cy + R0 * 1.4);
+    c.textAlign = 'center'; c.font = '800 20px system-ui'; c.shadowColor = '#000'; c.shadowBlur = 4; c.fillText(t < 3 ? who + ' bet 10 on ' + ro.bet + '...' : ro.n + ' ' + col + (win ? ': ' + who + ' won 20 roubles!' : ': ' + who + ' lost') + (rb === undefined ? '' : ' (' + rb + ' left)'), cx, cy + R0 * 1.4);
     c.restore();
   },
   drawLead(c, w, h) { // gunners get a lead indicator: where to aim so the bullet and the fighter arrive together
@@ -14115,7 +14118,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
-      'Operation Red Star: a crew lounge off the tail passage, with a roulette wheel and a bottle of vodka (do not drink before manning the guns).',
+      'Operation Red Star: a crew lounge off the tail passage, with a roulette wheel and a bottle of vodka the whole crew shares: everyone sees who is drinking, who is drunk, and every spin of the wheel.',
       'Operation Red Star: the aircraft now half-holds its line when nobody is flying, problems happen at points on the route (so the bomb run is always over New York), one respawn per stage of the flight, and Charlies can no longer take the pilot\'s seat.',
       'Multiplayer: host a room, name it, and it appears on every Join screen with a Join button. Works over a normal secure connection, so it should get through school networks.',
       'Operation Red Star (preview): a Soviet atomic bomber you and friends walk around together, with windows to the outside. Crew stations and the mission are coming.',
