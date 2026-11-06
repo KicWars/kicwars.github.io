@@ -162,3 +162,15 @@ Estimate: about 8 to 12 focused sessions. Steps 1 and 2 carry most of the risk.
 - **Map built:** "Red Star Run", 384 x 384, low-detail air map (`redstarMap`): a Siberian airfield and runway, Arctic ice floes, the Atlantic with islands, and New York (Hudson, East River, harbour, a grid of skyscrapers with a spire at the aim point). `M.rsRoute` is the flight plan (7 waypoints, about 340 units) and `M.rsTarget` the aim point. The bomber follows the route at 1.2 units/s (about 4.7 minutes) then circles the city. **To do:** slow it to stretch the flight to the planned length, and add a stable hold at the target for the bomb run.
 - **3D models:** searched. No free (CC0) bomber or Soviet aircraft interior exists; free packs found are generic sci-fi (Quaternius). Using them would also mean embedding a glTF loader and the model data in the single html file. Decision pending with Finn; default stays procedural.
 - Nose glass is now low so the bombardier can look down at the ground.
+
+## Complications built (2026-11-06)
+Built and working in a single-player test; the multi-player treat-a-crewmate path is written but not yet tried with two real people.
+- **Fighters:** enemy jets attack in passes (scripted, owned by a hidden "Air Defence" player). Gunners sit at the tail or the two waist blisters (E to sit), aim in first person with a lead indicator, and shoot real bullets with travel time. Empty gun seats are manned by AI at low skill on crews of 3 or fewer.
+- **Injured crew:** hits can hurt a crewmate (slow, red screen), a second hit puts them down (bleeding out in 30 s). Another crew member holds E next to them to treat them. If they bleed out they respawn at the bunk according to the Respawns setting (one per phase, none, or unlimited).
+- **Radar lock and jamming:** a lock countdown; the radio operator sits at the set and tunes with A/D to a drifting signal until the lock breaks. Fail and a missile hits.
+- **Searchlights:** beams sweep; the pilot sits at the controls and shifts the aircraft sideways to stay out of them. Lit = brighter screen and more accurate fighters.
+- **Leaks:** oil, fuel and hydraulic leaks spray in the cabin; hold E next to one to patch it. Fuel leaks burn fuel; hydraulic leaks make the aircraft drift.
+- **Bomb bay door jam:** crank it shut at the bomb bay wall. Until then the aircraft is slower and shakes.
+- **Storm:** rain, lightning, jolts, more drift, harder jamming.
+- **Pilot:** drift pushes the aircraft off the flight line (visible bar). Off the line burns more fuel.
+- Fuel and hull are tracked; running out or being shot down loses the mission. Events are timed to the route and scaled by crew size and difficulty.
