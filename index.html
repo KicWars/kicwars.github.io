@@ -517,7 +517,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
 
 <div id="joinScr" class="screen hidden"><div class="mcard wide">
   <h2>Join a game</h2>
-  <div id="roomListBox" class="hidden"><h3>Open rooms (updates by itself)</h3><div id="roomList"></div></div>
+  <div id="roomListBox" class="hidden"><h3>Open rooms (updates by itself)</h3><p class="small" id="bld"></p><div id="roomList"></div></div>
   <p class="msg">Click a room above to join it. Not listed? Type the 5-letter room code your friend sees.</p>
   <textarea id="joinIn" rows="2" placeholder="Room code, e.g. KQXMB" style="text-transform:uppercase"></textarea>
   <button class="big primary" id="bJoinGo">Join</button>
@@ -11690,6 +11690,7 @@ const UI = {
         onStatus: () => this.inviteStatus(),
       });
       if (this.lobby.slots[1]) this.lobby.slots[1].auto = 1;
+      this.link.setMeta({name: this.testRoom ? 'Test room' : 'Friendly war', open: true});
     } else { $('invPanel').classList.add('hidden'); this.net = 'off'; $('lCode').classList.add('hidden'); $('lTitle').textContent = 'Skirmish against bots'; }
     this.drawLobby();
   },
@@ -11785,7 +11786,8 @@ const UI = {
         b.textContent = x.name + '  ·  ' + x.n + (x.n === 1 ? ' player' : ' players') + '  ·  Join'; b.onclick = () => { $('joinIn').value = x.code; this.join(x.code); };
         box.appendChild(b);
       }
-    } catch (e) {}
+    } catch (e) { $('roomListBox').classList.remove('hidden'); $('roomList').innerHTML = '<p class="small" style="color:#ff8a80">Cannot reach the room server (' + (e && e.message || 'network error') + '). Check your internet. School and work networks can block it: tell me if so.</p>'; }
+    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-c';
     clearTimeout(this.rlT); this.rlT = setTimeout(() => this.refreshRooms(), 3000);
   },
   openJoin() {
