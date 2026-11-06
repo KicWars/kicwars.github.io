@@ -47,7 +47,7 @@ Browser war game in one file: `index.html` (Three.js r128). Live at https://jjfa
 - **Xaviers:** neutral healers, only in Play vs bots when the "optXav" checkbox is on (off by default).
 
 ## Recently done (Nov 2026)
-- Playtester fixes: unlocked mouse look (`look` 'offset'/'pending' turn by movement + screen-edge push, `ux/uy`), `manDef`/`cmdRepair` (cmds `mandef`, `repair`), tower garrison 2, command-view orbit (`UI.orbit`, `cam.pOff`), placement rotation (`b.rot`, R key), peace mode (`optRaid` → `sim.peaceOpt`, cmd `war`, `declareWar`), `selCat` (was a duplicate `selGroup`).
+- Playtester fixes: unlocked mouse look (`look` 'offset'/'pending' turn by movement + screen-edge push, `ux/uy`), `manDef`/`cmdRepair` (cmds `mandef`, `repair`), tower garrison 2, command-view orbit (`UI.orbit`, `cam.pOff`), placement rotation (`b.rot`, R key), peace mode (`optRaid` → `sim.peaceOpt`, cmd `war`, `declareWar`), `selCat` (was a duplicate `selGroup`). Worker split: `p.builders` (default 2), `e.role` 'b'/'m', `stepWorkers` every 5 s, cmd `builders`.
 - Rename to jjfanwars, school mentions removed. Old `KICWARS-` invite codes are still accepted, new ones are `JJFANWARS-`.
 - Tank bots spread out; you can climb mountains on foot; low-flight and camera fixes; kill feed; you pick your vehicle at the start of arcade battles; A-10 pick fix.
 - Hit reports for buildings and drones; spy heists and the spy map.

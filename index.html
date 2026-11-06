@@ -2249,6 +2249,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'recon': this.sendRecon(p, Math.min(4, c.n || 1), false, c.x === undefined ? undefined : clamp(+c.x, 4, this.N - 5), c.y === undefined ? undefined : clamp(+c.y, 4, this.N - 5)); break;
     case 'autorecon': p.autoRecon = !!c.on; this.notify(pi, p.autoRecon ? 'Scouts will patrol and report automatically' : 'Automatic scouting off', 'info'); if (p.autoRecon) this.sendRecon(p, 1, true); break;
     case 'nuke': { const e = this.ents.get(c.id); if (e && e.o === pi && e.nukeReady) this.launchNuke(e, c.x, c.y); break; }
+    case 'builders': p.builders = clamp(Math.round(+c.n || 0), 0, 99); this.stepWorkers(p); break;
     case 'war': if (this.peace && this.peaceOpt && !p.bot) this.declareWar(pi); break;
     case 'mandef': this.manDef(pi, c.all ? null : mine, c.b || 0); break;
     case 'repair': this.cmdRepair(pi, c.b || 0); break;
@@ -2358,7 +2359,7 @@ Sim.prototype.autoWorkers = function (pi, x, y, n) {
   const list = [];
   for (const e of this.ents.values()) if (e.o === pi && e.k === 'worker' && !e.pilot && !e.inside) {
     const busy = e.task && e.task.type !== 'gather' ? 2 : e.task ? 1 : 0;
-    list.push({e, s: busy * 40 + (e.bq ? e.bq.length * 60 : 0) + Math.hypot(e.x - x, e.y - y)}); // builders get it queued
+    list.push({e, s: busy * 40 + (e.bq ? e.bq.length * 60 : 0) + Math.hypot(e.x - x, e.y - y) + (this.players[pi].builders !== undefined && e.role !== 'b' ? 400 : 0)}); // builders get it queued; miners only if no builder is free
   }
   return list.sort((a, b) => a.s - b.s).slice(0, n).map(q => q.e);
 };
@@ -3064,7 +3065,7 @@ Sim.prototype.step = function () {
     if (this.tick % 10 === 0) this.income(p);
   }
   if (this.tick % 10 === 3) this.stepMorale();
-  if (this.tick % 50 === 21) for (const p of this.players) if (p.alive && !this.battle && !this.scen) { if (p.autoEco) this.stepAutoEco(p); else if (p.autoHouse && !p.bot) this.stepAutoHouse(p); }
+  if (this.tick % 50 === 21) for (const p of this.players) if (p.alive && !this.battle && !this.scen) { if (!p.bot) this.stepWorkers(p); if (p.autoEco) this.stepAutoEco(p); else if (p.autoHouse && !p.bot) this.stepAutoHouse(p); }
   if (this.tick % 100 === 47 && !this.battle && !this.scen) { // your deputy runs the base (a bit slower than you would) while you fight on the ground
     const away = {}; for (const e of this.ents.values()) if (e.pilot) away[e.pilot - 1] = 1;
     for (const p of this.players) if (p.alive && !p.bot && away[p.i]) this.stepDeputy(p);
@@ -4165,6 +4166,32 @@ Sim.prototype.stepAutoHouse = function (p) {
     for (let t = 0; t < 30; t++) { const a = this.rnd() * 6.283, r = 11 + this.rnd() * 10, x = Math.round(hq.x + Math.cos(a) * r), y = Math.round(hq.y + Math.sin(a) * r); if (this.canPlace('housing', x, y, p.i)) { this.cmdBuild([], p, 'housing', x, y); this.notify(p.i, 'Workers are building more Housing', 'info', x, y); break; } }
   }
 };
+// Worker split (human players): p.builders workers are builders, the rest are miners. Every 5 s:
+// builders go to any unfinished or damaged building (spread over the sites), and mine when there is nothing to build;
+// idle workers of either kind go back to mining, so nobody stands around.
+Sim.prototype.stepWorkers = function (p) {
+  if (this.battle || this.scen) return;
+  if (p.builders === undefined) p.builders = 2;
+  const W = [];
+  for (const e of this.ents.values()) if (e.o === p.i && e.k === 'worker' && !e.pilot && !e.inside) W.push(e);
+  if (!W.length) return;
+  const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i) || W[0];
+  const isB = e => e.task && (e.task.type === 'build' || e.task.type === 'road' || e.task.type === 'dig2' || e.task.type === 'dig');
+  // keep the builder count: current builders first, then whoever is already building, then the closest to the capital
+  W.sort((a, b) => ((a.role === 'b' ? 0 : 2) + (isB(a) ? 0 : 1)) - ((b.role === 'b' ? 0 : 2) + (isB(b) ? 0 : 1)) || dist(a, hq) - dist(b, hq));
+  W.forEach((e, i) => { e.role = i < p.builders ? 'b' : 'm'; });
+  const sites = [...this.ents.values()].filter(b => b.b && b.o === p.i && b.k !== 'mine' && (b.bp < 1 || b.hp < b.hpm * .9));
+  const staff = {}; for (const e of W) if (e.task && e.task.type === 'build') staff[e.task.id] = (staff[e.task.id] || 0) + 1;
+  for (const e of W) {
+    const busyOrder = e.goal || (e.task && e.task.type !== 'gather');
+    if (e.role === 'b' && !busyOrder && sites.length) {
+      let best = null, bs = 1e9; for (const b of sites) { const sc = dist(e, b) + (staff[b.id] || 0) * 25 + (b.bp < 1 ? 0 : 15); if (sc < bs) { bs = sc; best = b; } }
+      if (best) { this.clearOrders(e); e.task = {type: 'build', id: best.id}; staff[best.id] = (staff[best.id] || 0) + 1; continue; }
+    }
+    if (!e.task && !e.goal) { const n = this.nearestNode(e, 'steel'); if (n) e.task = {type: 'gather', node: n.id}; }
+  }
+};
+
 Sim.prototype.stepAutoEco = function (p) {
   const hq = [...this.ents.values()].find(e => e.k === 'hq' && e.o === p.i); if (!hq) return;
   let wk = 0, idle = [], housingUp = false;
@@ -5004,7 +5031,7 @@ function encodeSnap(sim, sendSlow) {
   }
   const msg = {snap: 1, t: sim.t, buf: out.buffer, meta};
   if (sendSlow) {
-    msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, techAll: p.techAll || 0, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, spyMap: p.spyMap, autoRecon: p.autoRecon, autoEco: p.autoEco, autoHouse: p.autoHouse, ecoK: p.ecoK}));
+    msg.pl = sim.players.map(p => ({bld: p.builders, specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, techAll: p.techAll || 0, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, spyMap: p.spyMap, autoRecon: p.autoRecon, autoEco: p.autoEco, autoHouse: p.autoHouse, ecoK: p.ecoK}));
     msg.bs = [];
     for (const e of sim.ents.values()) if (e.b) msg.bs.push({id: e.id, bp: e.bp, q: e.q, prog: e.prog, rally: e.rally, au: e.auto ? 1 : 0, ak: e.autoK || null, cdn: e.nukeCD, g: e.garrison ? e.garrison.length : 0, hd: e.hard || 0, rot: e.rot || 0});
     msg.nodes = sim.M.nodes.map(n => [n.amt | 0, n.taken || 0]);
@@ -5058,7 +5085,7 @@ Mirror.prototype.apply = function (m) {
     e.tid = a[i + 9]; e.tu = a[i + 10] / 1000;
   }
   for (const id of this.ents.keys()) if (!seen.has(id)) this.ents.delete(id);
-  if (m.pl) m.pl.forEach((q, i) => Object.assign(this.players[i], q));
+  if (m.pl) m.pl.forEach((q, i) => { Object.assign(this.players[i], q); this.players[i].builders = q.bld; });
   if (m.bs) for (const b of m.bs) { const e = this.ents.get(b.id); if (e) { e.bp = b.bp; e.q = b.q; e.prog = b.prog; e.rally = b.rally; e.auto = !!b.au; e.autoK = b.ak; e.nukeCD = b.cdn; e.g = b.g; e.garrison = new Array(b.g); e.hard = b.hd; e.rot = b.rot || 0; } }
   if (m.nodes) m.nodes.forEach((n, i) => { this.M.nodes[i].amt = n[0]; this.M.nodes[i].taken = n[1]; });
   if (m.smokes) this.smokes = m.smokes;
@@ -12007,6 +12034,10 @@ const UI = {
         S.push({hk: 'I', name: 'Dig trench', gl: '⌇', desc: 'Workers dig a trench between two points, shovelful by shovelful. Infantry in it take 55% less damage.', act: () => this.setMode({t: 'digline'}, 'Click where the trench starts')});
         S.push({hk: 'O', name: 'Dig tunnel', gl: '⛫', desc: 'Workers dig a deep, timber-roofed tunnel. Troops inside are hidden from the enemy unless they come right up close: dig toward the enemy for sneak attacks.', act: () => this.setMode({t: 'digline', deep: 1}, 'Click where the tunnel starts')});
         S.push({hk: 'X', name: 'Road', gl: '⛙', desc: 'Lay a road between two points (2 steel per tile). Units move 50% faster on roads.', act: () => this.setMode({t: 'road'}, 'Click the start of the road')});
+        { const nb = p.builders === undefined ? 2 : p.builders, nw = v.players && [...v.ents.values()].filter(e => e.o === G.me && e.k === 'worker').length, nbx = Math.min(nb, nw);
+          const tip = 'Builders build and repair on their own, and mine when there is nothing to do. Everyone else mines. Idle workers always go back to mining. Now: ' + nbx + ' builders, ' + Math.max(0, nw - nbx) + ' miners.';
+          S.push({hk: '', name: 'Builders ' + nbx + ' / Miners ' + Math.max(0, nw - nbx) + '  (−)', gl: '⛏', desc: 'One fewer builder. ' + tip, off: nb <= 0, why: 'No builders', act: () => G.issue({c: 'builders', n: Math.min(nb, nw) - 1})});
+          S.push({hk: '', name: 'More builders (+)', gl: '🔨', desc: 'One more builder. ' + tip, off: nb >= nw, why: 'Every worker is a builder', act: () => G.issue({c: 'builders', n: Math.min(nb, nw) + 1})}); }
         const ah = p.autoHouse || p.autoEco;
         S.push({hk: '', name: ah ? 'Auto housing: ON' : 'Auto housing: OFF', gl: '⌂', active: ah, desc: p.autoEco ? 'Auto economy is on, so housing is already handled. Turn auto economy off (at the Capital) to control this on its own.' : 'Workers build a new Housing block by themselves whenever you are close to the population cap (140 steel each). Turn it off to choose where housing goes.', act: () => { if (!p.autoEco) G.issue({c: 'autohouse', on: !p.autoHouse}); setTimeout(() => this.refreshHud(true), 150); }});
         if (!autoB) S.push({hk: 'C', name: 'Stop', gl: '■', desc: 'Stop what they are doing.', act: () => G.issue({c: 'stop', ids})});
@@ -12580,6 +12611,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Workers: choose how many are builders and how many are miners (− / + in the worker build menu). Builders build and repair on their own and mine when there is nothing to do. Idle workers always go back to mining, so nobody stands around.',
       'First person: moving the mouse always turns the view, even when the browser has not locked the mouse. No click needed. Hold the cursor at the screen edge to keep turning.',
       'Defences: Man defences (bottom bar, or H with infantry selected) fills every bunker, pillbox and watchtower with the nearest infantry, then lines your trenches and sandbags. Bunkers, pillboxes and watchtowers have a Fill button too.',
       'Repair: damaged buildings have a Repair button, and Repair all is on the bottom bar. Workers fix them for free, then go back to mining.',
