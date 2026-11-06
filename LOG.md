@@ -1,4 +1,4 @@
-# KICwars log
+# jjfanwars log
 
 ## Start here
 - **Play:** https://jjfanwars.github.io/
@@ -82,7 +82,7 @@
 - Final test pass on the exact published file: two-player over WebRTC (0 errors), GitHub relay against a fake GitHub API (0 errors), first-five-minutes flow, every jet and the gunship driven by keyboard and mouse, and the fallback when the browser refuses to lock the mouse (moving the cursor off centre steers, and the view stops at centre).
 - Source pull request (not merged): https://github.com/finndoolan-m/warsim/pull/1 (branch `claude/warsim-overnight` into `v2`).
 - **Try first:** Quick Battle → Rifleman → aim with the mouse, Space to fire, G for your nation's special. Then try an F-16 or F-15 (W for throttle, the jet follows the mouse) and the tank (mouse turns the turret, A/D turn the hull). Then host a game, send a friend the invite, and play each other.
-- **Known rough edges:** tank tracks and wheels don't visibly turn; jets have no landing-gear animation; frame rate on a real laptop GPU is untested (Graphics: Auto steps quality down if it's slow); the direct link may not work on strict school networks, which is what the GitHub relay is for.
+- **Known rough edges:** tank tracks and wheels don't visibly turn; jets have no landing-gear animation; frame rate on a real laptop GPU is untested (Graphics: Auto steps quality down if it's slow); the direct link may not work on strict networks, which is what the GitHub relay is for.
 
 ### 2026-11-05 03:20 AEDT — Big update: fight in first person, real planes, detailed tanks
 **What's new**
@@ -113,7 +113,7 @@
 ### 2026-11-05 02:35 AEDT — Two player now needs only GitHub; blob troops
 - Removed PeerJS (it needed an outside broker server). Multiplayer now uses a direct WebRTC link set up by copy-pasting an invite code and a reply code (about 560 characters each), or an invite link. No server is involved; the page asks Google's public STUN server for your public address if it can reach it, and works without it on the same network.
 - Fallback: a GitHub relay through secret gists. Each player pastes their own token with only the gist scope; it is stored only in their browser (if they tick remember) and only sent to api.github.com. It updates every few seconds, so it suits commanding more than flying. I could not test this one because it needs real tokens.
-- Tested: two separate browser profiles on a local server serving the exact published file: invite, reply, join, nation pick, the friend's move orders run on the host, unit counts and positions stay in sync, Victory for the host and Defeat for the friend. Zero console errors. Not testable here: your school/home network, two real computers.
+- Tested: two separate browser profiles on a local server serving the exact published file: invite, reply, join, nation pick, the friend's move orders run on the host, unit counts and positions stay in sync, Victory for the host and Defeat for the friend. Zero console errors. Not testable here: your home network, two real computers.
 - Every soldier is now a round blob guy (eyes, hands, feet that step, squash and stretch, flinch when hit, pop-and-splat deaths). Toms are short, wide and buff with sunglasses, Dhruvs have big glasses, Licases ride road bikes, Valentinos wear the tricolour sash and a moustache, Jethroes are red/white/blue, Veil are gold with a veil. Alpha wolves are wolf blobs with a bandana. Capital villagers are blobs too.
 - Next: first-person direct control with precise gunplay, then planes.
 

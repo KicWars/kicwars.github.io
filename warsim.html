@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>KICwars</title>
+<title>jjfanwars</title>
 <link rel="icon" href="data:,">
 <style>:root{--acc:#6dff9a;--bg:rgba(10,15,20,.82);--bd:rgba(255,255,255,.12);--tx:#e8eef2;--dim:#93a1ab;--red:#ff5a4a}
 *{box-sizing:border-box}
@@ -320,7 +320,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
 
 <!-- main menu -->
 <div id="menu" class="screen"><div id="codeBox"><input id="codeIn" placeholder="Enter code" maxlength="24" autocomplete="off"><button id="codeGo">OK</button></div>
-  <div class="brand"><h1>KICwars</h1><p>Six nations. One island. Command the war, or jump into the fight yourself.</p>
+  <div class="brand"><h1>jjfanwars</h1><p>Six nations. One island. Command the war, or jump into the fight yourself.</p>
     <div class="natstrip">
       <span style="--c:#ff6b3d">The Licases</span><span style="--c:#4a90ff">The Dhruvs</span><span style="--c:#3fbf6f">The Valentinos</span><span style="--c:#e8283c">The Jethroes</span><span style="--c:#19c8b9">The Toms</span><span style="--c:#2fa84f">The Charlies</span>
     </div>
@@ -334,16 +334,16 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
     <button class="big mtile" id="bBat" title="First-person modes: beach landings and team deathmatch"><b>🎯 FPS Modes</b><small>D-Day, Pacific landing, Deathmatch</small></button>
     <div class="mgroup">Arcade: air &amp; tanks</div>
     <button class="big mtile" id="bArc" style="grid-column:1/-1" title="Arcade air and tank battles: endless respawns, tickets and capture points"><b>✈ Air &amp; Tank Battles</b><small>Dogfights and tank fights · 12 vs 12, tickets, capture points</small></button>
-    <div class="mgroup">With friends <em>(won't work at school)</em></div>
-    <button class="big mtile" id="bHost"><b>🛰 Host a game</b><small>Get a code to share · won't work at school</small></button>
-    <button class="big mtile" id="bJoin"><b>🔗 Join a friend</b><small>Enter their code · won't work at school</small></button>
+    <div class="mgroup">With friends</div>
+    <button class="big mtile" id="bHost"><b>🛰 Host a game</b><small>Get a code to share</small></button>
+    <button class="big mtile" id="bJoin"><b>🔗 Join a friend</b><small>Enter their code</small></button>
     <div class="mfoot">
       <button class="big sm" id="bSettings">⚙ Controls &amp; settings</button>
       <button class="big sm" id="bLog">✦ What's new</button>
       <button class="big sm" id="bFb">🐞 Bug report / idea</button>
     </div>
     <div id="xpLine"></div>
-    <div class="mquick"><label>🔊 Sound <input type="range" id="hmVol" min="0" max="100" step="5"></label><label>🖥 Graphics <select id="hmQ"><option value="auto">Auto</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low (school laptops)</option></select></label></div>
+    <div class="mquick"><label>🔊 Sound <input type="range" id="hmVol" min="0" max="100" step="5"></label><label>🖥 Graphics <select id="hmQ"><option value="auto">Auto</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low (older laptops)</option></select></label></div>
     <details class="how"><summary>How to play</summary>
       <ul>
         <li><b>Quick Battle</b>: pick a unit and fight it yourself straight away. <b>P</b> reopens the unit chooser; when you die it comes back.</li>
@@ -486,7 +486,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
 <div id="joinScr" class="screen hidden"><div class="mcard wide">
   <h2>Join a friend</h2>
   <p class="msg">Paste the invite code or link your friend sent you. For a second tab on this computer, type the 5-letter room code.</p>
-  <textarea id="joinIn" rows="3" placeholder="KICWARS-... invite code, invite link, or room code"></textarea>
+  <textarea id="joinIn" rows="3" placeholder="JJFANWARS-... invite code, invite link, or room code"></textarea>
   <button class="big primary" id="bJoinGo">Join</button>
   <div id="joinReply" class="hidden">
     <p><b>Send this reply code back to your friend</b>, then wait here:</p>
@@ -577,12 +577,12 @@ async function unzip(code) {
 function slimSdp(sdp) {
   return sdp.split(/\r?\n/).filter(l => l && !/^a=(extmap|rtcp|ssrc|msid|ice-options)/.test(l)).join('\n');
 }
-const INVITE_TAG = 'KICWARS-';
+const INVITE_TAG = 'JJFANWARS-';
 function cleanInvite(s) { // accept a bare code, a code with the tag, or a full link with #join=
   s = (s || '').trim();
   const h = s.match(/[#&?]join=([A-Za-z0-9_-]+)/); if (h) s = h[1];
   s = s.replace(/\s+/g, '');
-  if (s.startsWith(INVITE_TAG)) s = s.slice(INVITE_TAG.length);
+  if (s.startsWith(INVITE_TAG)) s = s.slice(INVITE_TAG.length); else if (s.startsWith('KICWARS-')) s = s.slice(8); // old codes still work
   return s;
 }
 const Net = {
@@ -631,7 +631,7 @@ Gh.prototype.req = async function (method, path, body, cond) {
   return {same: false, data};
 };
 Gh.prototype.me = async function () { return (await this.req('GET', '/user')).data.login; };
-Gh.prototype.newGist = async function (file, content) { return (await this.req('POST', '/gists', {description: 'KICwars relay (safe to delete)', public: false, files: {[file]: {content}}})).data.id; };
+Gh.prototype.newGist = async function (file, content) { return (await this.req('POST', '/gists', {description: 'jjfanwars relay (safe to delete)', public: false, files: {[file]: {content}}})).data.id; };
 Gh.prototype.write = function (id, files) { const f = {}; for (const k in files) f[k] = {content: files[k]}; return this.req('PATCH', '/gists/' + id, {files: f}); };
 Gh.prototype.read = async function (id) { const r = await this.req('GET', '/gists/' + id, null, true); return r.same ? null : r.data; };
 Gh.prototype.fileText = async function (g, name) {
@@ -793,7 +793,7 @@ function ClientLink(code, h, opts) {
 }
 ClientLink.prototype.answer = async function (code) {
   let o;
-  try { o = JSON.parse(await unzip(code)); } catch (e) { throw new Error('That invite code is not complete. Copy the whole code (it starts with KICWARS-).'); }
+  try { o = JSON.parse(await unzip(code)); } catch (e) { throw new Error('That invite code is not complete. Copy the whole code (it starts with JJFANWARS-).'); }
   if (o.t !== 'o') throw new Error('That is a reply code. Paste it on the host\'s screen instead.');
   const pc = this.pc = new RTCPeerConnection(Net.rtcConfig());
   pc.ondatachannel = ev => {
@@ -840,7 +840,7 @@ ClientLink.prototype.close = function () {
 };
 </script>
 
-<script>// KICwars game data: nations, units, buildings, upgrades, powers. No DOM here, the sim also runs in Node.
+<script>// jjfanwars game data: nations, units, buildings, upgrades, powers. No DOM here, the sim also runs in Node.
 const NATIONS = [
   {key: 'licases', name: 'The Licases', leader: 'Lucas Mar', color: '#ff6b3d', dark: '#8a2f12', look: 'bike',
    blurb: 'Infantry speed +20% · Steel income +12% · Scouts cost −50% · Units train 15% faster',
@@ -12197,6 +12197,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '6 Nov 2026 (latest)', items: [
+      'The game is now called jjfanwars.',
       'Air & tank battles: you now choose your plane or tank before you spawn. Changing your pick while waiting to spawn works now too.',
       'Fixed: you could not pick the A-10 strike plane after earning it with a kill streak.',
       'Hit reports: when you bomb, shoot or shell a building you see the damage and how much is left. After a drone strike you get a report of what it killed and hit.',
@@ -12264,7 +12265,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
       'Tutorial, gritty realistic look, trenches, sandbags and pillboxes, worker build queue, Valentinos melee and Trattoria, stats screen.',
       'Big custom maps (desert, Hormuz, Stalingrad, Pacific War), War Room and scout reports, transports, swimming, real ICBMs, team deathmatch.',
       'FPS Battles: D-Day and Pacific landings with landing craft, waves and objectives.',
-      'Diplomacy, auto patrol, kill confirms, highways, big tactical map. The game was renamed KICwars.']},
+      'Diplomacy, auto patrol, kill confirms, highways, big tactical map. The game got a new name.']},
     {d: '4 Nov 2026', items: [
       'New jets (A-10, F/A-18, Typhoon), air-to-air missiles, chaff, radar locks and missile warning. Machine Gunner, Grenadier and Paratrooper.',
       'Tank barrels aim at the crosshair; vehicle gun elevation fixes; no-build overlay, excavation and time controls.',
