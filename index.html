@@ -621,7 +621,7 @@ function cleanInvite(s) { // accept a bare code, a code with the tag, or a full 
   return s;
 }
 // Rooms relay (Cloudflare Worker, see relay/). WebSocket over 443, so it works on school networks. Empty = fall back to the old paste-a-code links.
-const RELAY_URL = '';
+const RELAY_URL = 'wss://jjfanwars-relay.businessautomationvic.workers.dev';
 const Net = {
   stun: true,
   relay() { // localhost can point at a test relay with ?relay=ws://127.0.0.1:8787
