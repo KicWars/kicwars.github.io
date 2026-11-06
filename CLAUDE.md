@@ -1,6 +1,6 @@
 # jjfanwars: notes for Claude
 
-Browser war game in one file: `index.html` (Three.js r128). Live at https://jjfanwars.github.io. Repo: `jjfanwars/jjfanwars.github.io`. The game was formerly called KICwars, and the repo was formerly KicWars/kicwars.github.io.
+Browser war game in one file: `index.html` (Three.js r170, inlined: the ESM build converted to a classic script that sets `window.THREE`). Live at https://jjfanwars.github.io. Repo: `jjfanwars/jjfanwars.github.io`. The game was formerly called KICwars, and the repo was formerly KicWars/kicwars.github.io.
 
 ## Rules for every change
 - Copy `index.html` to `warsim.html` before each commit.
@@ -47,6 +47,7 @@ Browser war game in one file: `index.html` (Three.js r128). Live at https://jjfa
 - **Xaviers:** neutral healers, only in Play vs bots when the "optXav" checkbox is on (off by default).
 
 ## Recently done (Nov 2026)
+- Three.js r128 -> r170. Compat rules: `THREE.ColorManagement.enabled = false` (hex colours used as-is, like r128); textures use `.colorSpace = THREE.SRGBColorSpace`; light intensities are x`Math.PI` (no legacy lights); point lights use decay 0; `gradeRT` is a linear HalfFloat target and the grade shader does tone mapping + sRGB itself (three skips both for render targets); instanced meshes cull by `m.boundingSphere` (world space), so set that, not the geometry's; WebGL2 only.
 - Roads/bridges: `genMap` wraps `genMap0` + `finishRoads` (levels ground along roads, then `roadDecks`). `M.deck` = bridge deck height (3 wide), `M.bridge` = bridge road cells; `gAt()` = walk surface (use it for unit heights, not `hAt`); `passable` allows deck over water. Renderer: `paintRoads` (asphalt strokes into ground texture, clipped local repaint in `paintRoad`), `buildBridges` (deck/rails/piers, rebuilt via `bridgeDirty`). Player roads may cross water (8 steel, not deep sea).
 - Perf: `tileSplit`/`addTiles` split map-wide instanced meshes (trees, rocks, grass) into 16-cell tiles with real bounds; `updateLod` (called before render) swaps far tree/rock tiles to `treeGeoLo`/`rockGeoNeo(1)` (55 m) and hides far grass (70 m); troops > 40 m use the lo blob; `texMark`/`texFlush` upload only the changed ground-texture rect; fog blend skips when settled (`fogMoving`); per-frame DOM writes guarded. Triangles in a busy 4-player scene: 2.68M -> 1.34M.
 - New look (default) vs Classic: `LOOK.neo` (localStorage `jj-look`, `?look=classic`, menu select `hmLook`), `LOOKS` presets, `applyLook`, `terrainMat` (per-pixel + bump), `swayMat`/`swayT`, `buildGrass`/`hideGrass`, `rockGeoNeo`, `body.neo` CSS + `#vig`. Low quality keeps Lambert terrain and no grass.
