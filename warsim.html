@@ -1235,12 +1235,12 @@ BATTLES.push(
     comp: ['tank', 'ltank', 'htank', 'td', 'tank', 'ltank', 'tank', 'htank', 'td', 'ifv', 'sam'],
     blurb: 'Desert. B is a walled old town, A an oasis in the palms, and C lies at the bottom of a canyon you can only enter from the ends. Rock mesas break the long sightlines: perfect for ambushes.'});
 const HH_CLASSES = ['f16', 'fa18', 'seaplane', 'a10', 'bomber', 'fighter', 'patrolboat', 'destroyer'];
-BATTLES.push({n: 'Harbor Havoc: Island Harbors', arc: 'air', harbor: 1, team: 7, map: 2, seed: 41, size: 240, foe: 'toms', tickets: 1e9, tix: 3000, sea: [0, 1], obj: [], land: [], def: [], classes: HH_CLASSES,
+BATTLES.push({n: 'Harbor Havoc: Island Harbors', arc: 'air', harbor: 1, team: 7, map: 18, seed: 5, size: 240, foe: 'toms', tickets: 1e9, tix: 3000, sea: [0, 1], obj: [], land: [], def: [], classes: HH_CLASSES,
   comp: ['f16', 'bomber', 'seaplane', 'fa18', 'a10', 'fighter', 'bomber'],
-  blurb: 'Two nations, two harbors, one sea. Arcade flying (no stalls, no crashes): launch from your aircraft carrier, bomb the enemy harbor, sink their fleet and shoot down their jets, or take a patrol boat or destroyer out yourself. Take off from the deck or start airborne; to land, fly low over the deck and hold S until you drop onto it, then you repair and rearm. Destroy the enemy harbor core to win. Pick both nations.'},
-  {n: 'Harbor Havoc: Desert Coast', arc: 'air', harbor: 1, team: 7, map: 6, seed: 23, size: 240, foe: 'jethroes', tickets: 1e9, tix: 3000, sea: [0, 1], obj: [], land: [], def: [], classes: HH_CLASSES,
+  blurb: 'All ocean: two base islands and three small islands to capture, each with turrets, a runway and a naval yard once you hold it. Arcade flying (no stalls, no crashes): launch from your aircraft carrier, bomb the enemy harbor, sink their fleet and shoot down their jets, or take a patrol boat or destroyer out yourself. Take off from the deck or start airborne; to land, fly low over the deck and hold S until you drop onto it, then you repair and rearm. Destroy the enemy harbor core to win. Pick both nations.'},
+  {n: 'Harbor Havoc: Open Seas', arc: 'air', harbor: 1, team: 9, map: 18, seed: 12, size: 320, foe: 'jethroes', tickets: 1e9, tix: 3000, sea: [0, 1], obj: [], land: [], def: [], classes: HH_CLASSES,
   comp: ['a10', 'f16', 'seaplane', 'bomber', 'fa18', 'fighter', 'bomber'],
-  blurb: 'Harbor Havoc on a desert coast. Same rules and arcade flying: launch off your carrier, level the enemy harbor core and defend yours.'});
+  blurb: 'A bigger ocean, the same rules: all sea, two base islands and three small islands to capture. Held islands bleed the enemy tickets, get turrets, a runway for repairs and a naval yard that sends out patrol boats.'});
 const BAT_CLASSES = ['rifle', 'mg', 'rocket', 'assault', 'sniper', 'medic', 'grenadier'];
 const batClasses = B => B && B.classes || BAT_CLASSES;
 // the Toms' special swaps the pilot's guns for this blade for a few seconds (sent as weapon slot 9)
@@ -1454,6 +1454,19 @@ function genAirMap(N, seed) {
   K.lane([[.1, .55], [.3, .45], [.49, .4], [.7, .55], [.9, .45]], .004); K.lane([[.1, .55], [.18, .3]], .004); K.lane([[.9, .45], [.82, .7], [.6, .3]], .004);
   return Object.assign(K.finish([[.08, .55], [.92, .45]], .3, seed), {lite: 1});
 }
+// HARBOR HAVOC (map 18): open ocean, a big base island in each far corner and three small islands to capture across the middle.
+function genHarborMap(N, seed) {
+  const rnd = mulberry(seed * 7919 + 71), nz = makeNoise(rnd), K = arcKit(N, rnd), M = K.M, h = M.h, j = () => (rnd() - .5) * .06;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const i = y * N + x; h[i] = -1.7 + (nz(x * .03, y * .03, 3) - .5) * .6; M.bio[i] = BIO.DESERT; }
+  const isle = (u, v, r) => K.each(u, v, r, (i, d, x, y) => {
+    const e = Math.pow(1 - d, .5) * 3.4 - 1.1 + (nz(x * .15, y * .15, 2) - .5) * .5 * (1 - d); if (d < .45) { if (e < 1.5) h[i] = Math.max(h[i], 1.5); else h[i] = Math.max(h[i], e); } else if (e > h[i]) h[i] = e;
+    if (h[i] > .9) { M.bio[i] = BIO.GRASS; if (d > .45 && d < .85 && rnd() < .07) M.tree[i] = 1 + (rnd() * 2 | 0); }
+  });
+  const B0 = [.14 + j(), .84 + j()], B1 = [.86 + j(), .16 + j()], I = [['A', .27 + j(), .38 + j()], ['B', .5 + j(), .5 + j()], ['C', .73 + j(), .62 + j()]];
+  isle(B0[0], B0[1], .11); isle(B1[0], B1[1], .11); for (const [, u, v] of I) isle(u, v, .055);
+  const M2 = K.finish([B0, B1], .12, seed);
+  return Object.assign(M2, {lite: 1, isles: I.map(([n, u, v]) => ({n, x: Math.round(u * N), y: Math.round(v * N)}))});
+}
 function genTankMap(N, seed, BT) {
   const rnd = mulberry(seed * 7919 + 61), K = arcKit(N, rnd), M = K.M, h = M.h;
   const wall = () => { for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const e = Math.min(x, y, N - 1 - x, N - 1 - y); if (e < 5 && rnd() < .85) M.tree[y * N + x] = 1 + (rnd() * 3 | 0); if (e < 3) h[y * N + x] += 1.5; } };
@@ -1593,6 +1606,7 @@ function genMap0(N, seed, nPlayers) {
   if (BT >= 11 && BT <= 13) return genWarMap(N, seed, BT, nPlayers);
   if (BT === 4 || BT === 5 || BT === 10) return genBattleMap(N, seed, BT);
   if (BT === 14) return genAirMap(N, seed);
+  if (BT === 18) return genHarborMap(N, seed);
   if (BT >= 15 && BT <= 17) return genTankMap(N, seed, BT);
   const rnd = mulberry(seed * 7919 + 13), nz = makeNoise(rnd), nz2 = makeNoise(rnd), nz3 = makeNoise(rnd), MT = mapType(seed);
   const A = N * N, hr = new Float32Array(A), te = new Float32Array(A), mo = new Float32Array(A);
@@ -4614,14 +4628,18 @@ Sim.prototype.arcSetup = function (B) {
   const land = (x, y) => { for (let t = 0; t < 60; t++) { const a = t * 2.4, r = t * .6, qx = clamp(x + Math.cos(a) * r, 5, N - 6), qy = clamp(y + Math.sin(a) * r, 5, N - 6); if (this.landOk(qx, qy)) return {x: qx, y: qy}; } return {x, y}; };
   if (!air && this.M.caps) for (const C of this.M.caps) { const q = land(C.x, C.y); S.caps.push({n: C.n, x: q.x, y: q.y, r: 8, own: -1, prog: 0}); }
   else if (!air) ['A', 'B', 'C'].forEach((n, i) => { const o = (i - 1) * N * .26, q = land(mx + px * o, my + py * o); S.caps.push({n, x: q.x, y: q.y, r: 8, own: -1, prog: 0}); });
-  else if (B.harbor) for (const o of [0, 1]) { // Harbor Havoc: a harbor with a core, turrets, a fleet and an airfield each side
-    const hb = {x: H[o].x + (mx - H[o].x) * .2, y: H[o].y + (my - H[o].y) * .2};
-    const wat = (x, y) => { for (let t = 0; t < 120; t++) { const a = t * 2.4, r = t * .7, qx = clamp(x + Math.cos(a) * r, 5, N - 6), qy = clamp(y + Math.sin(a) * r, 5, N - 6); if (this.deepWater(qx, qy)) return {x: qx, y: qy}; } return null; };
-    const q0 = land(hb.x, hb.y), core = this.addBuilding('bunker', o, Math.round(q0.x), Math.round(q0.y), true); if (core) { core.base = 1; core.core = 1; core.hp = core.hpm = 6000; }
-    for (const sd of [-2, -1, 1, 2]) { const q = land(q0.x + px * sd * 7, q0.y + py * sd * 7); const b = this.addBuilding(sd % 2 ? 'aa' : 'tower', o, Math.round(q.x), Math.round(q.y), true); if (b) { b.base = 1; b.hp = b.hpm = 1500; } }
-    ['destroyer', 'destroyer', 'patrolboat', 'patrolboat', 'patrolboat'].forEach((k, i) => { const w = wat(q0.x + px * (i - 2) * 9, q0.y + py * (i - 2) * 9); if (w) { const e = this.addUnit(k, o, w.x, w.y); e.gt = 1; e.stance = 'hold'; } });
-    const cw = wat(H[o].x + (mx - H[o].x) * .08, H[o].y + (my - H[o].y) * .08) || wat(H[o].x, H[o].y); // the carrier is your airfield: low pass over the deck to repair and rearm
-    if (cw) { const c = this.addUnit('carrier', o, cw.x, cw.y); c.gt = 1; c.base = 1; c.stance = 'hold'; c.h = Math.atan2(ay, ax) * (o ? -1 : 1) + (o ? Math.PI : 0); S.field = S.field || []; S.field[o] = {x: cw.x, y: cw.y}; }
+  else if (B.harbor) { // Harbor Havoc: base island with a core, turrets, runway and yard each side, a carrier and a fleet; small islands to capture
+    S.isleF = [[], []]; S.yard = [null, null];
+    for (const o of [0, 1]) {
+      const q0 = land(H[o].x, H[o].y), core = this.addBuilding('bunker', o, Math.round(q0.x), Math.round(q0.y), true); if (core) { core.base = 1; core.core = 1; core.hp = core.hpm = 6000; }
+      for (const sd of [-2, -1, 1, 2]) { const q = land(q0.x + px * sd * 7, q0.y + py * sd * 7); const b = this.addBuilding(sd % 2 ? 'aa' : 'tower', o, Math.round(q.x), Math.round(q.y), true); if (b) { b.base = 1; b.hp = b.hpm = 1500; } }
+      const rw = land(q0.x - ax / L * 12, q0.y - ay / L * 12), A = this.addBuilding('airfield', o, Math.round(rw.x), Math.round(rw.y), true); if (A) { A.hp = A.hpm = 1e6; S.isleF[o].push({x: A.x, y: A.y}); }
+      S.yard[o] = this.harborWater(q0.x, q0.y, 30);
+      ['destroyer', 'destroyer', 'patrolboat', 'patrolboat', 'patrolboat'].forEach((k, i) => { const w = this.harborWater(q0.x + px * (i - 2) * 6, q0.y + py * (i - 2) * 6, 28 + i); if (w) { const e = this.addUnit(k, o, w.x, w.y); e.gt = 1; e.stance = 'hold'; } });
+      const cw = this.harborWater(q0.x + ax / L * 10, q0.y + ay / L * 10, 32); // the carrier is your airfield: a low pass over the deck repairs and rearms
+      if (cw) { const c = this.addUnit('carrier', o, cw.x, cw.y); c.gt = 1; c.base = 1; c.stance = 'hold'; c.h = Math.atan2(ay, ax) + (o ? Math.PI : 0); S.field = S.field || []; S.field[o] = {x: cw.x, y: cw.y}; }
+    }
+    for (const I of this.M.isles || []) S.caps.push({n: I.n, x: I.x, y: I.y, r: 17, own: -1, prog: 0, isle: 1, bld: []});
   }
   else for (const o of [0, 1]) { // ground targets: an armour column, trucks and AA on each side
     const bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45;
@@ -4633,6 +4651,38 @@ Sim.prototype.arcSetup = function (B) {
   }
 };
 Sim.prototype.deepWater = function (x, y) { return !!this.M.water[Math.round(y) * this.N + Math.round(x)] && hAt(this.M, x, y) < -.5; };
+// open deep water around (x, y), starting r0 tiles out
+Sim.prototype.harborWater = function (x, y, r0) {
+  const N = this.N; for (let t = 0; t < 300; t++) { const a = t * .9, r = (r0 || 8) + t * .3, qx = clamp(x + Math.cos(a) * r, 5, N - 6), qy = clamp(y + Math.sin(a) * r, 5, N - 6); if (this.deepWater(qx, qy)) return {x: qx, y: qy}; } return null;
+};
+// a captured island gets turrets, a runway and a naval yard for its owner; the old owner's are blown up
+Sim.prototype.harborBuild = function (C, o) {
+  const S = this.scen;
+  for (const id of C.bld) { const b = this.ents.get(id); if (b && b.hp > 0) this.kill(b, null); } C.bld = [];
+  for (const a of S.isleF) for (let i = a.length - 1; i >= 0; i--) if (a[i].isle === C.n) a.splice(i, 1);
+  if (o < 0) return;
+  const put = (k, dx, dy, hp) => { const x = Math.round(C.x + dx), y = Math.round(C.y + dy), b = this.addBuilding(k, o, x, y, true); if (b) { b.hp = b.hpm = hp; C.bld.push(b.id); } return b; };
+  put('aa', -5, -4, 900); put('aa', 5, 4, 900); put('tower', 4, -5, 1200); put('yard', 6, -1, 2000);
+  const A = put('airfield', -3, 3, 1e6); if (A) S.isleF[o].push({x: A.x, y: A.y, isle: C.n});
+};
+Sim.prototype.harborStep = function () {
+  const S = this.scen, M = this.M;
+  for (const C of S.caps) { // an island is taken by whoever has more units on or beside it (planes must be low); an even split holds the bar still
+    const n = [0, 0]; for (const e of this.ents.values()) if (!e.b && (e.o === 0 || e.o === 1) && Math.hypot(e.x - C.x, e.y - C.y) < C.r && (!e.air || e.z - Math.max(0, hAt(M, e.x, e.y)) < 5)) n[e.o]++;
+    C.cnt = n; const d = n[0] - n[1];
+    if (d && !(n[0] && n[1])) { C.prog = clamp(C.prog + Math.sign(d) * Math.min(3, Math.abs(d)) * .05, -1, 1); const side = d > 0 ? 0 : 1;
+      if (Math.abs(C.prog) >= 1 && C.own !== side) { C.own = side; this.harborBuild(C, side); this.ev({k: 'msg', p: 0, text: (side === 0 ? 'We captured island ' : 'The enemy captured island ') + C.n, kind: side === 0 ? 'good' : 'bad', x: C.x, y: C.y}); }
+      else if (C.own !== -1 && Math.sign(C.prog) !== (C.own === 0 ? 1 : -1)) { this.harborBuild(C, -1); C.own = -1; } }
+  }
+  if (this.tick % 10 === 0) { const a = S.caps.filter(C => C.own === 0).length, b = S.caps.filter(C => C.own === 1).length; if (a > b) S.tix[1] = Math.max(0, S.tix[1] - (a - b) * 1.1); if (b > a) S.tix[0] = Math.max(0, S.tix[0] - (b - a) * 1.1); }
+  if (this.tick % 400 === 200) for (const o of [0, 1]) { // naval yards send patrol boats to the nearest island the enemy or nobody holds
+    const mine = [...this.ents.values()].filter(e => e.o === o && e.d && e.d.cat === 'sea' && e.k === 'patrolboat' && e.auto);
+    if (mine.length >= 3 + S.caps.filter(C => C.own === o).length) continue;
+    const from = S.yard[o]; if (!from) continue;
+    const targets = S.caps.filter(C => C.own !== o).sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y)); if (!targets.length) continue;
+    const e = this.addUnit('patrolboat', o, from.x, from.y); e.gt = 1; e.auto = 1; const w = this.harborWater(targets[0].x, targets[0].y, 12); if (w) this.cmdMove([e], w.x, w.y, true, false);
+  }
+};
 Sim.prototype.arcLoss = function (t, by) {
   const S = this.scen, o = t.o; if (o !== 0 && o !== 1) return;
   const air = S.arc === 'air', cost = t.core ? 0 : t.base ? (S.B.harbor ? 150 : 120) : air ? (t.gt ? 12 : t.air ? 30 : 8) : (t.air ? 12 : 16);
@@ -4649,6 +4699,7 @@ Sim.prototype.arcLoss = function (t, by) {
 Sim.prototype.arcStep = function () {
   const S = this.scen, B = S.B, H = this.M.spawns, N = this.N, air = S.arc === 'air';
   if (S.tix[0] <= 0 || S.tix[1] <= 0) { this.scenOver(S.tix[1] <= 0); return; }
+  if (S.B.harbor && this.tick % 5 === 0) this.harborStep();
   // capture points: only ground vehicles count; more of yours inside moves the bar your way
   if (!air && this.tick % 5 === 0) {
     for (const C of S.caps) {
@@ -4662,7 +4713,7 @@ Sim.prototype.arcStep = function () {
   if (this.tick % 5 === 0) for (const e of this.ents.values()) {
     if (e.b || e.gt || (e.o !== 0 && e.o !== 1) || e.hp >= e.hpm) continue;
     if (!air && !e.air && !e.moving && this.t - (e.hurtT || -99) > 6) { e.hp = Math.min(e.hpm, e.hp + e.hpm * .025); e.repairing = this.t; } // field repair: stop out of the fight and the crew patch the tank up
-    if (air && e.air && S.field && S.field[e.o]) { const F = S.field[e.o]; if (Math.hypot(e.x - F.x, e.y - F.y) < 14 && e.z - Math.max(0, hAt(this.M, e.x, e.y)) < 7) { e.hp = Math.min(e.hpm, e.hp + e.hpm * .08); e.repairing = this.t; if (e.pilot && (!e.rearmT || this.t - e.rearmT > 2)) { e.rearmT = this.t; this.ev({k: 'rearm', id: e.id, p: e.pilot - 1}); } } }
+    if (air && e.air && S.field && S.field[e.o]) { if ([S.field[e.o]].concat(S.isleF ? S.isleF[e.o] : []).some(F => Math.hypot(e.x - F.x, e.y - F.y) < 14) && e.z - Math.max(0, hAt(this.M, e.x, e.y)) < 7) { e.hp = Math.min(e.hpm, e.hp + e.hpm * .08); e.repairing = this.t; if (e.pilot && (!e.rearmT || this.t - e.rearmT > 2)) { e.rearmT = this.t; this.ev({k: 'rearm', id: e.id, p: e.pilot - 1}); } } }
   }
   if (!air && this.tick % 10 === 0) { // WT-style strike aircraft: a side with kill streaks calls in an attacker now and then
     S.airT = S.airT || [90, 120];
@@ -9831,6 +9882,7 @@ const Direct = {
   nearField(x, y, r) {
     const g = this.ui.g, v = g.view, S = v.scen || (g.sim && g.sim.scen), me = this.e ? this.e.o : g.me;
     if (S && S.field && S.field[me]) { const F = S.field[me]; if (Math.hypot(F.x - x, F.y - y) < r) return F; }
+    if (S && S.isleF && S.isleF[me]) for (const F of S.isleF[me]) if (Math.hypot(F.x - x, F.y - y) < r) return F;
     for (const b of v.ents.values()) if (b.b && b.k === 'airfield' && v.friendly(b.o, me) && Math.hypot(b.x - x, b.y - y) < r) return b;
     return null;
   },
@@ -10482,11 +10534,11 @@ const Direct = {
   drawScenHud(c, w, h, S) {
     if (S.arc) {
       const cx = w / 2, T = S.tix, mx = S.B.tix;
-      c.save(); if (S.arc === 'air') c.translate(0, 44); c.textAlign = 'center'; c.fillStyle = 'rgba(6,10,14,.7)'; c.fillRect(cx - 170, 60, 340, S.arc === 'ground' ? 70 : 50);
+      c.save(); if (S.arc === 'air') c.translate(0, 44); c.textAlign = 'center'; c.fillStyle = 'rgba(6,10,14,.7)'; c.fillRect(cx - 170, 60, 340, S.arc === 'ground' || S.B.harbor ? 70 : 50);
       c.font = '700 11px system-ui'; c.fillStyle = '#fff'; c.fillText(S.arc === 'air' ? 'AIR BATTLE · tickets' : 'DOMINATION · tickets', cx, 74);
       c.font = '900 20px system-ui'; c.fillStyle = '#6dc8ff'; c.fillText(Math.ceil(T[0]), cx - 120, 96); c.fillStyle = '#ff6a5a'; c.fillText(Math.ceil(T[1]), cx + 120, 96);
       c.fillStyle = 'rgba(255,255,255,.15)'; c.fillRect(cx - 90, 84, 180, 8); c.fillStyle = '#6dc8ff'; c.fillRect(cx - 90, 84, 88 * T[0] / mx, 8); c.fillStyle = '#ff6a5a'; c.fillRect(cx + 90 - 88 * T[1] / mx, 84, 88 * T[1] / mx, 8);
-      if (S.arc === 'ground') {
+      if (S.arc === 'ground' || S.B.harbor) {
         S.caps.forEach((C, i) => {
           const x = cx - 50 + i * 50, y = 114, col = C.own === 0 ? '#6dc8ff' : C.own === 1 ? '#ff6a5a' : '#c9d4da';
           c.fillStyle = 'rgba(255,255,255,.12)'; c.beginPath(); c.arc(x, y, 12, 0, 6.3); c.fill();
@@ -13082,6 +13134,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Harbor Havoc: new all-ocean map with two base islands and three capturable islands (turrets, a runway for repairs and a naval yard that sends patrol boats). Held islands drain enemy tickets.',
       'Harbor Havoc: cartoony bright graphics, and a new Torpedo Seaplane that floats on the water, takes off from it, and drops torpedoes on ships (E).',
       'New mode: Harbor Havoc (Air & Tank Battles). Pick both nations, fly arcade-style (no stalls, no crashes) off your aircraft carrier, sink the enemy fleet and destroy their harbor core, or take a patrol boat or destroyer yourself.',
       'Upgraded the 3D engine (Three.js) to a much newer version. The game looks the same for now, but this makes room for better graphics next.',
