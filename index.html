@@ -2353,10 +2353,11 @@ Sim.prototype.setupSandbox = function () {
 // Operation Red Star (work in progress): one Soviet bomber that flies a slow circle while the crew walk around inside it.
 Sim.prototype.setupRedstar = function () {
   this.rs = {t: 0, fuel: 100, hull: 100, off: 0, drift: 0, inp: 0, lit: 0, beams: [], lights: null, lockOn: 0, lockT: 0, jamF: .5, jamT: .5, jamP: 0, sig: 0, storm: 0, stormT: 0, flT: 3, door: 0, doorP: 0, leaks: [], hurt: {}, seat: {}, hold: {}, spent: {}, sched: null, bullets: [], fighters: [], gcd: {}, seq: 1, state: 'fly', kills: 0, bf: null};
-  this.rsEnemy = this.players.length - 1; this.redstar = 1; this.rsS = 0; const R0 = this.M.rsRoute[0], b = this.addUnit('bomber', 0, R0[0], R0[1]); b.z = 16; b.rs = 1; b.h = 0; this.rsB = b;
+  this.rsEnemy = this.players.length - 1; this.redstar = 1; this.rsS = 0; const R0 = this.M.rsRoute[0], b = this.addUnit('bomber', 0, R0[0], R0[1]); b.z = RS_ALT; b.rs = 1; b.h = 0; this.rsB = b;
 };
 // ---------- Operation Red Star: mission director, systems, fighters, crew states ----------
-const RS_SEATS = {pilot: {x: 10.5, z: -.7, yaw: 0, arc: 1.3}, radio: {x: 5, z: -.75, yaw: -Math.PI / 2, arc: 1.3}, tail: {x: -14.4, z: 0, yaw: Math.PI, arc: 1.0, gun: 1}, wl: {x: 3.3, z: -.9, yaw: -Math.PI / 2, arc: 1.0, gun: 1}, wr: {x: 3.3, z: .9, yaw: Math.PI / 2, arc: 1.0, gun: 1}};
+const RS_ALT = 48; // cruising altitude: high above the city's towers
+const RS_SEATS = {pilot: {x: 10.5, z: -.7, yaw: 0, arc: 1.3}, radio: {x: 5, z: -.55, yaw: -Math.PI / 2, arc: 1.3}, tail: {x: -14.4, z: 0, yaw: Math.PI, arc: 1.0, gun: 1}, wl: {x: 3.3, z: -.9, yaw: -Math.PI / 2, arc: 1.0, gun: 1}, wr: {x: 3.3, z: .9, yaw: Math.PI / 2, arc: 1.0, gun: 1}};
 const RS_NAMES = {pilot: "pilot's", radio: 'radio', tail: "tail gunner's", wl: 'left waist gun', wr: 'right waist gun'};
 const RS_SPOTS = [[-.3, -.9, 'oil', "engineer's bay"], [1.5, .3, 'fuel', "engineer's bay"], [3.4, .2, 'hydraulic', "engineer's bay"], [-4, .9, 'hydraulic', 'bomb bay'], [-6, -.9, 'oil', 'bomb bay'], [6.2, -.2, 'fuel', 'radio room'], [9.2, -.9, 'hydraulic', 'cockpit']];
 Sim.prototype.rsMsg = function (text, snd, only) { for (let i = 0; i < this.players.length - 1; i++) if (only === undefined || only === i) this.ev({k: 'msg', p: i, text, kind: 'rs', s: snd ? 1 : 0}); };
@@ -2436,7 +2437,7 @@ Sim.prototype.rsStep = function () {
     const e = alive(fi); if (!e || e.hp <= 0) { R.fighters.splice(R.fighters.indexOf(fi), 1); continue; }
     if (fi.ph === 'in') { fi.d -= 2.7 * dt; if (fi.d <= 4) { fi.d = 4; fi.ph = 'out'; fi.pass++; } }
     else { fi.d += 3.6 * dt; fi.ang += fi.sw * dt * .35; if (fi.d > 24) { if (fi.pass >= fi.max) { this.ents.delete(e.id); this.ev({k: 'gone', id: e.id}); R.fighters.splice(R.fighters.indexOf(fi), 1); continue; } fi.ph = 'in'; fi.ang = (rnd() < .5 ? -1 : 1) * (.5 + rnd() * 2.2); } }
-    const a = hd + fi.ang; e.x = B.x + Math.cos(a) * fi.d; e.y = B.y + Math.sin(a) * fi.d; e.z = 16 + fi.dz; e.moving = true;
+    const a = hd + fi.ang; e.x = B.x + Math.cos(a) * fi.d; e.y = B.y + Math.sin(a) * fi.d; e.z = RS_ALT + fi.dz; e.moving = true;
     const to = Math.atan2(B.y - e.y, B.x - e.x); e.h = fi.ph === 'in' ? to : to + Math.PI;
     if (fi.ph === 'in' && fi.d < 15) { fi.cd -= dt; if (fi.cd <= 0) { fi.cd = .16 + rnd() * .12; const hit = rnd() < .2 * acc; this.ev({k: 'rstr', x0: e.x, y0: e.y, z0: e.z, x1: B.x + (rnd() - .5) * 2.4, y1: B.y + (rnd() - .5) * 2.4, z1: B.z + (rnd() - .5) * 1.4, c: 'e'}); if (hit) { R.hull -= .9 * dmgK; this.ev({k: 'rsjolt', m: .5}); if (rnd() < .05) this.rsHurt(); } } }
   }
@@ -2491,7 +2492,7 @@ Sim.prototype.redstarStep = function () { // follows the flight plan at a steady
   this.rsS = (this.rsS || 0) + .12 * (RS && RS.door ? .75 : 1) * (RS && RS.storm ? .92 : 1); let s = this.rsS, x, y, hd;
   for (let i = 0; i < RT.length - 1; i++) { const dx = RT[i + 1][0] - RT[i][0], dy = RT[i + 1][1] - RT[i][1], L = Math.hypot(dx, dy); if (s <= L) { x = RT[i][0] + dx / L * s; y = RT[i][1] + dy / L * s; hd = Math.atan2(dy, dx); break; } s -= L; }
   if (x === undefined) { const T = this.M.rsTarget, a = (s / 16) + 2.2; x = T.x + Math.cos(a) * 16; y = T.y + Math.sin(a) * 16; hd = a + Math.PI / 2; }
-  this.rsH = (this.rsH === undefined ? hd : this.rsH) + angDiff(this.rsH === undefined ? hd : this.rsH, hd) * .06; const pxv = -Math.sin(this.rsH), pyv = Math.cos(this.rsH), off = RS ? RS.off : 0, ox = b.x, oy = b.y; b.x = x + pxv * off; b.y = y + pyv * off; this.rsHd = this.rsH; this.rsV = {x: (b.x - ox) / .1, y: (b.y - oy) / .1}; b.h = this.rsH; b.z = 16; b.moving = true; b.hp = b.hpm;
+  this.rsH = (this.rsH === undefined ? hd : this.rsH) + angDiff(this.rsH === undefined ? hd : this.rsH, hd) * .06; const pxv = -Math.sin(this.rsH), pyv = Math.cos(this.rsH), off = RS ? RS.off : 0, ox = b.x, oy = b.y; b.x = x + pxv * off; b.y = y + pyv * off; this.rsHd = this.rsH; this.rsV = {x: (b.x - ox) / .1, y: (b.y - oy) / .1}; b.h = this.rsH; b.z = RS_ALT; b.moving = true; b.hp = b.hpm;
 };
 Sim.prototype.setupPlayer = function (p) {
   const s = p.spawn;
@@ -7943,6 +7944,11 @@ Renderer.prototype.buildTerrain = function (M, N) {
   const m = this.terrain = new THREE.Mesh(g, this.terrainMat(tex));
   m.receiveShadow = true; m.castShadow = this.quality === 'high';
   this.world.add(m);
+  if (M.rsRoute) { // Operation Red Star: land and sea go on forever. Snow beyond the west edge, farmland beyond the east, a far fog and a long view distance.
+    const skirt = (x, col, y) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(3000, 6000), new THREE.MeshLambertMaterial({color: col})); m.rotation.x = -Math.PI / 2; m.position.set(x, y, N / 2); this.world.add(m); };
+    skirt(-1500, 0xdde4e8, 1.05); skirt(N + 1500, 0x587a3c, 1.65);
+    if (this.scene.fog) { this.scene.fog.near = 300; this.scene.fog.far = 1300; } this.cam.far = Math.max(this.cam.far, 2600); this.cam.updateProjectionMatrix();
+  }
   // seabed beyond the edge of the map
   const sb = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshBasicMaterial({color: 0x1b4153}));
   sb.rotation.x = -Math.PI / 2; sb.position.set(N / 2, -3.7, N / 2); this.world.add(sb);
@@ -10054,7 +10060,9 @@ const Direct = {
     }
   },
   crewEyeY(y) { // on top of the bomb, then riding it down
-    const V = this.ui.g.view, bf = V.rs && V.rs.bf; if (!bf) return y;
+    const V = this.ui.g.view, bf = V.rs && V.rs.bf;
+    if (this.seatId && !(bf && bf.st === 'drop')) return {pilot: .8, radio: .66, tail: .6, wl: .66, wr: .66}[this.seatId] || y; // seated eye heights: the pilot sits tall to see over the dash
+    if (!bf) return y;
     if (bf.st === 'fault' && this.onBomb) return 1.3;
     if (bf.st === 'drop' && bf.rider === this.ui.g.me) return (this.bombY === undefined ? .66 : this.bombY) + .64;
     return y;
@@ -11775,7 +11783,7 @@ const Interior = {
       for (let i = 0; i < 6; i++) { b.cyl(.05, .02, 12.26, .55 + (i % 2) * .13, s * 1.05 - .5 + i * .2, DK, 0, 0, Math.PI / 2); b.cyl(.04, .022, 12.26, .55 + (i % 2) * .13, s * 1.05 - .5 + i * .2, 0xe8e8d8, 0, 0, Math.PI / 2); } });
     b.box(.4, .08, 1.5, 11.2, H - .12, 0, ST); for (let i = 0; i < 8; i++) b.box(.03, .03, .03, 11.4, H - .17, -.65 + i * .18, i % 3 ? GRN : i % 2 ? RD : AM);
     b.box(.42, .07, .42, 10.5, .34, .7, SEAT); b.box(.07, .5, .42, 10.3, .6, .7, SEAT); b.cyl(.05, .3, 10.5, .15, .7, DK);
-    [-.7, .7].forEach(z => { b.cyl(.025, .35, 11.45, .4, z, DK); b.cyl(.16, .02, 11.6, .64, z, DK, 0, 0, Math.PI / 2); b.cyl(.04, .03, 11.6, .64, z, MT, 0, 0, Math.PI / 2); });
+    [-.7, .7].forEach(z => { b.cyl(.025, .35, 11.45, .4, z, DK); b.cyl(.13, .02, 11.6, .5, z, DK, 0, 0, Math.PI / 2); b.cyl(.04, .03, 11.6, .5, z, MT, 0, 0, Math.PI / 2); });
     b.box(.4, .22, .3, 10.5, .3, 0, ST); [0, 1, 2, 3].forEach(i => b.box(.03, .2, .03, 10.5, .5, -.12 + i * .08, [RD, AM, MT, MT][i]));
     b.box(1.1, .42, .6, 9, .21, 1.4, OL); b.box(1.1, .03, .6, 9, .43, 1.4, 0xe8dfc0); b.box(.5, .005, .02, 9, .447, 1.4, RD); b.cyl(.03, .14, 8.7, .5, 1.2, DK); b.add(GEO.sph, AM, 8.7, .6, 1.2, .045, .045, .045);
     b.box(.5, .45, .9, 14.9, .22, 0, ST); b.cylX(.07, .4, 14.6, .55, 0, DK); b.add(GEO.sph, GL, 14.4, .55, 0, .04, .04, .04); b.box(.7, .1, .6, 14.1, .08, 0, PAD); b.box(.3, .14, .2, 14.9, .5, .3, DK); b.add(GEO.sph, RD, 14.75, .58, -.3, .03, .03, .03);
@@ -11783,7 +11791,7 @@ const Interior = {
     // ---- radio and navigation: the radio desk, set, key and headset, a map cabinet, oxygen bottles
     b.box(1.8, .45, .5, 5, .22, -1.35, ST); b.box(.5, .28, .3, 5, .6, -1.42, DK);
     [0, 1, 2].forEach(i => { b.cyl(.04, .02, 4.8 + i * .2, .64, -1.26, 0xd8d0a0, Math.PI / 2); b.box(.02, .06, .01, 4.8 + i * .2, .66, -1.25, RD); });
-    b.box(.15, .04, .08, 5.7, .47, -1.25, BR); b.add(GEO.sph, DK, 5.3, .5, -1.2, .06, .03, .06); b.cyl(.15, .3, 5, .15, -.8, DK); b.add(GEO.sph, AM, 4.4, .62, -1.4, .04, .04, .04);
+    b.box(.15, .04, .08, 5.7, .47, -1.25, BR); b.add(GEO.sph, DK, 5.3, .5, -1.2, .06, .03, .06); b.cyl(.15, .3, 5, .15, -.55, DK); b.add(GEO.sph, AM, 4.4, .62, -1.4, .04, .04, .04);
     b.box(1.6, .9, .4, 5, .45, 1.4, OL); [0, 1, 2].forEach(i => { b.cyl(.07, .5, 7.4 + i * .2, .3, 1.45, MT); b.cyl(.075, .05, 7.4 + i * .2, .58, 1.45, RD); });
     [6.2, 7.8].forEach(x => { b.box(.07, .55, .07, x, .8, 1.6, DK); b.box(.07, .55, .07, x, .8, -1.6, DK); });
     b.box(1.6, .06, .08, 7, .55, 1.6, DK); b.box(1.6, .06, .08, 7, .55, -1.6, DK);
