@@ -2451,7 +2451,7 @@ Sim.prototype.rsStep = function () {
       if (bf.p >= 1) { bf.st = 'drop'; bf.dt = 0; this.rsMsg('Wires joined! The release is live...', 1); }
     } else if (bf.st === 'drop') {
       bf.dt += dt; if (bf.dt > .8 && !bf.away) { bf.away = 1; this.rsMsg('BOMB AWAY!', 1); }
-      if (bf.dt > 5.2 && R.state === 'fly') { R.state = 'won'; this.rsMsg('Detonation over New York. Operation Red Star is complete.', 1); }
+      if (bf.dt > 15.5 && R.state === 'fly') { R.state = 'won'; this.rsMsg('Detonation over New York. Operation Red Star is complete.', 1); }
     }
   }
   if (R.door) { if (!used.door) R.doorP = Math.max(0, R.doorP - dt * .1); if (R.doorP >= 1) { R.door = 0; R.doorP = 0; this.rsMsg('Bomb bay doors closed.'); } }
@@ -9970,7 +9970,7 @@ const Direct = {
     }
     if (this.seatId) { this.seatId = null; if (this.rsVin) { this.rsVin = 0; g.issue({c: 'rsctl', v: 0}); } }
     const bfs = R.bf, drop = !!(bfs && bfs.st === 'drop'), rides = drop && bfs.rider === me, onB = !!(bfs && bfs.st === 'fault' && k.KeyE && !lockedOut && Math.abs(A.x + 5.5) < 3.2 && Math.abs(A.z) < 1.4);
-    if (drop) { this.dropT = (this.dropT || 0) + dt; if (rides) A.pitch += (-.75 - A.pitch) * Math.min(1, dt * 2); } else this.dropT = undefined;
+    if (drop) { if (this.dropS === undefined) this.dropS = performance.now(); this.dropT = (performance.now() - this.dropS) / 1000; if (rides) A.pitch += (-.75 - A.pitch) * Math.min(1, dt * 2); } else { this.dropT = undefined; this.dropS = undefined; }
     if (onB) { this.onBomb = true; A.z += (0 - A.z) * Math.min(1, dt * 6); }
     else if (this.onBomb) { this.onBomb = false; if (Math.abs(A.z) < 1.0) A.z = A.z >= 0 ? 1.05 : -1.05; }
     let f = 0, r = 0; if (!lockedOut && !onB && !rides) { if (k[B.fwd]) f++; if (k[B.back]) f--; if (k[B.right]) r++; if (k[B.left]) r--; }
@@ -9989,6 +9989,55 @@ const Direct = {
     if (tgt && tgt.hold && k.KeyE && !lockedOut) { this.holdT = (this.holdT || 0) - dt; if (this.rsHoldId !== tgt.id || this.holdT <= 0) { this.rsHoldId = tgt.id; this.holdT = .25; g.issue({c: 'rshold', id: tgt.id}); } }
     else if (this.rsHoldId) { this.rsHoldId = null; g.issue({c: 'rshold', id: null}); }
     if (edgeE && tgt && !tgt.hold) g.issue({c: 'rsseat', id: tgt.id.slice(5)});
+  },
+  drawCutHud(c, w, h) { // the ending: letterbox, a caption, the white flash, then the end card
+    const t = this.dropT - .8, te = t - 7, bar = Math.min(1, t) * h * .1; c.save(); c.textAlign = 'center';
+    c.fillStyle = '#000'; c.fillRect(0, 0, w, bar); c.fillRect(0, h - bar, w, bar);
+    if (t > .8 && t < 6) { c.globalAlpha = Math.min(1, (t - .8) * 2, (6 - t) * 2); c.font = 'italic 800 26px system-ui'; c.fillStyle = '#fff'; c.shadowColor = '#000'; c.shadowBlur = 6; c.fillText('Yeeee-haaaw!', w / 2, h - bar - 22); c.globalAlpha = 1; c.shadowBlur = 0; }
+    if (te >= 0) { const a = Math.max(0, 1 - te / 2.6); if (a > 0) { c.fillStyle = 'rgba(255,255,255,' + a + ')'; c.fillRect(0, 0, w, h); } }
+    if (te > 6) { c.fillStyle = 'rgba(0,0,0,' + clamp((te - 6) / 2, 0, 1) + ')'; c.fillRect(0, 0, w, h); }
+    if (te > 7.4) { c.globalAlpha = clamp((te - 7.4) / 1.2, 0, 1); c.fillStyle = '#fff'; c.font = '800 30px system-ui'; c.fillText('OPERATION RED STAR', w / 2, h / 2 - 8); c.font = '600 16px system-ui'; c.fillStyle = '#c9d0d4'; c.fillText('Detonation over New York', w / 2, h / 2 + 22); }
+    c.restore();
+  },
+  rsCutEnd() { const C = this.fin; if (!C) return; const R = this.ui.g.R; R.scene.remove(C.G); if (C.fb) R.scene.remove(C.fb); this.fin = null; },
+  rsCutscene(dt, cam, g) { // the iconic ending: the rider astride the bomb, waving his hat, all the way down to New York, then the blast
+    const R = g.R, M = g.view.M, T = M.rsTarget, p = this.pose, t = Math.max(0, this.dropT - .8), FT = 7, V3 = THREE.Vector3;
+    if (!this.fin) {
+      const mk = (geo, col) => new THREE.Mesh(geo, new THREE.MeshLambertMaterial({color: new THREE.Color(col).multiplyScalar(.4)})), G = new THREE.Group(), bomb = new THREE.Group();
+      const body = mk(new THREE.SphereGeometry(1, 20, 12), 0x3a3f36); body.scale.set(.6, .09, .09); bomb.add(body);
+      const ring = mk(new THREE.CylinderGeometry(.092, .092, .03, 16), 0xa83228); ring.rotation.z = Math.PI / 2; ring.position.x = .28; bomb.add(ring);
+      for (const bx of [-.38, -.14, .12, .42]) { const bd = mk(new THREE.CylinderGeometry(.094, .094, .01, 16), 0x1c1f22); bd.rotation.z = Math.PI / 2; bd.position.x = bx; bomb.add(bd); }
+      for (const r2 of [0, Math.PI / 2]) { const fin = mk(new THREE.BoxGeometry(.14, .2, .005), 0x2c3128); fin.position.x = -.52; fin.rotation.x = r2; bomb.add(fin); }
+      const rd = new THREE.Group(); rd.position.set(.05, .085, 0); rd.scale.setScalar(1.6);
+      const tor = mk(new THREE.CylinderGeometry(.03, .036, .12, 10), 0x5a6338); tor.position.y = .09; rd.add(tor);
+      const head = mk(new THREE.SphereGeometry(.028, 10, 8), 0xe0b090); head.position.y = .175; rd.add(head);
+      for (const s of [-1, 1]) { const lg = mk(new THREE.CylinderGeometry(.016, .014, .15, 8), 0x4a5230); lg.position.set(0, .02, s * .06); lg.rotation.x = -s * .5; rd.add(lg); }
+      const hold = mk(new THREE.CylinderGeometry(.011, .011, .1, 6), 0x5a6338); hold.position.set(.04, .1, -.04); hold.rotation.set(0, 0, -1.2); rd.add(hold); // the arm gripping on
+      const arm = new THREE.Group(); arm.position.set(0, .13, .04); const au = mk(new THREE.CylinderGeometry(.011, .011, .11, 6), 0x5a6338); au.position.y = .055; arm.add(au);
+      const hat = new THREE.Group(); hat.position.y = .12; hat.add(mk(new THREE.CylinderGeometry(.06, .06, .006, 14), 0x6b4a24)); const cr = mk(new THREE.CylinderGeometry(.03, .034, .04, 12), 0x6b4a24); cr.position.y = .02; hat.add(cr); arm.add(hat); rd.add(arm);
+      bomb.add(rd); G.add(bomb); R.scene.add(G);
+      const E0 = new V3(T.x, hAt(M, T.x, T.y) + 2.5, T.y), S0 = new V3(p.x, p.z - .1, p.y), dx = E0.x - S0.x, dz = E0.z - S0.z, dl = Math.hypot(dx, dz) || 1;
+      if (dl > 12) { S0.x = E0.x - dx / dl * 12; S0.z = E0.z - dz / dl * 12; } // however far the bomber is, the drop is over the city
+      this.fin = {G, bomb, rd, arm, S: S0, E: E0, boom: false};
+    }
+    const C = this.fin, S = C.S, E = C.E, at = u => new V3(S.x + (E.x - S.x) * u, S.y + (E.y - S.y) * Math.pow(u, 1.5), S.z + (E.z - S.z) * u);
+    const u = Math.min(1, t / FT), P = at(u), D = at(Math.min(1, u + .03)).sub(P).normalize();
+    if (t < FT) {
+      C.bomb.position.copy(P); C.bomb.quaternion.setFromUnitVectors(new V3(1, 0, 0), D); C.bomb.rotateX(Math.sin(t * 2.6) * .03);
+      C.arm.rotation.z = -2.3 + Math.sin(t * 8) * .45; C.rd.rotation.z = .25 + Math.sin(t * 2) * .05;
+    } else C.G.visible = false;
+    cam.fov = 58; cam.near = .02; cam.far = Math.max(cam.far, 900);
+    if (t < FT - 1.4) { const a = 2.1 + t * .32, rr = 1 + t * .13, up = new V3(0, 1, 0).applyQuaternion(C.bomb.quaternion), rp = P.clone().add(up.clone().multiplyScalar(.2));
+      cam.position.set(P.x + Math.cos(a) * rr, P.y + .35 + Math.sin(t * 1.3) * .1, P.z + Math.sin(a) * rr); cam.up.set(0, 1, 0); cam.lookAt(rp);
+    } else { const te = Math.max(0, t - FT), k = Math.min(te, 6); cam.position.set(E.x - 38 - k * 1.5, E.y + 24 + k * 1.2, E.z + 30 + k * 1.2); cam.up.set(0, 1, 0); cam.lookAt(E.x, E.y + 6 + k * 1.5, E.z); }
+    cam.updateProjectionMatrix();
+    if (t >= FT) {
+      const te = t - FT;
+      if (!C.boom) { C.boom = true; R.mushroom(E.x, E.y, E.z); if (typeof Sfx !== 'undefined' && Sfx.nuke) Sfx.nuke();
+        C.fb = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({color: 0xffb84a, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false})); C.fb.position.set(E.x, E.y + 2, E.z); R.scene.add(C.fb); }
+      C.fb.scale.setScalar(1 + Math.min(te, 2.4) * 9 + Math.max(0, te - 2.4) * 1.5); C.fb.material.opacity = Math.max(0, 1 - te / 4.5); C.fb.material.color.setHSL(Math.max(.01, .1 - Math.min(te, 4) * .02), 1, .55);
+      R.shake = Math.max(R.shake || 0, Math.max(0, 1.6 - te * .4));
+    }
   },
   crewEyeY(y) { // on top of the bomb, then riding it down
     const V = this.ui.g.view, bf = V.rs && V.rs.bf; if (!bf) return y;
@@ -10073,6 +10122,7 @@ const Direct = {
     cam.position.set(cx, cz, cy); cam.up.set(0, 1, 0); cam.lookAt(cx + fw.x * 50, cz + fw.z * 50, cy + fw.y * 50);
     if (this.mode === 'crew') this.crewCamFx(dt, cam);
     cam.fov = 72; cam.near = .1; cam.updateProjectionMatrix();
+    if (this.mode === 'crew') { if (this.dropT !== undefined && this.dropT > .8) this.rsCutscene(dt, cam, g); else if (this.fin) this.rsCutEnd(); }
     R.camTarget = R.camTarget || new THREE.Vector3(); R.camTarget.set(p.x, p.z, p.y);
   },
   moveSoldier(dt, e, M, N) {
@@ -10767,7 +10817,7 @@ const Direct = {
       const R = this.ui.g.R, r = R.r, A = this.aboard, I = this.interior(), C = I.cam, cp = Math.cos(A.pitch), y0 = (this.mode === 'crew' && this.crewDown ? .15 : Interior.EYE) + Math.abs(Math.sin(this.bobT)) * .012, y = this.mode === 'crew' ? this.crewEyeY(y0) : y0;
       C.fov = R.cam.fov; C.aspect = R.cam.aspect; C.updateProjectionMatrix();
       C.position.set(A.x, y, A.z); C.lookAt(A.x + Math.cos(A.yaw) * cp, y + Math.sin(A.pitch), A.z + Math.sin(A.yaw) * cp);
-      const ac = r.autoClear; r.autoClear = false; if (this.mode === 'crew') { this.syncCrewMeshes(I, C); this.syncRsFx(I); } r.clearDepth(); r.render(I.scene, C); r.autoClear = ac;
+      if (!(this.mode === 'crew' && this.dropT > .8)) { const ac = r.autoClear; r.autoClear = false; if (this.mode === 'crew') { this.syncCrewMeshes(I, C); this.syncRsFx(I); } r.clearDepth(); r.render(I.scene, C); r.autoClear = ac; }
       return;
     }
     if (!this.on || this.cut || !this.firstPerson() || this.mode !== 'soldier') return;
@@ -10777,7 +10827,7 @@ const Direct = {
   },
 
   // ---------- heads-up display on the 2D overlay ----------
-  drawCrewHud(c, w, h) { // Operation Red Star: mission status, prompts, station screens, lead indicators and the effects of damage
+  drawCrewHud(c, w, h) { if (this.dropT > .8) { this.drawCutHud(c, w, h); return; } // Operation Red Star: mission status, prompts, station screens, lead indicators and the effects of damage
     const g = this.ui.g, V = g.view, me = g.me, R = V.rs || {}, A = this.aboard, I = this.interior(), hs = (R.hurt || {})[me], now = performance.now() / 1000;
     c.save(); c.textAlign = 'center'; c.fillStyle = '#fff'; c.shadowColor = '#000'; c.shadowBlur = 4;
     c.font = '800 16px system-ui'; c.fillText(I.roomAt(A.x, A.z), w / 2, 62);
@@ -10814,8 +10864,6 @@ const Direct = {
       c.fillStyle = '#fff'; c.font = '800 20px system-ui'; c.textAlign = 'center'; if (hs.st === 'down') c.fillText('YOU ARE DOWN: wait for a crewmate to treat you (' + Math.max(0, Math.ceil(hs.bleed)) + 's)', w / 2, h * .3); else if (hs.st === 'out') c.fillText('YOU ARE OUT FOR THE MISSION', w / 2, h * .3); }
     c.fillStyle = 'rgba(255,255,255,.8)'; c.fillRect(w / 2 - 1.5, h / 2 - 1.5, 3, 3);
     if (this.look !== 'locked' && this.look !== 'touch') { c.font = '600 13px system-ui'; c.textAlign = 'center'; c.fillStyle = 'rgba(255,255,255,.75)'; c.fillText(this.look === 'free' ? 'Cursor free: press Alt or click to look again' : 'Click to lock the mouse for looking', w / 2, h - 90); }
-    if (this.dropT !== undefined) { const a = clamp((this.dropT - 3.2) / 1.6, 0, 1); if (a > 0) { c.shadowBlur = 0; c.fillStyle = 'rgba(255,255,255,' + a + ')'; c.fillRect(0, 0, w, h); }
-      if (this.dropT > 5.2) { c.fillStyle = '#1b1b1b'; c.font = '800 30px system-ui'; c.fillText('OPERATION RED STAR', w / 2, h / 2 - 8); c.font = '600 16px system-ui'; c.fillText('Detonation over New York', w / 2, h / 2 + 22); } }
     c.restore();
   },
   drawLead(c, w, h) { // gunners get a lead indicator: where to aim so the bullet and the fighter arrive together

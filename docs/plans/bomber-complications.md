@@ -84,3 +84,5 @@ Built so far: fighters, injured crew, radar jamming, searchlights, leaks, bomb b
 ## Final complication (built)
 
 **Dead bomb electronics (Dr Strangelove):** at the end of the flight the release fails. One crewmate holds E at the bomb in the bay to climb on top and rewire it (about 10 seconds, slower if hurt, progress decays if they climb down). Sparks and jolts shake the bay and can shock the rider. When fixed the bay opens and the bomb falls with the rider on it, then the flash. The timing is a placeholder (262 s) until the bomb run phase exists: see [bomber-pacing.md](bomber-pacing.md).
+
+The ending is now the Strangelove scene: letterboxed outside camera, the rider astride the falling bomb waving his hat over the skyline ("Yeeee-haaaw!"), a cut to a wide shot, the blast (fireball, shockwave, mushroom cloud), white-out, fade to the end card. About 16 seconds, same for the whole crew.
