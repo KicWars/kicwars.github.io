@@ -45,3 +45,4 @@ Seven missions for 2 to 7 players that rotate formats and finish with the bomber
 - Tone of the bomber: cartoon-silly or tense?
 - Other cities and routes after New York?
 - Accounts: do you want unique usernames and stored progress (needs the relay to keep data), or stay browser-only?
+- [bomber-pacing.md](bomber-pacing.md): flight length, acts, director and tension plan for Operation Red Star

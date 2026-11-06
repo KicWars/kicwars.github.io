@@ -2341,7 +2341,7 @@ Sim.prototype.setupSandbox = function () {
 };
 // Operation Red Star (work in progress): one Soviet bomber that flies a slow circle while the crew walk around inside it.
 Sim.prototype.setupRedstar = function () {
-  this.rs = {t: 0, fuel: 100, hull: 100, off: 0, drift: 0, inp: 0, lit: 0, beams: [], lights: null, lockOn: 0, lockT: 0, jamF: .5, jamT: .5, jamP: 0, sig: 0, storm: 0, stormT: 0, flT: 3, door: 0, doorP: 0, leaks: [], hurt: {}, seat: {}, hold: {}, spent: {}, sched: null, bullets: [], fighters: [], gcd: {}, seq: 1, state: 'fly', kills: 0};
+  this.rs = {t: 0, fuel: 100, hull: 100, off: 0, drift: 0, inp: 0, lit: 0, beams: [], lights: null, lockOn: 0, lockT: 0, jamF: .5, jamT: .5, jamP: 0, sig: 0, storm: 0, stormT: 0, flT: 3, door: 0, doorP: 0, leaks: [], hurt: {}, seat: {}, hold: {}, spent: {}, sched: null, bullets: [], fighters: [], gcd: {}, seq: 1, state: 'fly', kills: 0, bf: null};
   this.rsEnemy = this.players.length - 1; this.redstar = 1; this.rsS = 0; const R0 = this.M.rsRoute[0], b = this.addUnit('bomber', 0, R0[0], R0[1]); b.z = 16; b.rs = 1; b.h = 0; this.rsB = b;
 };
 // ---------- Operation Red Star: mission director, systems, fighters, crew states ----------
@@ -2358,18 +2358,18 @@ Sim.prototype.rsHurt = function (pi) {
 Sim.prototype.rsPub = function () {
   const R = this.rs;
   return {t: Math.round(R.t), fuel: Math.round(R.fuel), hull: Math.round(R.hull), off: +R.off.toFixed(1), lit: +R.lit.toFixed(2), lockOn: R.lockOn, lockT: Math.round(R.lockT), jamP: +R.jamP.toFixed(2), sig: +R.sig.toFixed(2), storm: R.storm, door: R.door, doorP: +R.doorP.toFixed(2),
-    leaks: R.leaks.map(l => ({id: l.id, x: l.x, z: l.z, k: l.k, n: l.n, p: +l.p.toFixed(2)})), hurt: R.hurt, seat: R.seat, beams: R.beams, state: R.state, fighters: R.fighters.length, kills: R.kills};
+    leaks: R.leaks.map(l => ({id: l.id, x: l.x, z: l.z, k: l.k, n: l.n, p: +l.p.toFixed(2)})), hurt: R.hurt, seat: R.seat, beams: R.beams, bf: R.bf ? {st: R.bf.st, p: +R.bf.p.toFixed(2), rider: R.bf.rider} : null, state: R.state, fighters: R.fighters.length, kills: R.kills};
 };
 Sim.prototype.rsStep = function () {
   const R = this.rs, B = this.rsB, dt = .1, n = this.players.length - 1, rso = this.rso || {}, rnd = () => this.rnd();
-  if (!R || !B || R.state === 'lost') return;
+  if (!R || !B || R.state === 'lost' || R.state === 'won') return;
   R.t += dt; const T = R.t, hd = this.rsHd || 0;
   const humans = []; for (let i = 0; i < n; i++) humans.push(i);
   const dmgK = {train: .6, std: 1, brutal: 1.4}[rso.diff] || 1;
   // --- director
   if (!R.sched) {
     const big = n >= 4 ? 1 : n === 3 ? .7 : .45, fc = k => Math.max(1, Math.round(k * big * dmgK));
-    R.sched = [[18, 'leak'], [40, 'fighters', fc(2)], [80, 'storm'], [120, 'lock'], [150, 'fighters', fc(3)], [185, 'lights'], [215, 'door'], [235, 'fighters', fc(3)], [255, 'leak']];
+    R.sched = [[18, 'leak'], [40, 'fighters', fc(2)], [80, 'storm'], [120, 'lock'], [150, 'fighters', fc(3)], [185, 'lights'], [215, 'door'], [235, 'fighters', fc(3)], [255, 'leak'], [262, 'bombfault']];
     if (n <= 2) R.sched = R.sched.filter((s, i) => i !== 8 && i !== 7); else if (n === 3) R.sched = R.sched.filter((s, i) => i !== 8);
   }
   while (R.sched.length && R.sched[0][0] <= T && R.state === 'fly') {
@@ -2380,6 +2380,7 @@ Sim.prototype.rsStep = function () {
     else if (kind === 'lock') { R.lockOn = 1; R.lockT = 0; R.jamP = 0; R.jamT = .25 + rnd() * .5; this.rsMsg('RADAR LOCK! Radio: sit at the set and jam it (A/D to tune).', 1); }
     else if (kind === 'lights') { R.lights = {t: 0}; this.rsMsg('Searchlights! Pilot: stay out of the beams.', 1); }
     else if (kind === 'door') { R.door = 1; R.doorP = 0; this.rsMsg('The bomb bay doors are jammed half open! Crank them shut in the bomb bay.', 1); }
+    else if (kind === 'bombfault') { R.bf = {st: 'fault', p: 0, rider: -1, sp: 5, dt: 0}; this.rsMsg('BOMB ELECTRONICS DEAD! The release will not fire. Someone must climb onto the bomb in the bay and rewire it by hand (hold E on it).', 1); }
   }
   // --- pilot, drift and the flight line
   const pilot = Object.keys(R.seat).find(k => R.seat[k] === 'pilot'); if (pilot === undefined) R.inp = 0;
@@ -2438,9 +2439,21 @@ Sim.prototype.rsStep = function () {
     const [kind, arg] = h.id.split(':'), slow = R.hurt[pi] ? .6 : 1;
     if (kind === 'leak') { const l = R.leaks.find(q => q.id === +arg); if (l && Math.hypot(cw.x - l.x, cw.z - l.z) < 1.6) { l.p += dt / 3.5 * slow; used['l' + l.id] = 1; } }
     else if (kind === 'door' && R.door && Math.hypot(cw.x + 8.3, cw.z - 1) < 1.7) { R.doorP += dt / 5 * slow; used.door = 1; }
+    else if (kind === 'bomb' && R.bf && R.bf.st === 'fault' && Math.abs(cw.x + 5.5) < 3.4 && Math.abs(cw.z) < 1.5) { R.bf.p += dt / 10 * slow; R.bf.rider = pi; used.bomb = 1; }
     else if (kind === 'treat' && +arg !== pi) { const hs = R.hurt[+arg], tc = this.crew[+arg]; if (hs && tc && hs.st !== 'out' && Math.hypot(cw.x - tc.x, cw.z - tc.z) < 1.8) { hs.p += dt / 3 * slow; used['t' + arg] = 1; } }
   }
   for (const l of R.leaks.slice()) { if (!used['l' + l.id]) l.p = Math.max(0, l.p - dt * .15); if (l.p >= 1) { R.leaks.splice(R.leaks.indexOf(l), 1); this.rsMsg('Leak patched.'); } }
+  if (R.bf) { const bf = R.bf;
+    if (bf.st === 'fault') {
+      if (!used.bomb) { bf.rider = -1; bf.p = Math.max(0, bf.p - dt * .03); }
+      bf.sp -= dt; if (bf.sp <= 0) { bf.sp = 4 + rnd() * 3; this.ev({k: 'rsjolt', m: .9}); if (bf.rider >= 0 && rnd() < .22) this.rsHurt(bf.rider); }
+      if (!bf.half && bf.p > .5) { bf.half = 1; this.rsMsg('Halfway: keep those wires together!', 1); }
+      if (bf.p >= 1) { bf.st = 'drop'; bf.dt = 0; this.rsMsg('Wires joined! The release is live...', 1); }
+    } else if (bf.st === 'drop') {
+      bf.dt += dt; if (bf.dt > .8 && !bf.away) { bf.away = 1; this.rsMsg('BOMB AWAY!', 1); }
+      if (bf.dt > 5.2 && R.state === 'fly') { R.state = 'won'; this.rsMsg('Detonation over New York. Operation Red Star is complete.', 1); }
+    }
+  }
   if (R.door) { if (!used.door) R.doorP = Math.max(0, R.doorP - dt * .1); if (R.doorP >= 1) { R.door = 0; R.doorP = 0; this.rsMsg('Bomb bay doors closed.'); } }
   for (const k of Object.keys(R.hurt)) {
     const hs = R.hurt[k]; if (hs.st === 'out') continue;
@@ -9956,7 +9969,11 @@ const Direct = {
       this.rsPrompt = {text: 'E: leave the seat' + (S.gun ? ' · hold the mouse button to fire' : sid === 'pilot' ? ' · A / D shift the aircraft sideways' : ' · A / D tune the dial')}; this.rsHoldId = null; return;
     }
     if (this.seatId) { this.seatId = null; if (this.rsVin) { this.rsVin = 0; g.issue({c: 'rsctl', v: 0}); } }
-    let f = 0, r = 0; if (!lockedOut) { if (k[B.fwd]) f++; if (k[B.back]) f--; if (k[B.right]) r++; if (k[B.left]) r--; }
+    const bfs = R.bf, drop = !!(bfs && bfs.st === 'drop'), rides = drop && bfs.rider === me, onB = !!(bfs && bfs.st === 'fault' && k.KeyE && !lockedOut && Math.abs(A.x + 5.5) < 3.2 && Math.abs(A.z) < 1.4);
+    if (drop) { this.dropT = (this.dropT || 0) + dt; if (rides) A.pitch += (-.75 - A.pitch) * Math.min(1, dt * 2); } else this.dropT = undefined;
+    if (onB) { this.onBomb = true; A.z += (0 - A.z) * Math.min(1, dt * 6); }
+    else if (this.onBomb) { this.onBomb = false; if (Math.abs(A.z) < 1.0) A.z = A.z >= 0 ? 1.05 : -1.05; }
+    let f = 0, r = 0; if (!lockedOut && !onB && !rides) { if (k[B.fwd]) f++; if (k[B.back]) f--; if (k[B.right]) r++; if (k[B.left]) r--; }
     const L = Math.hypot(f, r) || 1, sp = 2 * (hs ? .5 : 1) * (k[B.sprint] && !hs ? 1.5 : 1) * dt / L, c = Math.cos(A.yaw), s = Math.sin(A.yaw);
     const nx = A.x + (c * f - s * r) * sp, nz = A.z + (s * f + c * r) * sp;
     if (I.free(nx, nz)) { A.x = nx; A.z = nz; } else if (I.free(nx, A.z)) A.x = nx; else if (I.free(A.x, nz)) A.z = nz;
@@ -9965,19 +9982,36 @@ const Direct = {
     let tgt = null, best = 1.5; const px = A.x, pz = A.z;
     for (const l of R.leaks || []) { const d = Math.hypot(l.x - px, l.z - pz); if (d < best) { best = d; tgt = {id: 'leak:' + l.id, hold: 1, text: 'Hold E: patch the ' + l.k + ' leak (' + Math.round(l.p * 100) + '%)'}; } }
     if (R.door && Math.hypot(-8.3 - px, 1 - pz) < 1.6) tgt = {id: 'door', hold: 1, text: 'Hold E: crank the bomb bay door shut (' + Math.round(R.doorP * 100) + '%)'};
+    if (R.bf && R.bf.st === 'fault' && Math.abs(px + 5.5) < 3.2 && Math.abs(pz) < 1.4) tgt = {id: 'bomb', hold: 1, text: 'Hold E: climb on the bomb and rewire the release (' + Math.round(R.bf.p * 100) + '%)'};
     for (const kk of Object.keys(R.hurt || {})) { if (+kk === me) continue; const cc = cr[kk], h2 = R.hurt[kk]; if (cc && h2.st !== 'out' && Math.hypot(cc.x - px, cc.z - pz) < 1.7) tgt = {id: 'treat:' + kk, hold: 1, text: 'Hold E: treat ' + ((V.players[kk] && V.players[kk].name) || 'your crewmate') + ' (' + Math.round(h2.p * 100) + '%)'}; }
     if (!tgt && !lockedOut) for (const s2 of Object.keys(RS_SEATS)) { const S = RS_SEATS[s2]; if (Math.hypot(S.x - px, S.z - pz) < 1.4) { const taken = Object.keys(R.seat || {}).some(q => R.seat[q] === s2); if (!taken) tgt = {id: 'seat:' + s2, text: 'E: take the ' + RS_NAMES[s2] + ' seat'}; break; } }
-    this.rsPrompt = tgt;
+    this.rsPrompt = drop ? null : tgt;
     if (tgt && tgt.hold && k.KeyE && !lockedOut) { this.holdT = (this.holdT || 0) - dt; if (this.rsHoldId !== tgt.id || this.holdT <= 0) { this.rsHoldId = tgt.id; this.holdT = .25; g.issue({c: 'rshold', id: tgt.id}); } }
     else if (this.rsHoldId) { this.rsHoldId = null; g.issue({c: 'rshold', id: null}); }
     if (edgeE && tgt && !tgt.hold) g.issue({c: 'rsseat', id: tgt.id.slice(5)});
   },
+  crewEyeY(y) { // on top of the bomb, then riding it down
+    const V = this.ui.g.view, bf = V.rs && V.rs.bf; if (!bf) return y;
+    if (bf.st === 'fault' && this.onBomb) return 1.3;
+    if (bf.st === 'drop' && bf.rider === this.ui.g.me) return (this.bombY === undefined ? .66 : this.bombY) + .64;
+    return y;
+  },
   crewCamFx(dt, cam) { // storm, jolts and injuries shake the view
     const R = this.ui.g.view.rs || {}; this.rsJolt = Math.max(0, (this.rsJolt || 0) - dt * 1.6); this.rsFlash = Math.max(0, (this.rsFlash || 0) - dt * 2.2);
-    const sh = (R.storm ? .035 : 0) + (R.door ? .012 : 0) + this.rsJolt * .06 + (this.crewHurt ? .006 : 0);
+    const sh = (R.storm ? .035 : 0) + (R.door ? .012 : 0) + (R.bf && R.bf.st === 'drop' ? .03 : 0) + (this.onBomb ? .008 : 0) + this.rsJolt * .06 + (this.crewHurt ? .006 : 0);
     if (sh) { cam.position.x += (Math.random() - .5) * sh; cam.position.y += (Math.random() - .5) * sh; cam.rotateZ((Math.random() - .5) * sh * .5); }
   },
-  syncRsFx(I) { // leaks spraying, the jammed bay door
+  syncRsFx(I) { // leaks spraying, the jammed bay door, the bomb itself
+    if (!I.bombG) {
+      const g2 = new THREE.Group(), st = c => new THREE.MeshStandardMaterial({color: c, roughness: .55, metalness: .3}), body = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 14), st(0x3a3f36)); body.scale.set(3, .45, .45); g2.add(body);
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(.46, .46, .14, 18), st(0xa83228)); ring.rotation.z = Math.PI / 2; ring.position.x = 1.4; g2.add(ring);
+      for (const bx of [-1.9, -.7, .6, 2.1]) { const bd = new THREE.Mesh(new THREE.CylinderGeometry(.47, .47, .05, 18), st(0x1c1f22)); bd.rotation.z = Math.PI / 2; bd.position.x = bx; g2.add(bd); }
+      g2.position.set(-5.5, .66, 0); I.scene.add(g2); I.bombG = g2;
+      const sp = new THREE.PointLight(0x9fd0ff, 0, 5); sp.position.set(-4.6, 1.05, .5); I.scene.add(sp); I.sparkL = sp;
+    }
+    { const bf = (this.ui.g.view.rs || {}).bf; let by = .66;
+      if (bf && bf.st === 'drop') { const q = Math.max(0, (this.dropT || 0) - .8); by = .66 - 4.5 * q * q; I.bombG.rotation.z = -q * .5; } else I.bombG.rotation.z = 0;
+      I.bombG.position.y = by; I.bombG.visible = by > -40; this.bombY = by; I.sparkL.intensity = bf && bf.st === 'fault' && Math.random() < .35 ? 2.5 : 0; }
     const V = this.ui.g.view, R = V.rs || {}, now = performance.now() / 1000; I.leakG = I.leakG || {}; const ids = new Set((R.leaks || []).map(l => l.id));
     if (!this._sph) { this._sph = new THREE.SphereGeometry(.03, 6, 5); this._lm = {oil: new THREE.MeshBasicMaterial({color: 0x15120d}), fuel: new THREE.MeshBasicMaterial({color: 0xffc94a}), hydraulic: new THREE.MeshBasicMaterial({color: 0x8a1f16})}; this._pm = new THREE.CircleGeometry(.16, 14); }
     for (const id of Object.keys(I.leakG)) if (!ids.has(+id)) { I.scene.remove(I.leakG[id]); delete I.leakG[id]; }
@@ -9986,7 +10020,7 @@ const Direct = {
       G.children.forEach((m, i) => { if (i < 9) { const ph = (now * 1.4 + i / 9) % 1; m.position.set(Math.sin(now * 3 + i) * .06, .1 + ph * .85, Math.cos(now * 2.3 + i * 2) * .06); m.scale.setScalar(1.2 - ph * .6); } });
     }
     if (!I.doorM) { I.doorM = []; for (const s of [-1, 1]) { const m = new THREE.Mesh(new THREE.BoxGeometry(6.4, .03, .5), new THREE.MeshLambertMaterial({color: 0x5a6258})); m.position.set(-5.5, .05, s * .8); m.rotation.x = s * .6; I.scene.add(m); I.doorM.push(m); } }
-    for (const m of I.doorM) m.visible = !!R.door;
+    for (const m of I.doorM) m.visible = !!R.door || !!(R.bf && R.bf.st === 'drop');
     I.scene.fog && (I.scene.fog.density = R.storm ? .06 : .045);
   },
   syncCrewPose(e) { const p = this.pose; p.x = e.rx === undefined ? e.x : e.rx; p.y = e.ryy === undefined ? e.y : e.ryy; p.z = e.rz === undefined ? e.z : e.rz; p.h = e.ry === undefined ? e.h : e.ry; p.p = 0; p.r = 0; p.tu = p.h; },
@@ -9996,7 +10030,7 @@ const Direct = {
     for (const k of Object.keys(cr)) {
       const c = cr[k]; if (+k === me || V.t - c.t > 3) continue;
       let m = I.others[k]; if (!m) { m = I.others[k] = new THREE.Mesh(I.body, I.mat); m.position.set(c.x, 0, c.z); I.scene.add(m); }
-      m.position.x += (c.x - m.position.x) * .35; m.position.z += (c.z - m.position.z) * .35; const hh = V.rs && V.rs.hurt && V.rs.hurt[k], dn = hh && (hh.st === 'down' || hh.st === 'out'); m.rotation.order = 'YZX'; m.rotation.set(0, -c.yaw, dn ? -1.45 : 0); m.position.y = dn ? .1 : 0;
+      m.position.x += (c.x - m.position.x) * .35; m.position.z += (c.z - m.position.z) * .35; const hh = V.rs && V.rs.hurt && V.rs.hurt[k], dn = hh && (hh.st === 'down' || hh.st === 'out'); m.rotation.order = 'YZX'; m.rotation.set(0, -c.yaw, dn ? -1.45 : 0); m.position.y = dn ? .1 : (V.rs && V.rs.bf && V.rs.bf.rider === +k && V.rs.bf.st !== 'none' ? (this.bombY === undefined ? .66 : this.bombY) + .45 : 0);
       const v = this._cv.set(m.position.x, .8, m.position.z).project(C); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) this.crewTags.push({x: v.x, y: v.y, n: (V.players[k] && V.players[k].name) || 'Crew'});
     }
   },
@@ -10730,7 +10764,7 @@ const Direct = {
   // ---------- after the world is drawn: first-person hands and gun ----------
   post() {
     if (this.on && this.aboard) {
-      const R = this.ui.g.R, r = R.r, A = this.aboard, I = this.interior(), C = I.cam, cp = Math.cos(A.pitch), y = (this.mode === 'crew' && this.crewDown ? .15 : Interior.EYE) + Math.abs(Math.sin(this.bobT)) * .012;
+      const R = this.ui.g.R, r = R.r, A = this.aboard, I = this.interior(), C = I.cam, cp = Math.cos(A.pitch), y0 = (this.mode === 'crew' && this.crewDown ? .15 : Interior.EYE) + Math.abs(Math.sin(this.bobT)) * .012, y = this.mode === 'crew' ? this.crewEyeY(y0) : y0;
       C.fov = R.cam.fov; C.aspect = R.cam.aspect; C.updateProjectionMatrix();
       C.position.set(A.x, y, A.z); C.lookAt(A.x + Math.cos(A.yaw) * cp, y + Math.sin(A.pitch), A.z + Math.sin(A.yaw) * cp);
       const ac = r.autoClear; r.autoClear = false; if (this.mode === 'crew') { this.syncCrewMeshes(I, C); this.syncRsFx(I); } r.clearDepth(); r.render(I.scene, C); r.autoClear = ac;
@@ -10753,7 +10787,7 @@ const Direct = {
     if (R.hull !== undefined) {
       line('HULL ' + Math.round(R.hull) + '%', R.hull < 35 ? '#ff6a5a' : ''); line('FUEL ' + Math.round(R.fuel) + '%', R.fuel < 25 ? '#ff6a5a' : '');
       const nf = Array.isArray(R.fighters) ? R.fighters.length : R.fighters; if (nf) line('BANDITS ' + nf, '#ff8a65'); if (R.lockOn) line('RADAR LOCK ' + Math.max(0, Math.round(35 - R.lockT)) + 's', '#ff5a4a'); if (R.beams && R.beams.length) line('SEARCHLIGHTS', '#ffe27a');
-      if (R.storm) line('STORM', '#9fc9ff'); if (R.door) line('BAY DOOR JAMMED', '#ffb74d'); for (const l of R.leaks || []) line(l.k.toUpperCase() + ' LEAK: ' + l.n, '#ffb74d');
+      if (R.storm) line('STORM', '#9fc9ff'); if (R.door) line('BAY DOOR JAMMED', '#ffb74d'); if (R.bf && R.bf.st === 'fault') line('BOMB ELECTRONICS DEAD ' + Math.round(R.bf.p * 100) + '%', '#ff6b6b'); for (const l of R.leaks || []) line(l.k.toUpperCase() + ' LEAK: ' + l.n, '#ffb74d');
       for (const k of Object.keys(R.hurt || {})) if (+k !== me) line(((V.players[k] && V.players[k].name) || 'CREW') + (R.hurt[k].st === 'hurt' ? ' HURT' : R.hurt[k].st === 'down' ? ' DOWN' : ' OUT'), '#ff6a5a');
       if (R.state === 'lost') line('MISSION LOST', '#ff3b30');
     }
@@ -10780,6 +10814,8 @@ const Direct = {
       c.fillStyle = '#fff'; c.font = '800 20px system-ui'; c.textAlign = 'center'; if (hs.st === 'down') c.fillText('YOU ARE DOWN: wait for a crewmate to treat you (' + Math.max(0, Math.ceil(hs.bleed)) + 's)', w / 2, h * .3); else if (hs.st === 'out') c.fillText('YOU ARE OUT FOR THE MISSION', w / 2, h * .3); }
     c.fillStyle = 'rgba(255,255,255,.8)'; c.fillRect(w / 2 - 1.5, h / 2 - 1.5, 3, 3);
     if (this.look !== 'locked' && this.look !== 'touch') { c.font = '600 13px system-ui'; c.textAlign = 'center'; c.fillStyle = 'rgba(255,255,255,.75)'; c.fillText(this.look === 'free' ? 'Cursor free: press Alt or click to look again' : 'Click to lock the mouse for looking', w / 2, h - 90); }
+    if (this.dropT !== undefined) { const a = clamp((this.dropT - 3.2) / 1.6, 0, 1); if (a > 0) { c.shadowBlur = 0; c.fillStyle = 'rgba(255,255,255,' + a + ')'; c.fillRect(0, 0, w, h); }
+      if (this.dropT > 5.2) { c.fillStyle = '#1b1b1b'; c.font = '800 30px system-ui'; c.fillText('OPERATION RED STAR', w / 2, h / 2 - 8); c.font = '600 16px system-ui'; c.fillText('Detonation over New York', w / 2, h / 2 + 22); } }
     c.restore();
   },
   drawLead(c, w, h) { // gunners get a lead indicator: where to aim so the bullet and the fighter arrive together
@@ -11701,8 +11737,7 @@ const Interior = {
     b.add(GEO.sph, RD, 1, H - .1, 0, .06, .04, .06);
     [2.6, 3.25, 3.9].forEach(x => { b.box(.07, .75, .07, x, .78, 1.6, DK); b.box(.07, .75, .07, x, .78, -1.6, DK); });
     // ---- bomb bay: the bomb on its cradle, bands, fins, the arming panel, catwalk grating
-    b.add(GEO.sph, 0x3a3f36, -5.5, .66, 0, 3.0, .45, .45); b.cyl(.46, .14, -4.1, .66, 0, RD, 0, 0, Math.PI / 2);
-    [-7.4, -6.2, -4.9, -3.4].forEach(x => { b.cyl(.47, .05, x, .66, 0, DK, 0, 0, Math.PI / 2); b.box(.05, H - 1.1, .05, x, 1.14 + (H - 1.1) / 2 - .02, 0, DK); });
+    [-7.4, -6.2, -4.9, -3.4].forEach(x => { b.box(.05, H - 1.1, .05, x, 1.14 + (H - 1.1) / 2 - .02, 0, DK); });
     b.box(.6, .9, .03, -8.3, .66, 0, 0x2e332c); b.box(.6, .03, .9, -8.3, .66, 0, 0x2e332c);
     [-.85, .85].forEach(z => b.box(6.8, .02, .25, -5.5, .01, z, DK));
     b.box(.5, .45, .1, -2.6, .7, 1.22, ST); b.add(GEO.sph, RD, -2.75, .8, 1.16, .025, .025, .025); b.add(GEO.sph, GRN, -2.6, .8, 1.16, .025, .025, .025); b.add(GEO.sph, AM, -2.45, .8, 1.16, .025, .025, .025);

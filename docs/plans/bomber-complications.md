@@ -80,3 +80,7 @@ Built so far: fighters, injured crew, radar jamming, searchlights, leaks, bomb b
 - **Bail-out decision:** if things go badly, the pilot can order the crew to jump. It ends the mission but lets everyone survive.
 - **Morale and the commissar:** pressure events that cost time if obeyed and trust if ignored.
 - **Visibility swings:** night, fog or glare at set points that change what each window shows.
+
+## Final complication (built)
+
+**Dead bomb electronics (Dr Strangelove):** at the end of the flight the release fails. One crewmate holds E at the bomb in the bay to climb on top and rewire it (about 10 seconds, slower if hurt, progress decays if they climb down). Sparks and jolts shake the bay and can shock the rider. When fixed the bay opens and the bomb falls with the rider on it, then the flash. The timing is a placeholder (262 s) until the bomb run phase exists: see [bomber-pacing.md](bomber-pacing.md).
