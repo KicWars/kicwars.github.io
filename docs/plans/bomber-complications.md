@@ -61,3 +61,22 @@ Ideas for making the flight surprising and tense, not a checklist. Written 2026-
 - How much of this should be random each run versus scripted? (Scripted gives set pieces; random gives replay.)
 - Is a hidden traitor a fun idea for friends, or too much?
 - Should a mission be allowed to end without bombing (abort/return), and does that count as a failure?
+
+## Round 2 ideas (2026-11-06)
+Built so far: fighters, injured crew, radar jamming, searchlights, leaks, bomb bay door jam, storms. More:
+- **Gun jams and ammo:** a gun jams (clear it with a key) and ammo runs low. Someone carries ammo cans from the tail passage to the gunners.
+- **Cabin fire:** an electrical fire starts in a compartment; extinguisher from the wall, and the smoke blinds that room. Spreads if ignored.
+- **Engine fire and feathering:** the engineer pulls the right handle in time or the engine seizes. A dead engine shakes the aircraft and slows it.
+- **Window frost:** windows ice up; scrape them (hold E) or the pilot and gunners lose their view.
+- **Cold in the open bay:** with the door jammed, whoever works in the bomb bay slowly loses health. Treat with the first aid kit.
+- **Loose bomb:** the bomb shifts on its cradle and swings with each jolt; strap it down before the bomb run or it throws off the aim.
+- **Arming fault:** the arming panel throws a wiring puzzle shortly before the drop (matching coloured wires under time pressure).
+- **Fuel imbalance:** the aircraft rolls to one side. The engineer transfers fuel; the pilot compensates meanwhile.
+- **Trim runaway:** the controls get heavy and the pilot needs a second pair of hands on the column.
+- **Spoofed radio orders:** a fake order to turn back. The radio operator checks the code word; the pilot chooses to trust it or not.
+- **Compass failure and star fix:** the navigator takes a fix (a short sighting minigame) when the compass spins.
+- **The ace:** one marked fighter targets a specific station (it keeps shooting the tail gun first). Kill it or lose a gunner.
+- **Flak walls before the target:** timed bursts the pilot must weave through, with the navigator calling the gaps.
+- **Bail-out decision:** if things go badly, the pilot can order the crew to jump. It ends the mission but lets everyone survive.
+- **Morale and the commissar:** pressure events that cost time if obeyed and trust if ignored.
+- **Visibility swings:** night, fog or glare at set points that change what each window shows.
