@@ -1367,7 +1367,7 @@ function genBattleMap(N, seed, BT) {
   }
   const t2 = new Float32Array(h);
   for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) { const i = y * N + x; h[i] = (t2[i] * 2 + t2[i - 1] + t2[i + 1] + t2[i - N] + t2[i + N]) / 6; }
-  for (let i = 0; i < A; i++) { if (h[i] < 0) { water[i] = 1; tree[i] = 0; block[i] = 0; road[i] = 0; } if (block[i]) tree[i] = 0; }
+  for (let i = 0; i < A; i++) { if (h[i] < 0) { water[i] = 1; tree[i] = 0; block[i] = 0; } if (block[i]) tree[i] = 0; }
   for (const R2 of ruins) R2.z = h[Math.round(R2.y) * N + Math.round(R2.x)];
   return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes: [], ruins};
 }
@@ -1410,7 +1410,7 @@ function arcKit(N, rnd) {
     const t2 = new Float32Array(h);
     for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) { const i = y * N + x; h[i] = (t2[i] * 2 + t2[i - 1] + t2[i + 1] + t2[i - N] + t2[i + N]) / 6; }
     for (const R2 of M.ruins) if (R2.kind !== 'rubble') for (let y = Math.round(R2.y - R2.d / 2 + .5); y < Math.round(R2.y + R2.d / 2); y++) for (let x = Math.round(R2.x - R2.w / 2 + .5); x < Math.round(R2.x + R2.w / 2); x++) { const i = y * N + x; if (inb(x, y)) { M.block[i] = 1; M.tree[i] = 0; M.road[i] = 0; } }
-    for (let i = 0; i < N * N; i++) { if (h[i] < 0) { M.water[i] = 1; M.tree[i] = 0; M.block[i] = 0; M.road[i] = 0; } if (M.block[i]) M.tree[i] = 0; }
+    for (let i = 0; i < N * N; i++) { if (h[i] < 0) { M.water[i] = 1; M.tree[i] = 0; M.block[i] = 0; } if (M.block[i]) M.tree[i] = 0; }
     for (const R2 of M.ruins) R2.z = h[Math.round(R2.y) * N + Math.round(R2.x)];
     M.seed = seed; return M;
   };
@@ -1452,7 +1452,7 @@ function genTankMap(N, seed, BT) {
     K.put('house', .87, .48, 6, 4, 2.6); K.put('house', .9, .55, 4, 4, 2.2); K.put('rubble', .86, .56, 3, 3, .6);
     K.forest(.32, .3, .07, .7); K.forest(.32, .7, .07, .7); K.forest(.65, .2, .06, .6); K.forest(.65, .8, .06, .6);
     K.lane([[.5, .06], [.5, .94]], .008); K.lane([[.06, .5], [.75, .5]], .008); K.lane([[.75, .5], [.82, .5], [.88, .5]], .006);
-    for (let v = .44; v <= .56; v += .004) for (let x = Math.round(N * .72); x <= Math.round(N * .82); x++) { const i = Math.round(v * N) * N + x; if (Math.abs(v - .5) < .014) { h[i] = Math.max(h[i], 1.0); M.road[i] = 1; } } // stone bridge
+    for (let v = .44; v <= .56; v += .004) for (let x = Math.round(N * .72); x <= Math.round(N * .82); x++) { const i = Math.round(v * N) * N + x; if (Math.abs(v - .5) < .014) { M.road[i] = 1; M.tree[i] = 0; } } // the bridge (finishRoads gives it a deck)
     sp = [[.5, .93], [.5, .07]]; caps = [['A', .2, .5], ['B', .5, .5], ['C', .87, .52]];
   } else if (BT === 16) {
     // KESSEL HEIGHTS: a tall rocky hill in the middle holds B; whoever owns the crest sees the whole map, but its faces are cliffs and
@@ -1541,7 +1541,7 @@ function genWarMap(N, seed, BT, nPlayers) {
   for (const s of spawns) each(s.x / N, s.y / N, 11 / N, (i, d, x, y) => { h[i] = 1.4 + (h[i] - 1.4) * Math.pow(d, 1.5); tree[i] = 0; water[i] = 0; block[i] = 0; bio[i] = BIO.GRASS; });
   const t2 = new Float32Array(h);
   for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) { const i = y * N + x; h[i] = (t2[i] * 2 + t2[i - 1] + t2[i + 1] + t2[i - N] + t2[i + N]) / 6; }
-  for (let i = 0; i < A; i++) { if (h[i] < 0) { water[i] = 1; tree[i] = 0; block[i] = 0; road[i] = 0; } if (block[i]) tree[i] = 0; }
+  for (let i = 0; i < A; i++) { if (h[i] < 0) { water[i] = 1; tree[i] = 0; block[i] = 0; } if (block[i]) tree[i] = 0; }
   // resources: every capital gets the same start; the rest is placed by hand where the map wants fights
   // a node needs room for its 3x3 derrick or mine plus a margin, so it can never end up wedged against rock or a wall
   const roomy = (x, y) => { for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const q = (y + j) * N + x + i; if (block[q] || h[q] < .3) return false; } return true; };
@@ -1571,7 +1571,8 @@ function genWarMap(N, seed, BT, nPlayers) {
   for (const n of nodes) for (let y = n.y - 1; y <= n.y + 1; y++) for (let x = n.x - 1; x <= n.x + 1; x++) { tree[y * N + x] = 0; road[y * N + x] = 0; }
   return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes, ruins};
 }
-function genMap(N, seed, nPlayers) {
+function genMap(N, seed, nPlayers) { const M = genMap0(N, seed, nPlayers); finishRoads(M); return M; }
+function genMap0(N, seed, nPlayers) {
   const BT = Math.floor(seed / 1e7);
   if (BT >= 11 && BT <= 13) return genWarMap(N, seed, BT, nPlayers);
   if (BT === 4 || BT === 5 || BT === 10) return genBattleMap(N, seed, BT);
@@ -1722,6 +1723,7 @@ function genMap(N, seed, nPlayers) {
       const x = q % N, y = (q / N) | 0;
       for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { // a 3-wide cleared lane, raised over water
         const n = (y + j) * N + x + i;
+        if (h[n] < 0) continue; // open water: the road crosses it on a bridge (finishRoads)
         if (h[n] < .45) h[n] = i === 0 && j === 0 ? .55 : Math.max(h[n], .45);
         water[n] = 0; block[n] = 0; tree[n] = 0;
       }
@@ -1791,6 +1793,61 @@ function genMap(N, seed, nPlayers) {
   return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes, ruins};
 }
 
+// ---------- roads and bridges ----------
+// A road follows a smoothed grade. Where it crosses water or a sharp dip (river, ravine, trench), it rides on a bridge deck:
+// M.deck[cell] = deck height (0 = none), 3 cells wide so everything can cross. gAt() is the surface units stand on.
+const RD8X = [1, -1, 0, 0, 1, 1, -1, -1], RD8Y = [0, 0, 1, -1, 1, -1, 1, -1];
+function roadDecks(M) {
+  const N = M.N, A = N * N, R = M.road, h = M.h, W = M.water, list = [];
+  for (let i = 0; i < A; i++) if (R[i]) list.push(i);
+  const deck = M.deck = new Float32Array(A), br = M.bridge = new Uint8Array(A);
+  if (!list.length) return;
+  const g = new Float32Array(A).fill(NaN), fixed = new Uint8Array(A), nb = (c, f) => { const x = c % N, y = (c / N) | 0; for (let k = 0; k < 8; k++) { const nx = x + RD8X[k], ny = y + RD8Y[k]; if (nx >= 0 && ny >= 0 && nx < N && ny < N && R[ny * N + nx]) f(ny * N + nx); } };
+  const Q = [];
+  for (const c of list) if (!W[c] && h[c] >= .2) { g[c] = h[c]; fixed[c] = 1; Q.push(c); }
+  for (let qi = 0; qi < Q.length; qi++) { const c = Q[qi]; nb(c, n => { if (isNaN(g[n])) { g[n] = g[c]; Q.push(n); } }); } // fill water spans from the nearest bank
+  for (const c of list) if (isNaN(g[c])) g[c] = .8;
+  const free = list.filter(c => !fixed[c]), t = new Float32Array(A);
+  for (let it = 0; it < 40 && free.length; it++) { // ease the deck between the two banks
+    for (const c of free) { let s = g[c], n = 1; nb(c, j => { s += g[j]; n++; }); t[c] = s / n; }
+    for (const c of free) g[c] = t[c];
+  }
+  for (let it = 0; it < 3; it++) { // a gentle grade along the whole road
+    for (const c of list) { let s = g[c], n = 1; nb(c, j => { s += g[j]; n++; }); t[c] = s / n; }
+    for (const c of list) g[c] = Math.max(g[c], t[c]);
+  }
+  for (const c of list) {
+    if (!(W[c] || h[c] < .15 || g[c] - h[c] > .7)) continue;
+    const d = Math.max(g[c], W[c] || h[c] < .15 ? .75 : 0), x = c % N, y = (c / N) | 0; br[c] = 1;
+    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const nx = x + i, ny = y + j; if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue; const n = ny * N + nx; if (h[n] < d - .05 && d > deck[n]) deck[n] = d; }
+  }
+}
+// once at map creation: level the ground under the roads (cut and fill along the grade) so they read as built roads, then find the bridges
+function finishRoads(M) {
+  const N = M.N, R = M.road, h = M.h, W = M.water;
+  if (!R) return;
+  const list = []; for (let i = 0; i < N * N; i++) if (R[i] && !W[i]) list.push(i);
+  if (list.length) {
+    const g = new Float32Array(N * N), t = new Float32Array(N * N);
+    for (const c of list) g[c] = h[c];
+    for (let it = 0; it < 4; it++) {
+      for (const c of list) { const x = c % N, y = (c / N) | 0; let s = g[c], n = 1; for (let k = 0; k < 8; k++) { const nx = x + RD8X[k], ny = y + RD8Y[k], q = ny * N + nx; if (nx >= 0 && ny >= 0 && nx < N && ny < N && R[q] && !W[q]) { s += g[q]; n++; } } t[c] = s / n; }
+      for (const c of list) g[c] = t[c];
+    }
+    for (const c of list) {
+      const x = c % N, y = (c / N) | 0, G = g[c];
+      if (Math.abs(G - h[c]) > .9 || G < .2) continue; // keep big cuts (switchbacks, cliffs) as they are
+      for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const nx = x + i, ny = y + j; if (nx < 1 || ny < 1 || nx >= N - 1 || ny >= N - 1) continue; const q = ny * N + nx; if (W[q] || M.occ[q]) continue; const w = R[q] ? .85 : .45; h[q] += (G - h[q]) * w; }
+    }
+  }
+  roadDecks(M);
+}
+function gAt(M, x, y) {
+  const v = hAt(M, x, y), D = M.deck; if (!D) return v;
+  const c = Math.round(y) * M.N + Math.round(x), d = D[c];
+  return d > v ? d : v;
+}
+
 function hAt(M, x, y) {
   const N = M.N, gx = Math.max(0, Math.min(N - 1.001, x)), gy = Math.max(0, Math.min(N - 1.001, y)), xi = gx | 0, yi = gy | 0, fx = gx - xi, fy = gy - yi, i = yi * N + xi;
   return (M.h[i] * (1 - fx) + M.h[i + 1] * fx) * (1 - fy) + (M.h[i + N] * (1 - fx) + M.h[i + N + 1] * fx) * fy;
@@ -1804,7 +1861,7 @@ function passable(M, dom, i) {
   if (dom === 1) return M.h[i] < -.5;
   if (dom === 2) return !M.block[i] || M.water[i];
   if (dom === 3) return !M.block[i] || M.water[i]; // hovercraft
-  return !M.water[i] && !M.block[i];
+  return (!M.water[i] || (M.deck && M.deck[i] > 0)) && !M.block[i];
 }
 
 // Flow fields: Dijkstra over the grid from a goal cell, cached per domain+cell and flushed when buildings change.
@@ -1880,9 +1937,9 @@ Fields.prototype.compute = function (dom, gx, gy) {
       if (closed[j] || !passable(M, dom, j)) continue;
       if (k >= 4 && (!passable(M, dom, y * N + nx) || !passable(M, dom, ny * N + x))) continue;
       let c = DC[k];
-      if (dom === 2 && M.water[j]) c *= 5;
+      if (dom === 2 && M.water[j] && !(M.deck && M.deck[j])) c *= 5;
       else if (dom !== 1) {
-        if (M.road[j]) c *= .62;
+        if (M.road[j] || (M.deck && M.deck[j])) c *= .62;
         else {
           if (M.tree[j]) c *= 1.25;
           if (M.bio[j] === BIO.SWAMP) c *= 1.3;
@@ -2135,7 +2192,7 @@ Sim.prototype.addUnit = function (k, o, x, y) {
   if (d.cat === 'drone') e.life = d.life;
   if (d.cat === 'air' || d.cat === 'heli' || d.cat === 'drone') { e.air = true; e.z = hAt(this.M, x, y) + d.alt; e.hold = {x, y}; }
   else if (d.cat === 'sea') { e.sea = true; e.z = d.sub ? -.25 : 0; }
-  else e.z = hAt(this.M, x, y);
+  else e.z = gAt(this.M, x, y);
   this.ents.set(e.id, e); p.pop += d.pop;
   this.joinSquad(e);
   this.ev({k: 'spawn', id: e.id});
@@ -2292,7 +2349,7 @@ Sim.prototype.issue = function (c, pi) {
           const dd = Math.min(...foes.map(h => Math.hypot(h.x - f.x, h.y - f.y)));
           if (dd < bd) { bd = dd; best = f; }
         }
-        if (best) for (let i = 0; i < 12; i++) { const a = i * 1.7, nx = best.x + Math.cos(a) * 1.5, ny = best.y + Math.sin(a) * 1.5; if (passable(this.M, 0, Math.round(ny) * this.N + Math.round(nx))) { u.x = nx; u.y = ny; u.z = hAt(this.M, nx, ny); break; } }
+        if (best) for (let i = 0; i < 12; i++) { const a = i * 1.7, nx = best.x + Math.cos(a) * 1.5, ny = best.y + Math.sin(a) * 1.5; if (passable(this.M, 0, Math.round(ny) * this.N + Math.round(nx))) { u.x = nx; u.y = ny; u.z = gAt(this.M, nx, ny); break; } }
       }
       if (c.u === 'para') this.ferryPara(u, hq, pi);
       this.ev({k: 'deployed', p: pi, id: u.id});
@@ -2502,7 +2559,7 @@ Sim.prototype.cmdRepair = function (pi, bid) {
 Sim.prototype.unload = function (b) {
   for (const g of b.garrison) {
     const a = this.rnd() * 6.28, u = this.ents.get(g);
-    if (u) { u.inside = 0; u.x = b.x + Math.cos(a) * (b.d.s / 2 + 1.2); u.y = b.y + Math.sin(a) * (b.d.s / 2 + 1.2); u.z = hAt(this.M, u.x, u.y); }
+    if (u) { u.inside = 0; u.x = b.x + Math.cos(a) * (b.d.s / 2 + 1.2); u.y = b.y + Math.sin(a) * (b.d.s / 2 + 1.2); u.z = gAt(this.M, u.x, u.y); }
   }
   b.garrison = [];
 };
@@ -3391,7 +3448,7 @@ Sim.prototype.stepUnit = function (e) {
   if ((e.burnT || 0) > this.t) { e.hp -= 7 * DT; if (e.hp <= 0) { this.kill(e, e.lastBy); return; } }
   if (d.cat === 'inf') { // swimming: breath runs out, then the water wins
     const c = Math.round(e.y) * this.N + Math.round(e.x);
-    if (this.M.water[c]) { e.swimT = (e.swimT || 0) + DT; if (e.swimT > (e.pilot ? SWIM_T : SWIM_T_AI)) { e.srcX = e.x; e.srcY = e.y; this.hurt(e, e.hpm * .13 * DT, null); if (e.hp <= 0) return; } }
+    if (this.M.water[c] && !this.M.deck[c]) { e.swimT = (e.swimT || 0) + DT; if (e.swimT > (e.pilot ? SWIM_T : SWIM_T_AI)) { e.srcX = e.x; e.srcY = e.y; this.hurt(e, e.hpm * .13 * DT, null); if (e.hp <= 0) return; } }
     else if (e.swimT) e.swimT = Math.max(0, e.swimT - DT * 3);
   }
   if (e.pilot) {
@@ -3428,8 +3485,8 @@ Sim.prototype.moveSpeed = function (e, p) {
   if (e.sea) return s;
   const c = Math.round(e.y) * this.N + Math.round(e.x), M = this.M;
   if (c >= 0 && c < M.road.length) {
-    if (M.water[c]) s *= .45;
-    else if (M.road[c]) s *= p.ups.arm3 ? 1.8 : 1.5;
+    if (M.road[c] || M.deck[c]) s *= p.ups.arm3 ? 1.8 : 1.5;
+    else if (M.water[c]) s *= .45;
     else {
       if (M.bio[c] === BIO.SWAMP) s *= .78;
       if (M.bio[c] === BIO.SNOW) s *= .9;
@@ -3446,7 +3503,7 @@ Sim.prototype.stepGround = function (e, p) {
   const d = e.d, dom = e.sea ? 1 : d.cat === 'inf' ? 2 : d.amph ? 3 : 0;
   if (e.chute > 0) { // drifting down under canopy: no fighting until boots touch ground
     e.chute -= DT * 2.4; e.x += Math.cos(e.id) * DT * .3; e.y += Math.sin(e.id) * DT * .3;
-    e.z = hAt(this.M, e.x, e.y) + Math.max(0, e.chute);
+    e.z = gAt(this.M, e.x, e.y) + Math.max(0, e.chute);
     if (e.chute <= 0) { e.chute = 0; e.amove = true; this.ev({k: 'land', id: e.id}); }
     return;
   }
@@ -3532,7 +3589,7 @@ Sim.prototype.stepGround = function (e, p) {
     const t = this.ents.get(e.tid);
     if (t) e.tu = Math.atan2(t.y - e.y, t.x - e.x);
   } else if (d.turret) e.tu = e.h;
-  e.z = e.sea ? (d.sub ? -.25 : 0) : hAt(this.M, e.x, e.y);
+  e.z = e.sea ? (d.sub ? -.25 : 0) : gAt(this.M, e.x, e.y);
   if (dom === 2 && e.z < SWIM_Z) e.z = SWIM_Z;
   if (dom === 3 && e.z < 0) e.z = 0;
 };
@@ -3655,16 +3712,18 @@ Sim.prototype.stepTask = function (e, p) {
   } else if (T.type === 'road') {
     if (T.i >= T.cells.length) { e.task = null; return; }
     const c = T.cells[T.i], q = Math.hypot(c[0] - e.x, c[1] - e.y), i = c[1] * this.N + c[0];
-    if (M.road[i] || M.water[i] || M.block[i] || M.occ[i]) { T.i++; return; }
+    if (M.road[i] || M.block[i] || M.occ[i] || (M.water[i] && M.h[i] < -1.6)) { T.i++; return; } // bridges span rivers and shallows, not the open sea
     if (q < 1.4) {
       e.st = 3;
       T.tt = (T.tt || 0) + DT;
       if (T.tt >= .3) {
         T.tt = 0;
-        if (p.steel < 2) { this.notify(p.i, 'Not enough steel for the road', 'bad'); e.task = null; return; }
-        p.steel -= 2; M.road[i] = 1; M.tree[i] = 0; T.i++;
+        const cost = M.water[i] || M.h[i] < .15 ? 8 : 2; // bridge sections cost more
+        if (p.steel < cost) { this.notify(p.i, 'Not enough steel for the road', 'bad'); e.task = null; return; }
+        p.steel -= cost; M.road[i] = 1; M.tree[i] = 0; T.i++;
         this.ev({k: 'road', x: c[0], y: c[1]});
-        if (this.tick % 30 === 0) this.F.flush();
+        const nearDeck = () => { for (let j = -3; j <= 3; j++) for (let k = -3; k <= 3; k++) { const q = (c[1] + j) * this.N + c[0] + k; if (q >= 0 && q < M.deck.length && (M.deck[q] || M.water[q])) return true; } return false; };
+        if (cost > 2 || nearDeck()) { roadDecks(M); this.F.flush(); } else if (this.tick % 30 === 0) this.F.flush();
       }
     } else this.moveAlong(e, c[0], c[1], 0, p, c[0], c[1]);
   } else if (T.type === 'dig') {
@@ -3837,7 +3896,7 @@ function rayGround(M, o, v, max, water) {
   for (let t = st; t <= max; t += st) {
     const x = o.x + v.x * t, y = o.y + v.y * t, z = o.z + v.z * t;
     if (x < 0 || y < 0 || x >= M.N - 1 || y >= M.N - 1) return t;
-    const g = hAt(M, x, y);
+    const g = gAt(M, x, y);
     if (z < g || (water && z < -.05 && g < 0)) {
       let a = t - st, b = t; for (let i = 0; i < 6; i++) { const m = (a + b) / 2, gz = hAt(M, o.x + v.x * m, o.y + v.y * m); if (o.z + v.z * m < gz) b = m; else a = m; }
       return b;
@@ -3926,7 +3985,7 @@ Sim.prototype.stepProjs = function () {
       const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt, nz = p.z + p.vz * dt, from = {x: p.x, y: p.y, z: p.z}, seg = Math.hypot(nx - p.x, ny - p.y, nz - p.z) || 1e-6, dir = {x: (nx - p.x) / seg, y: (ny - p.y) / seg, z: (nz - p.z) / seg};
       if (nx < 0 || ny < 0 || nx > this.N - 1 || ny > this.N - 1) { p.life = 0; break; }
       p.x = nx; p.y = ny; p.z = nz;
-      const g = hAt(M, p.x, p.y);
+      const g = gAt(M, p.x, p.y);
       if (p.W.sea) { p.z = -.15; if (g > -.05) boom = true; }
       else if (p.z <= g || (p.z <= 0 && g < 0)) {
         if (p.W.fuse && !p.W.stick) { p.z = Math.max(g, 0) + .05; p.vz = Math.abs(p.vz) * .3; p.vx *= .5; p.vy *= .5; } // grenades bounce
@@ -7279,7 +7338,7 @@ Renderer.prototype.loadWorld = function (view) {
   this.view = view;
   const M = view.M, N = view.N;
   this.world = new THREE.Group(); this.scene.add(this.world);
-  this.applyLook(M, N); this.lodTiles = [];
+  this.applyLook(M, N); this.lodTiles = []; this.bridgeG = null; this.bridgeDirty = 0;
   this.buildTerrain(M, N);
   this.buildWater(M, N);
   this.buildTrees(M, N);
@@ -7425,11 +7484,11 @@ Renderer.prototype.buildTerrain = function (M, N) {
   sb.rotation.x = -Math.PI / 2; sb.position.set(N / 2, -3.7, N / 2); this.world.add(sb);
   this.scar = []; this.texDirty = false; this.texT = 0; this.texRect = null;
   this.mmBase = this.makeMinimapBase(M, N);
-  // the highways that come with the map
-  { const q = S / N; ctx.fillStyle = '#6a645a'; for (let i = 0; i < N * N; i++) if (M.road[i]) { ctx.beginPath(); ctx.arc((i % N) * q, ((i / N) | 0) * q, q * .9, 0, 6.3); ctx.fill(); }
-    ctx.fillStyle = 'rgba(200,190,165,.4)'; for (let i = 0; i < N * N; i++) if (M.road[i]) { ctx.beginPath(); ctx.arc((i % N) * q, ((i / N) | 0) * q, q * .28, 0, 6.3); ctx.fill(); }
-    const mg = this.mmBase.getContext('2d'); mg.fillStyle = '#b8ae98'; for (let i = 0; i < N * N; i++) if (M.road[i]) mg.fillRect((i % N) / N * 256 - 1, ((i / N) | 0) / N * 256 - 1, 2, 2);
-    tex.needsUpdate = true; }
+  // the roads that come with the map: paved, with bridges where they cross water or a gap
+  this.paintRoads(ctx, M, N, 0, 0, N - 1, N - 1);
+  { const mg = this.mmBase.getContext('2d'); mg.fillStyle = '#b8ae98'; for (let i = 0; i < N * N; i++) if (M.road[i]) mg.fillRect((i % N) / N * 256 - 1, ((i / N) | 0) / N * 256 - 1, 2, 2); }
+  tex.needsUpdate = true;
+  this.buildBridges(M, N);
 };
 
 // Boulders and rock outcrops on steep mountainsides and scattered across open ground (visual only).
@@ -7558,11 +7617,126 @@ Renderer.prototype.makeMinimapBase = function (M, N) {
 };
 
 Renderer.prototype.paintRoad = function (x, y) {
-  const M = this.view.M, N = this.view.N, S = this.tc.width, q = S / N, g = this.tg;
-  g.fillStyle = '#5f5a52'; g.beginPath(); g.arc((x + .5) * q - q / 2, (y + .5) * q - q / 2, q * .85, 0, 6.3); g.fill();
-  g.fillStyle = 'rgba(190,180,160,.35)'; g.beginPath(); g.arc(x * q, y * q, q * .3, 0, 6.3); g.fill();
-  this.texDirty = true; this.texMark(x - 2, y - 2, x + 2, y + 2);
+  const M = this.view.M, N = this.view.N, q = this.tc.width / N, g = this.tg;
+  g.save(); g.beginPath(); g.arc(x * q, y * q, q * 2.4, 0, 6.3); g.clip(); // repaint just around the new piece, in the same layer order as the full paint
+  this.paintRoads(g, M, N, x - 4, y - 4, x + 4, y + 4); g.restore();
+  this.texDirty = true; this.texMark(x - 3, y - 3, x + 3, y + 3);
   const mg = this.mmBase.getContext('2d'); mg.fillStyle = '#b8ae98'; mg.fillRect(x / N * 256 - 1, y / N * 256 - 1, 2, 2);
+  const i = y * N + x; let near = M.water[i] || M.h[i] < .15;
+  for (let j = -3; j <= 3 && !near; j++) for (let k = -3; k <= 3; k++) { const c = (y + j) * N + x + k; if (c >= 0 && c < N * N && M.deck && M.deck[c]) { near = true; break; } }
+  if (near) { roadDecks(M); this.bridgeDirty = performance.now(); }
+};
+// Roads drawn into the ground texture along the road graph: gravel verge, pale edge lines, asphalt, then a dashed centre line on single lanes.
+Renderer.prototype.paintRoads = function (g, M, N, x0, y0, x1, y1) {
+  const R = M.road, q = this.tc.width / N, E = [], deg = new Map();
+  x0 = Math.max(0, x0 | 0); y0 = Math.max(0, y0 | 0); x1 = Math.min(N - 1, x1 | 0); y1 = Math.min(N - 1, y1 | 0);
+  const on = (x, y) => x >= 0 && y >= 0 && x < N && y < N && R[y * N + x];
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    if (!on(x, y)) continue;
+    const add = (bx, by) => { E.push([x, y, bx, by]); const a = y * N + x, b = by * N + bx; deg.set(a, (deg.get(a) || 0) + 1); deg.set(b, (deg.get(b) || 0) + 1); };
+    if (on(x + 1, y)) add(x + 1, y);
+    if (on(x, y + 1)) add(x, y + 1);
+    if (on(x + 1, y + 1) && !on(x + 1, y) && !on(x, y + 1)) add(x + 1, y + 1);
+    if (on(x - 1, y + 1) && !on(x - 1, y) && !on(x, y + 1)) add(x - 1, y + 1);
+    if (!deg.has(y * N + x)) deg.set(y * N + x, 0);
+  }
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  const pass = (col, w, dash) => {
+    g.strokeStyle = col; g.lineWidth = Math.max(1, w * q); g.setLineDash(dash ? [q * .55, q * .45] : []);
+    g.beginPath();
+    for (const [ax, ay, bx, by] of E) { if (dash && ((deg.get(ay * N + ax) || 0) > 2 || (deg.get(by * N + bx) || 0) > 2)) continue; g.moveTo(ax * q, ay * q); g.lineTo(bx * q, by * q); }
+    if (!dash) for (const [c, d] of deg) if (!d) { const x = c % N, y = (c / N) | 0; g.moveTo(x * q, y * q); g.lineTo(x * q + .01, y * q); }
+    g.stroke();
+  };
+  pass('#857c69', 2.9); // gravel verge
+  pass('#c9c4b6', 2.25); // painted edge lines
+  pass('#3c3c3e', 1.95); // asphalt
+  pass('#d8c27a', .13, true); // centre line
+  g.setLineDash([]);
+};
+// Bridges: a deck that follows each run of bridge cells, with railings and piers down to the ground or riverbed.
+Renderer.prototype.buildBridges = function (M, N) {
+  if (this.bridgeG) { this.world.remove(this.bridgeG); this.bridgeG.traverse(o => { if (o.geometry) o.geometry.dispose(); }); this.bridgeG = null; }
+  if (!M.bridge) return;
+  const B = M.bridge, seen = new Uint8Array(N * N), G = this.bridgeG = new THREE.Group();
+  if (!this.bridgeMat) {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 128; const x = c.getContext('2d');
+    x.fillStyle = '#3d3d40'; x.fillRect(0, 0, 64, 128);
+    for (let i = 0; i < 500; i++) { x.fillStyle = `rgba(${Math.random() < .5 ? '255,255,255' : '0,0,0'},.07)`; x.fillRect(Math.random() * 64, Math.random() * 128, 2, 2); }
+    x.fillStyle = '#cfcabb'; x.fillRect(3, 0, 3, 128); x.fillRect(58, 0, 3, 128);
+    x.fillStyle = '#d8c27a'; x.fillRect(30.5, 8, 3, 56);
+    const t = new THREE.CanvasTexture(c); t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; t.encoding = THREE.sRGBEncoding;
+    const lin = h => new THREE.Color(h).convertSRGBToLinear();
+    this.bridgeMat = [new THREE.MeshStandardMaterial({map: t, roughness: .92}), new THREE.MeshStandardMaterial({color: lin(0x8f8a80), roughness: .85}), new THREE.MeshStandardMaterial({color: lin(0x5d6166), roughness: .5, metalness: .4})];
+  }
+  const top = [], side = [], rail = [];
+  for (let s0 = 0; s0 < N * N; s0++) {
+    if (!B[s0] || seen[s0]) continue;
+    const cells = [], Q = [s0]; seen[s0] = 1; // one bridge = one connected run of bridge cells
+    while (Q.length) { const c = Q.pop(); cells.push(c); const x = c % N, y = (c / N) | 0; for (let k = 0; k < 8; k++) { const nx = x + RD8X[k], ny = y + RD8Y[k], n = ny * N + nx; if (nx >= 0 && ny >= 0 && nx < N && ny < N && B[n] && !seen[n]) { seen[n] = 1; Q.push(n); } } }
+    let mx = 0, my = 0; for (const c of cells) { mx += c % N; my += (c / N) | 0; } mx /= cells.length; my /= cells.length;
+    let sxx = 0, syy = 0, sxy = 0; for (const c of cells) { const dx = c % N - mx, dy = ((c / N) | 0) - my; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+    let ax = 1, ay = 0;
+    if (cells.length > 1) { const a = .5 * Math.atan2(2 * sxy, sxx - syy); ax = Math.cos(a); ay = Math.sin(a); }
+    if (cells.length < 3) { // short span: run it along the road it belongs to
+      const c = cells[0], x = c % N, y = (c / N) | 0; let rx = 0, ry = 0; for (let k = 0; k < 8; k++) { const nx = x + RD8X[k], ny = y + RD8Y[k]; if (M.road[ny * N + nx]) { rx += RD8X[k] * (rx * RD8X[k] + ry * RD8Y[k] < 0 ? -1 : 1); ry += RD8Y[k] * (rx * RD8X[k] + ry * RD8Y[k] < 0 ? -1 : 1); } }
+      const l = Math.hypot(rx, ry); if (l > .1) { ax = rx / l; ay = ry / l; }
+    }
+    const bins = new Map(); let lo = 1e9, hi = -1e9;
+    for (const c of cells) { const x = c % N, y = (c / N) | 0, u = Math.round((x - mx) * ax + (y - my) * ay); let b = bins.get(u); if (!b) bins.set(u, b = {x: 0, y: 0, n: 0, w: 0}); b.x += x; b.y += y; b.n++; b.w = Math.max(b.w, Math.abs(-(x - mx) * ay + (y - my) * ax)); lo = Math.min(lo, u); hi = Math.max(hi, u); }
+    const P = []; let wid = 0;
+    for (let u = lo; u <= hi; u++) { const b = bins.get(u); if (!b) continue; P.push({x: b.x / b.n, y: b.y / b.n}); wid = Math.max(wid, b.w); }
+    const W = Math.max(2.4, Math.min(5, wid * 2 + 2.2)) / 2;
+    // run past the last bridge cell onto the banks
+    const ext = (a, b) => ({x: a.x + (a.x - b.x || ax * (a === P[0] ? -1 : 1)) * 1.2 / (Math.hypot(a.x - b.x, a.y - b.y) || 1), y: a.y + (a.y - b.y || ay * (a === P[0] ? -1 : 1)) * 1.2 / (Math.hypot(a.x - b.x, a.y - b.y) || 1)});
+    if (P.length === 1) { P.unshift({x: P[0].x - ax, y: P[0].y - ay}); P.push({x: P[1].x + ax, y: P[1].y + ay}); }
+    P.unshift(ext(P[0], P[1])); P.push(ext(P[P.length - 1], P[P.length - 2]));
+    for (let it = 0; it < 2; it++) for (let k = 1; k < P.length - 1; k++) { P[k].x = (P[k - 1].x + P[k].x * 2 + P[k + 1].x) / 4; P[k].y = (P[k - 1].y + P[k].y * 2 + P[k + 1].y) / 4; }
+    const dk = (x, y) => { let v = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const c = (Math.round(y) + j) * N + Math.round(x) + i; if (c >= 0 && c < N * N) v = Math.max(v, M.deck[c]); } return v || hAt(M, x, y); };
+    const Z = P.map(p => dk(p.x, p.y) + .06);
+    Z[0] = Math.max(hAt(M, P[0].x, P[0].y) + .04, Math.min(Z[0], Z[1])); Z[Z.length - 1] = Math.max(hAt(M, P[P.length - 1].x, P[P.length - 1].y) + .04, Math.min(Z[Z.length - 1], Z[Z.length - 2]));
+    for (let it = 0; it < 2; it++) for (let k = 1; k < Z.length - 1; k++) Z[k] = Math.max(Z[k], (Z[k - 1] + Z[k] * 2 + Z[k + 1]) / 4);
+    let v = 0, lastPier = -9;
+    for (let k = 0; k < P.length; k++) {
+      const a = P[Math.max(0, k - 1)], b = P[Math.min(P.length - 1, k + 1)], tl = Math.hypot(b.x - a.x, b.y - a.y) || 1, tx = (b.x - a.x) / tl, ty = (b.y - a.y) / tl, nx = -ty, ny = tx, p = P[k], z = Z[k];
+      if (k) v += Math.hypot(p.x - P[k - 1].x, p.y - P[k - 1].y);
+      p.L = [p.x + nx * W, z, p.y + ny * W]; p.R = [p.x - nx * W, z, p.y - ny * W]; p.v = v / 2.4; p.z = z;
+      const gz = Math.min(hAt(M, p.x, p.y), M.water[Math.round(p.y) * N + Math.round(p.x)] ? -1.2 : 9);
+      if (v - lastPier > 3 && z - gz > .5 && k > 0 && k < P.length - 1) { lastPier = v; // a pier: a column under each edge and a cap beam
+        for (const sd of [-.7, .7]) box(side, p.x + nx * W * sd, p.y + ny * W * sd, gz - .3, z - .2, .22, .22, tx, ty);
+        box(side, p.x, p.y, z - .42, z - .2, W * 1.05, .3, nx, ny);
+      }
+      for (const sd of [1, -1]) if (k % 2 === 0 || k === P.length - 1) box(rail, p.x + nx * (W - .08) * sd, p.y + ny * (W - .08) * sd, z, z + .5, .05, .05, tx, ty); // railing posts
+    }
+    for (let k = 1; k < P.length; k++) {
+      const A = P[k - 1], C = P[k];
+      quad(top, A.R, A.L, C.L, C.R, [0, A.v, 1, A.v, 1, C.v, 0, C.v], [0, 1, 0]);
+      const lo2 = (q) => [q[0], q[1] - .28, q[2]];
+      quad(side, A.L, lo2(A.L), lo2(C.L), C.L); quad(side, lo2(A.R), A.R, C.R, lo2(C.R)); quad(side, lo2(A.R), lo2(A.L), lo2(C.L), lo2(C.R)); // deck edges and underside
+      for (const sd of ['L', 'R']) { const a = A[sd], c = C[sd], up = (q, h) => [q[0], q[1] + h, q[2]]; quad(rail, up(a, .44), up(a, .5), up(c, .5), up(c, .44)); quad(rail, up(a, .5), up(a, .44), up(c, .44), up(c, .5)); quad(rail, up(a, .26), up(a, .3), up(c, .3), up(c, .26)); quad(rail, up(a, .3), up(a, .26), up(c, .26), up(c, .3)); }
+    }
+  }
+  function quad(L, a, b, c, d, uv, n) { L.push([a, b, c, d, uv]); }
+  function box(L, x, y, z0, z1, hw, hd, tx, ty) { // an upright box, hw along (tx,ty), hd across
+    const nx = -ty, ny = tx, P = (s, t, z) => [x + tx * hw * s + nx * hd * t, z, y + ty * hw * s + ny * hd * t];
+    const c = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    for (let i = 0; i < 4; i++) { const [s1, t1] = c[i], [s2, t2] = c[(i + 1) % 4]; L.push([P(s1, t1, z0), P(s2, t2, z0), P(s2, t2, z1), P(s1, t1, z1)]); }
+    L.push([P(-1, -1, z1), P(1, -1, z1), P(1, 1, z1), P(-1, 1, z1)]);
+  }
+  const mk = (L, mat, uv) => {
+    if (!L.length) return;
+    const pos = new Float32Array(L.length * 18), u = uv ? new Float32Array(L.length * 12) : null; let o = 0, ou = 0;
+    for (const [a, b, c, d, t] of L) { // two triangles per quad (the materials are double-sided)
+      for (const v of [a, b, c, a, c, d]) { pos[o++] = v[0]; pos[o++] = v[1]; pos[o++] = v[2]; }
+      if (u) { const T = t || [0, 0, 1, 0, 1, 1, 0, 1]; for (const k of [0, 1, 2, 0, 2, 3]) { u[ou++] = T[k * 2]; u[ou++] = T[k * 2 + 1]; } }
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); if (u) g.setAttribute('uv', new THREE.BufferAttribute(u, 2)); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, mat); m.castShadow = true; m.receiveShadow = true; G.add(m);
+  };
+  mk(top, this.bridgeMat[0], true); mk(side, this.bridgeMat[1]); mk(rail, this.bridgeMat[2]);
+  if (this.bridgeMat[1].side !== THREE.DoubleSide) { this.bridgeMat[1].side = THREE.DoubleSide; this.bridgeMat[2].side = THREE.DoubleSide; this.bridgeMat[0].side = THREE.DoubleSide; }
+  if (this.fogged) for (const m of this.bridgeMat) if (!m.userData.fog) { m.userData.fog = 1; this.fogged(m); }
+  this.world.add(G);
 };
 // Re-light only the vertices around a change (central differences on the height grid) instead of recomputing the whole terrain's normals.
 Renderer.prototype.fixNormals = function (x0, y0, x1, y1) {
@@ -7918,7 +8092,7 @@ Renderer.prototype.drawUnit = function (e, dt, tint) {
   } else if (d.cat === 'veh' || d.cat === 'sea') {
     const bob = e.sea ? Math.sin(this.time * .8 + e.id) * .05 : 0, pitch = e.sea ? Math.sin(this.time * .6 + e.id) * .02 : 0;
     let tilt = 0, roll = 0;
-    if (!e.sea) { const M = this.view.M, c = Math.cos(e.ry), s = Math.sin(e.ry); tilt = Math.atan2(hAt(M, e.rx + c * .9, e.ryy + s * .9) - hAt(M, e.rx - c * .9, e.ryy - s * .9), 1.8); roll = Math.atan2(hAt(M, e.rx - s * .5, e.ryy + c * .5) - hAt(M, e.rx + s * .5, e.ryy - c * .5), 1); }
+    if (!e.sea) { const M = this.view.M, c = Math.cos(e.ry), s = Math.sin(e.ry); tilt = Math.atan2(gAt(M, e.rx + c * .9, e.ryy + s * .9) - gAt(M, e.rx - c * .9, e.ryy - s * .9), 1.8); roll = Math.atan2(gAt(M, e.rx - s * .5, e.ryy + c * .5) - gAt(M, e.rx + s * .5, e.ryy - c * .5), 1); }
     const rec = e.recoilV || 0;
     const mk = () => VEH[k](palette(nat));
     let parts = this._vp && this._vp[key];
@@ -8542,7 +8716,7 @@ const _origDraw = Renderer.prototype.draw;
 Renderer.prototype.draw = function (dt, view) {
   const t = this.r.render; const self = this;
   // commit instance counts just before rendering, after every put() of this frame
-  this.r.render = function (s, c) { self.updateLod(); self.commit(); self.r.render = t; t.call(self.r, s, c); };
+  this.r.render = function (s, c) { self.updateLod(); if (self.bridgeDirty && performance.now() - self.bridgeDirty > 250) { self.bridgeDirty = 0; self.buildBridges(self.view.M, self.view.N); } self.commit(); self.r.render = t; t.call(self.r, s, c); };
   const post = this.gradeOn();
   if (post) this.r.setRenderTarget(this.gradeRT);
   _origDraw.call(this, dt, view);
@@ -9348,7 +9522,7 @@ const Direct = {
     let fx = 0, fy = 0;
     if (k[B.fwd] || k.KeyW) fy += 1; if (k[B.back] || k.KeyS) fy -= 1; if (k[B.right] || k.KeyD) fx += 1; if (k[B.left] || k.KeyA) fx -= 1;
     const sprint = k[B.sprint] && fy > 0 && !this.ads, wolf = e.k === 'wolf';
-    const dash = (this.dashT || 0) > performance.now() ? 1.9 : 1, cell = Math.round(p.y) * N + Math.round(p.x), wet = !!M.water[cell];
+    const dash = (this.dashT || 0) > performance.now() ? 1.9 : 1, cell = Math.round(p.y) * N + Math.round(p.x), wet = !!M.water[cell] && !(M.deck && M.deck[cell] > p.z - .6);
     this.swimming = wet;
     this.swimB = wet ? Math.max(0, (this.swimB === undefined ? SWIM_T : this.swimB) - dt) : Math.min(SWIM_T, (this.swimB === undefined ? SWIM_T : this.swimB) + dt * 3);
     const top = d.spd * (wolf ? 1.15 : 1.25) * (wet ? .5 : sprint ? 1.6 : this.ads ? .6 : 1) * dash, c = Math.cos(this.yaw), s = Math.sin(this.yaw), L = Math.hypot(fx, fy) || 1;
@@ -9361,14 +9535,14 @@ const Direct = {
     if (!M.ruinMask) { const R = M.ruinMask = new Uint8Array(N * N); for (const R2 of M.ruins || []) if (R2.kind !== 'rubble') for (let y = Math.round(R2.y - R2.d / 2 + .5); y < Math.round(R2.y + R2.d / 2); y++) for (let x = Math.round(R2.x - R2.w / 2 + .5); x < Math.round(R2.x + R2.w / 2); x++) if (x >= 0 && y >= 0 && x < N && y < N) R[y * N + x] = 1; }
     const walk = i => !M.occ[i] && !(M.block[i] && M.ruinMask[i]);
     const free = (x, y) => walk(Math.round(y) * N + Math.round(x)) || !walk(Math.round(p.y) * N + Math.round(p.x));
-    { const mv = Math.hypot(nx - p.x, ny - p.y); if (mv > 1e-4 && this.onGround !== false) { const gr = (hAt(M, nx, ny) - hAt(M, p.x, p.y)) / mv; if (gr > .7) { const f = Math.max(.3, 1 - (gr - .7) * .45); nx = p.x + (nx - p.x) * f; ny = p.y + (ny - p.y) * f; } } }
+    { const mv = Math.hypot(nx - p.x, ny - p.y); if (mv > 1e-4 && this.onGround !== false) { const gr = (gAt(M, nx, ny) - gAt(M, p.x, p.y)) / mv; if (gr > .7) { const f = Math.max(.3, 1 - (gr - .7) * .45); nx = p.x + (nx - p.x) * f; ny = p.y + (ny - p.y) * f; } } }
     if (free(nx, ny)) { p.x = nx; p.y = ny; } else if (free(nx, p.y)) { p.x = nx; this.vel.y *= .3; } else if (free(p.x, ny)) { p.y = ny; this.vel.x *= .3; } else { this.vel.x = this.vel.y = 0; }
     const spd = Math.hypot(this.vel.x, this.vel.y);
     this.mv = spd > .3; this.sprinting = sprint && this.mv; this.moveK = Math.min(1, spd / Math.max(1, d.spd));
     p.h = this.yaw; p.tu = this.yaw;
     if (k[B.jump] && this.onGround !== false && !wet) { this.vz = wolf ? 6.5 : 5.2; this.onGround = false; }
     this.vz -= 15 * dt; p.z += this.vz * dt;
-    const gh = wet ? Math.max(hAt(M, p.x, p.y), SWIM_Z + Math.sin(performance.now() / 400) * .04) : hAt(M, p.x, p.y);
+    const gh = wet ? Math.max(hAt(M, p.x, p.y), SWIM_Z + Math.sin(performance.now() / 400) * .04) : gAt(M, p.x, p.y);
     if (p.z <= gh) { if (this.onGround === false && this.vz < -6) this.land = .25; p.z = gh; this.vz = 0; this.onGround = true; }
     if (this.mv && this.onGround !== false) this.bobT += dt * spd * 2.6;
     p.p = 0; p.r = 0;
@@ -9411,7 +9585,7 @@ const Direct = {
     p.x = clamp(p.x + this.vel.x * dt, 1, N - 2); p.y = clamp(p.y + this.vel.y * dt, 1, N - 2);
     if (can) this.vz += (-3 - this.vz) * Math.min(1, dt * 2.5); else this.vz = Math.max(-17, this.vz - 14 * dt);
     p.z += this.vz * dt;
-    const gh = Math.max(hAt(M, p.x, p.y), M.water[Math.round(p.y) * N + Math.round(p.x)] ? SWIM_Z : -99), agl = p.z - gh;
+    const gh = Math.max(gAt(M, p.x, p.y), M.water[Math.round(p.y) * N + Math.round(p.x)] ? SWIM_Z : -99), agl = p.z - gh;
     if (!can && agl < 9) { this.jump = 'canopy'; this.msg('Automatic opener fired: canopy open', 1.8); }
     this.altT = (this.altT || 0) - dt; if (this.altT <= 0 && agl > 1) { this.altT = .5; this.msg('ALT ' + Math.round(agl) + (can ? '  ·  steer with WASD' : '  ·  ' + Settings.keyName(B.jump) + ': open chute'), .6); }
     if (agl <= 0) { p.z = gh; this.vz = 0; this.onGround = true; this.jump = null; this.land = .3; this.vel.x *= .3; this.vel.y *= .3; this.msg('Boots on the ground', 1.5); }
@@ -9433,7 +9607,7 @@ const Direct = {
     else if (passable(M, dom, Math.round(ny) * N + Math.round(p.x))) p.y = ny;
     else this.hullSpd *= -.2;
     this.mv = Math.abs(this.hullSpd) > .2;
-    p.z = sea ? (d.sub ? -.25 : 0) : d.amph ? Math.max(0, hAt(M, p.x, p.y)) : hAt(M, p.x, p.y);
+    p.z = sea ? (d.sub ? -.25 : 0) : d.amph ? Math.max(0, gAt(M, p.x, p.y)) : gAt(M, p.x, p.y);
     // turret traverses toward where you look, at a limited speed (feels heavy, still precise)
     const trav = e.k === 'tank' ? 2.2 : e.k === 'htank' ? 1.5 : e.k === 'td' ? 1.1 : e.k === 'ltank' ? 3 : e.k === 'arty' ? 1 : 2.6;
     if (d.turret || sea) this.turret += clamp(angDiff(this.turret, this.camYaw), -trav * dt, trav * dt); else this.turret = p.h;
@@ -12225,7 +12399,7 @@ const UI = {
         S.push({hk: 'L', name: 'Excavate', gl: '⛏', cost: [DIG_COST, 0], desc: 'Flatten a patch of ground (rock, slopes, shallows) so you can build on it. ' + DIG_COST + ' steel.', act: () => this.setMode({t: 'dig', r: DIG_R}, 'Click the ground to excavate  (right click cancels)')});
         S.push({hk: 'I', name: 'Dig trench', gl: '⌇', desc: 'Workers dig a trench between two points, shovelful by shovelful. Infantry in it take 55% less damage.', act: () => this.setMode({t: 'digline'}, 'Click where the trench starts')});
         S.push({hk: 'O', name: 'Dig tunnel', gl: '⛫', desc: 'Workers dig a deep, timber-roofed tunnel. Troops inside are hidden from the enemy unless they come right up close: dig toward the enemy for sneak attacks.', act: () => this.setMode({t: 'digline', deep: 1}, 'Click where the tunnel starts')});
-        S.push({hk: 'X', name: 'Road', gl: '⛙', desc: 'Lay a road between two points (2 steel per tile). Units move 50% faster on roads.', act: () => this.setMode({t: 'road'}, 'Click the start of the road')});
+        S.push({hk: 'X', name: 'Road', gl: '⛙', desc: 'Lay a paved road between two points (2 steel per tile). Across a river it becomes a bridge (8 steel per section). Units move 50% faster on roads.', act: () => this.setMode({t: 'road'}, 'Click the start of the road')});
         { const nb = p.builders === undefined ? 2 : p.builders, nw = v.players && [...v.ents.values()].filter(e => e.o === G.me && e.k === 'worker').length, nbx = Math.min(nb, nw);
           const tip = 'Builders build and repair on their own, and mine when there is nothing to do. Everyone else mines. Idle workers always go back to mining. Now: ' + nbx + ' builders, ' + Math.max(0, nw - nbx) + ' miners.';
           S.push({hk: '', name: 'Builders ' + nbx + ' / Miners ' + Math.max(0, nw - nbx) + '  (−)', gl: '⛏', desc: 'One fewer builder. ' + tip, off: nb <= 0, why: 'No builders', act: () => G.issue({c: 'builders', n: Math.min(nb, nw) - 1})});
@@ -12803,6 +12977,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Real roads: paved asphalt with edge lines and a centre line, levelled into the ground. Where a road crosses a river, strait or ravine it now runs over a proper bridge with railings and piers, and boats can sail underneath. Workers can build bridges across rivers (8 steel per section).',
       'Smoother frame rate with the same graphics: trees, rocks and grass now skip whatever is off screen, including in the shadow pass. Far-away trees and troops use lighter models. Craters and digging no longer cause a hitch, and fog of war and the HUD do less work each frame.',
       'New look: each map gets clear day, golden hour or overcast lighting. Grass sways in the wind, trees sway and vary, rocks are chiseled boulders, and the ground has fine relief when seen close up. There is a soft vignette and a warmer HUD. Want the old graphics back? Main menu → 🎨 Look → Classic (applies from the next battle).',
       'Workers: choose how many are builders and how many are miners (− / + in the worker build menu). Builders build and repair on their own and mine when there is nothing to do. Idle workers always go back to mining, so nobody stands around.',
