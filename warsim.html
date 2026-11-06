@@ -2358,6 +2358,7 @@ Sim.prototype.setupRedstar = function () {
 // ---------- Operation Red Star: mission director, systems, fighters, crew states ----------
 const RS_ALT = 48; // cruising altitude: high above the city's towers
 const RS_SEATS = {pilot: {x: 10.5, z: -.7, yaw: 0, arc: 1.3}, radio: {x: 5, z: -.55, yaw: -Math.PI / 2, arc: 1.3}, tail: {x: -14.4, z: 0, yaw: Math.PI, arc: 1.0, gun: 1}, wl: {x: 3.3, z: -.9, yaw: -Math.PI / 2, arc: 1.0, gun: 1}, wr: {x: 3.3, z: .9, yaw: Math.PI / 2, arc: 1.0, gun: 1}};
+const RS_RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]), RS_WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 const RS_NAMES = {pilot: "pilot's", radio: 'radio', tail: "tail gunner's", wl: 'left waist gun', wr: 'right waist gun'};
 const RS_SPOTS = [[-.3, -.9, 'oil', "engineer's bay"], [1.5, .3, 'fuel', "engineer's bay"], [3.4, .2, 'hydraulic', "engineer's bay"], [-4, .9, 'hydraulic', 'bomb bay'], [-6, -.9, 'oil', 'bomb bay'], [6.2, -.2, 'fuel', 'radio room'], [9.2, -.9, 'hydraulic', 'cockpit']];
 Sim.prototype.rsMsg = function (text, snd, only) { for (let i = 0; i < this.players.length - 1; i++) if (only === undefined || only === i) this.ev({k: 'msg', p: i, text, kind: 'rs', s: snd ? 1 : 0}); };
@@ -9980,7 +9981,8 @@ const Direct = {
   rsRespawn() { const A = this.aboard, i = Math.max(0, this.ui.g.me); if (A) { A.x = 4.6 + i * .45; A.z = i % 2 ? .45 : -.45; A.yaw = 0; A.pitch = 0; } this.seatId = null; },
   crewMove(dt, e) { // walk, sit at stations, work on problems, and the effects of being hurt
     const A = this.aboard, I = this.interior(), k = this.keys, B = Settings.binds, g = this.ui.g, V = g.view, me = g.me, R = V.rs || {}, hs = (R.hurt || {})[me], sid = (R.seat || {})[me], cr = V.crew || {};
-    A.yaw += this.lookX; A.pitch = clamp(A.pitch - this.lookY, -1.3, 1.3);
+    A.yaw += this.lookX; A.pitch = clamp(A.pitch - this.lookY, -1.3, 1.3); const now = performance.now() / 1000;
+    this.vodka = Math.max(0, (this.vodka || 0) - dt / 40); const vd = this.vodka; if (vd) { A.yaw += Math.sin(now * .6) * dt * .1 * vd; A.pitch += Math.sin(now * .83) * dt * .05 * vd; } // drunk: the view wanders, even at the guns
     const lockedOut = !!(hs && (hs.st === 'down' || hs.st === 'out')); this.crewDown = lockedOut; this.crewHurt = !!hs;
     g.R.rsBeams(R.beams || []);
     const edgeE = this.crewE; this.crewE = false;
@@ -9998,7 +10000,7 @@ const Direct = {
     if (drop) { if (this.dropS === undefined) this.dropS = performance.now(); this.dropT = (performance.now() - this.dropS) / 1000; if (rides) A.pitch += (-.75 - A.pitch) * Math.min(1, dt * 2); } else { this.dropT = undefined; this.dropS = undefined; }
     if (onB) { this.onBomb = true; A.z += (0 - A.z) * Math.min(1, dt * 6); }
     else if (this.onBomb) { this.onBomb = false; if (Math.abs(A.z) < 1.0) A.z = A.z >= 0 ? 1.05 : -1.05; }
-    let f = 0, r = 0; if (!lockedOut && !onB && !rides) { if (k[B.fwd]) f++; if (k[B.back]) f--; if (k[B.right]) r++; if (k[B.left]) r--; }
+    let f = 0, r = 0; if (!lockedOut && !onB && !rides) { if (k[B.fwd]) f++; if (k[B.back]) f--; if (k[B.right]) r++; if (k[B.left]) r--; if (vd > 1 && (f || r)) r += Math.sin(now * 1.4) * Math.min(1, (vd - 1) / 3) * .7; } // drunk walking
     const L = Math.hypot(f, r) || 1, sp = 2 * (hs ? .5 : 1) * (k[B.sprint] && !hs ? 1.5 : 1) * dt / L, c = Math.cos(A.yaw), s = Math.sin(A.yaw);
     const nx = A.x + (c * f - s * r) * sp, nz = A.z + (s * f + c * r) * sp;
     if (I.free(nx, nz)) { A.x = nx; A.z = nz; } else if (I.free(nx, A.z)) A.x = nx; else if (I.free(A.x, nz)) A.z = nz;
@@ -10010,10 +10012,22 @@ const Direct = {
     if (R.bf && R.bf.st === 'fault' && Math.abs(px + 5.5) < 3.2 && Math.abs(pz) < 1.4) tgt = {id: 'bomb', hold: 1, text: 'Hold E: climb on the bomb and rewire the release (' + Math.round(R.bf.p * 100) + '%)'};
     for (const kk of Object.keys(R.hurt || {})) { if (+kk === me) continue; const cc = cr[kk], h2 = R.hurt[kk]; if (cc && h2.st !== 'out' && Math.hypot(cc.x - px, cc.z - pz) < 1.7) tgt = {id: 'treat:' + kk, hold: 1, text: 'Hold E: treat ' + ((V.players[kk] && V.players[kk].name) || 'your crewmate') + ' (' + Math.round(h2.p * 100) + '%)'}; }
     if (!tgt && !lockedOut) for (const s2 of Object.keys(RS_SEATS)) { const S = RS_SEATS[s2]; if (Math.hypot(S.x - px, S.z - pz) < 1.4) { const taken = Object.keys(R.seat || {}).some(q => R.seat[q] === s2); if (s2 === 'pilot' && V.players[me] && V.players[me].nat.key === 'charlies') { tgt = {id: 'nopilot', hold: 1, text: "Charlies are colourblind: no pilot's seat. Any other seat is yours."}; break; } if (!taken) tgt = {id: 'seat:' + s2, text: 'E: take the ' + RS_NAMES[s2] + ' seat'}; break; } }
+    if (!tgt && !lockedOut && pz > .55) { // the crew lounge: roulette and vodka, just for you (not shared with the crew)
+      const ro = this.roul, purse = this.roubles === undefined ? (this.roubles = 100) : this.roubles;
+      if (Math.hypot(-12.25 - px, 1.15 - pz) < 1.05) tgt = {id: 'roul', loc: 1, text: ro && now - ro.t0 < 3.4 ? 'Spinning...' : purse < 10 ? 'You are broke, comrade (' + purse + ' roubles)' : 'E: bet 10 on red · Shift+E: bet on black (' + purse + ' roubles)'};
+      else if (Math.hypot(-9.75 - px, 1.15 - pz) < 1.0) tgt = {id: 'vodka', loc: 1, text: (this.vodka || 0) >= 5 ? 'You have had enough, comrade' : 'E: drink a shot of vodka'};
+    }
     this.rsPrompt = drop ? null : tgt;
     if (tgt && tgt.hold && k.KeyE && !lockedOut) { this.holdT = (this.holdT || 0) - dt; if (this.rsHoldId !== tgt.id || this.holdT <= 0) { this.rsHoldId = tgt.id; this.holdT = .25; g.issue({c: 'rshold', id: tgt.id}); } }
     else if (this.rsHoldId) { this.rsHoldId = null; g.issue({c: 'rshold', id: null}); }
-    if (edgeE && tgt && !tgt.hold) g.issue({c: 'rsseat', id: tgt.id.slice(5)});
+    if (edgeE && tgt && tgt.loc) this.rsLounge(tgt.id, k[B.sprint], now);
+    else if (edgeE && tgt && !tgt.hold) g.issue({c: 'rsseat', id: tgt.id.slice(5)});
+  },
+  rsLounge(id, black, now) {
+    if (id === 'vodka') { if ((this.vodka || 0) >= 5) { this.ui.addAlert('The bottle says no. Sober up first.', 'rs'); return; } this.vodka = (this.vodka || 0) + 1; Sfx.beep(140);
+      this.ui.addAlert(['Na zdorovye! Warm all the way down.', 'Another one. The engines sound friendlier.', 'The floor is moving. Or is that the aircraft?', 'You feel ready to fly this thing yourself.', 'Comrade... which one of the two pilots is real?'][this.vodka - 1], 'rs'); return; }
+    if (id === 'roul') { const ro = this.roul; if ((ro && now - ro.t0 < 3.4) || this.roubles < 10) return; this.roubles -= 10; const i = (Math.random() * 37) | 0, n = RS_WHEEL[i];
+      this.roul = {t0: now, i, n, bet: black ? 'black' : 'red', paid: false}; Sfx.beep(520); }
   },
   drawCutHud(c, w, h) { // the ending: letterbox, a caption, the white flash, then the end card
     const t = this.dropT - .8, te = t - 7, bar = Math.min(1, t) * h * .1; c.save(); c.textAlign = 'center';
@@ -10071,6 +10085,7 @@ const Direct = {
     const R = this.ui.g.view.rs || {}; this.rsJolt = Math.max(0, (this.rsJolt || 0) - dt * 1.6); this.rsFlash = Math.max(0, (this.rsFlash || 0) - dt * 2.2);
     const sh = (R.storm ? .035 : 0) + (R.door ? .012 : 0) + (R.bf && R.bf.st === 'drop' ? .03 : 0) + (this.onBomb ? .008 : 0) + this.rsJolt * .06 + (this.crewHurt ? .006 : 0);
     if (sh) { cam.position.x += (Math.random() - .5) * sh; cam.position.y += (Math.random() - .5) * sh; cam.rotateZ((Math.random() - .5) * sh * .5); }
+    const vd = this.vodka || 0; if (vd) { const t = performance.now() / 1000; cam.rotateZ(Math.sin(t * .9) * .035 * vd); cam.position.y += Math.sin(t * 1.7) * .01 * vd; } // vodka sways the world
   },
   syncRsFx(I) { // leaks spraying, the jammed bay door, the bomb itself
     if (!I.bombG) {
@@ -10887,6 +10902,22 @@ const Direct = {
       c.fillStyle = '#fff'; c.font = '800 20px system-ui'; c.textAlign = 'center'; if (hs.st === 'down') c.fillText('YOU ARE DOWN: wait for a crewmate to treat you (' + Math.max(0, Math.ceil(hs.bleed)) + 's)', w / 2, h * .3); else if (hs.st === 'out') c.fillText('YOU ARE OUT FOR THE MISSION', w / 2, h * .3); }
     c.fillStyle = 'rgba(255,255,255,.8)'; c.fillRect(w / 2 - 1.5, h / 2 - 1.5, 3, 3);
     if (this.look !== 'locked' && this.look !== 'touch') { c.font = '600 13px system-ui'; c.textAlign = 'center'; c.fillStyle = 'rgba(255,255,255,.75)'; c.fillText(this.look === 'free' ? 'Cursor free: press Alt or click to look again' : 'Click to lock the mouse for looking', w / 2, h - 90); }
+    this.drawLounge(c, w, h, now);
+    c.restore();
+  },
+  drawLounge(c, w, h, now) { // vodka haze and the roulette wheel (local to you)
+    const vd = this.vodka || 0;
+    if (vd > .05) { c.fillStyle = 'rgba(255,190,110,' + Math.min(.16, vd * .035) + ')'; c.fillRect(0, 0, w, h); const gx = Math.sin(now * 1.1) * 10 * vd; c.fillStyle = 'rgba(255,255,255,' + Math.min(.45, vd * .1) + ')'; c.fillRect(w / 2 - 1.5 + gx, h / 2 - 1.5 + gx * .3, 3, 3); }
+    const ro = this.roul; if (!ro) return; const t = now - ro.t0; if (t > 5.5) { this.roul = null; return; }
+    const red = RS_RED.has(ro.n), col = ro.n === 0 ? 'green' : red ? 'red' : 'black', win = col === ro.bet;
+    if (t > 3 && !ro.paid) { ro.paid = true; if (win) this.roubles += 20; Sfx.beep(win ? 880 : 200); }
+    const R0 = Math.min(w, h) * .17, cx = w / 2, cy = h * .42, sg = Math.PI * 2 / 37, p = Math.min(1, t / 3), rot = (-Math.PI / 2 - ro.i * sg - Math.PI * 10) * (1 - Math.pow(1 - p, 3));
+    c.save(); c.shadowBlur = 0; c.fillStyle = '#4a3420'; c.beginPath(); c.arc(cx, cy, R0 * 1.08, 0, 7); c.fill();
+    for (let i = 0; i < 37; i++) { const a = rot + i * sg, n = RS_WHEEL[i]; c.fillStyle = n === 0 ? '#2a9a40' : RS_RED.has(n) ? '#c23030' : '#151515'; c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, R0, a - sg / 2, a + sg / 2); c.fill();
+      c.save(); c.translate(cx + Math.cos(a) * R0 * .86, cy + Math.sin(a) * R0 * .86); c.rotate(a + Math.PI / 2); c.fillStyle = '#fff'; c.font = '700 ' + Math.max(8, R0 * .07 | 0) + 'px system-ui'; c.textAlign = 'center'; c.fillText(n, 0, 3); c.restore(); }
+    c.fillStyle = '#6b4a2a'; c.beginPath(); c.arc(cx, cy, R0 * .55, 0, 7); c.fill(); c.fillStyle = '#d8b040'; c.beginPath(); c.arc(cx, cy, R0 * .1, 0, 7); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.moveTo(cx, cy - R0 * 1.02); c.lineTo(cx - 8, cy - R0 * 1.2); c.lineTo(cx + 8, cy - R0 * 1.2); c.fill(); if (p >= 1) { c.beginPath(); c.arc(cx, cy - R0 * .72, R0 * .045, 0, 7); c.fill(); }
+    c.textAlign = 'center'; c.font = '800 20px system-ui'; c.shadowColor = '#000'; c.shadowBlur = 4; c.fillText(t < 3 ? 'Bet 10 on ' + ro.bet + '...' : ro.n + ' ' + col + (win ? ': you win 20 roubles!' : ': you lose') + ' (' + this.roubles + ' left)', cx, cy + R0 * 1.4);
     c.restore();
   },
   drawLead(c, w, h) { // gunners get a lead indicator: where to aim so the bullet and the fighter arrive together
@@ -11667,10 +11698,11 @@ const Interior = {
         {n: "Engineer's bay", x0: -2, x1: 4, z0: -1.6, z1: 1.6, win: [['z', -1.6, 2.6, 3.9, .4, 1.15], ['z', 1.6, 2.6, 3.9, .4, 1.15]]},
         {n: 'Bomb bay', x0: -9, x1: -2, z0: -1.3, z1: 1.3},
         {n: 'Tail passage', x0: -13, x1: -9, z0: -.6, z1: .6},
+        {n: 'Crew lounge', x0: -12.8, x1: -9.2, z0: .6, z1: 1.7},
         {n: 'Tail gunner', x0: -16, x1: -13, z0: -.9, z1: .9, win: [['x', -16, -.7, .7], ['z', -.9, -15.5, -13.5], ['z', .9, -15.5, -13.5]]},
       ],
-      doors: [['x', 13.5, -1.5, 1.5], ['x', 8, -.5, .5], ['x', 4, -.5, .5], ['x', -2, -.5, .5], ['x', -9, -.5, .5], ['x', -13, -.4, .4]],
-      blocks: [[12.2, 12.7, -1.6, -.5], [12.2, 12.7, .5, 1.6], [10.1, 10.9, -1.05, -.35], [10.1, 10.9, .35, 1.05], [10.1, 10.9, -.2, .2], [8.4, 9.6, 1.1, 1.7], [14.7, 15.3, -.5, .5], [4.2, 5.8, -1.6, -1.1], [4.2, 5.8, 1.2, 1.6], [-.8, 2.8, -1.6, -1.2], [-.9, 2.3, .9, 1.5], [-8.6, -2.5, -.5, .5], [-14.9, -14.1, -.45, .45]].concat(tb),
+      doors: [['x', 13.5, -1.5, 1.5], ['x', 8, -.5, .5], ['x', 4, -.5, .5], ['x', -2, -.5, .5], ['x', -9, -.5, .5], ['x', -13, -.4, .4], ['z', .6, -11.5, -10.5]],
+      blocks: [[12.2, 12.7, -1.6, -.5], [12.2, 12.7, .5, 1.6], [10.1, 10.9, -1.05, -.35], [10.1, 10.9, .35, 1.05], [10.1, 10.9, -.2, .2], [8.4, 9.6, 1.1, 1.7], [14.7, 15.3, -.5, .5], [4.2, 5.8, -1.6, -1.1], [4.2, 5.8, 1.2, 1.6], [-.8, 2.8, -1.6, -1.2], [-.9, 2.3, .9, 1.5], [-8.6, -2.5, -.5, .5], [-14.9, -14.1, -.45, .45], [-12.65, -11.85, .85, 1.45], [-10.1, -9.4, .85, 1.45], [-11.4, -10.6, 1.45, 1.7]].concat(tb),
       crew: []}; }
     const sub = !!UNITS[k].sub, long = k === 'nukesub';
     if (k === 'destroyer') return {sub, chair: [6.2, 0], worldUp: 1.2,
@@ -11822,6 +11854,20 @@ const Interior = {
     for (const s of [-1, 1]) for (let k = 0; k < 10; k++) { const z0 = 1.6 + k * 1.3, chord = 8.5 - k * .55, xc = 2.8 - k * 1.0; b.box(chord, .14 - k * .006, 1.32, xc, -.14, s * (z0 + .65), SK); } // swept wings
     [[1, 4.2], [2, 8]].forEach(([n, zz]) => [-1, 1].forEach(s => { const k = Math.floor((zz - 1.6) / 1.3), xc = 2.8 - k * 1.0, chord = 8.5 - k * .55, xe = xc + chord / 2 - 1.2, z = s * zz;
       b.cylX(.5, 4.4, xe - 1.4, .12, z, 0x7d8576); b.add(GEO.sph, 0x555a50, xe + .9, .12, z, .22, .2, .2); b.box(.04, 1.3, .1, xe + 1.05, .12, z, DK); b.box(.04, .1, 1.3, xe + 1.05, .12, z, DK); b.box(.5, .08, .08, xe - 2.4, .62, z, 0xe8c040); }));
+    // ---- crew lounge: roulette table, vodka table, bench, rug, poster
+    { const FE = 0x1f5a32, WD = 0x6b4a2a, GD = 0xd8b040, CRM = 0xe8e0c8, RN = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+      b.box(2.2, .01, .7, -11, .006, 1.15, 0x7a2a22); b.box(2, .012, .5, -11, .008, 1.15, 0xa8862e); // rug
+      b.box(.8, .05, .6, -12.25, .5, 1.15, FE); b.box(.84, .04, .64, -12.25, .47, 1.15, WD); [[-.34, -.24], [.34, -.24], [-.34, .24], [.34, .24]].forEach(([dx, dz]) => b.box(.05, .46, .05, -12.25 + dx, .23, 1.15 + dz, WD)); // roulette table
+      b.cyl(.24, .04, -12.25, .54, 1.15, WD); for (let i = 0; i < 37; i++) { const a = i / 37 * Math.PI * 2; b.box(.04, .012, .065, -12.25 + Math.cos(a) * .19, .565, 1.15 + Math.sin(a) * .19, RN[i] === 0 ? 0x2a9a40 : RS_RED.has(RN[i]) ? 0xc23030 : 0x111111, -a); }
+      b.cyl(.11, .02, -12.25, .57, 1.15, 0x4a3420); b.cyl(.025, .07, -12.25, .6, 1.15, GD); b.add(GEO.sph, CRM, -12.08, .58, 1.2, .015, .015, .015); // centre spindle and the ball
+      [[-12.45, .95], [-12.4, 1.32]].forEach(([x, z]) => [0, 1, 2].forEach(i => b.cyl(.025, .008, x, .53 + i * .009, z, i % 2 ? 0xc23030 : CRM))); // chips
+      b.box(.6, .04, .5, -9.75, .5, 1.15, WD); b.cyl(.04, .48, -9.75, .25, 1.15, 0x3a2a1a); b.box(.35, .03, .35, -9.75, .02, 1.15, 0x3a2a1a); // vodka table
+      b.cyl(.045, .2, -9.8, .62, 1.1, 0xdfe9ee); b.cyl(.018, .07, -9.8, .755, 1.1, 0xdfe9ee); b.cyl(.021, .025, -9.8, .8, 1.1, 0xc23030); b.cyl(.047, .07, -9.8, .6, 1.1, 0xc23030); // the bottle: clear, red label and cap
+      [[-9.62, 1.25], [-9.7, 1.0], [-9.9, 1.28]].forEach(([x, z]) => b.cyl(.018, .04, x, .54, z, 0xd8e4ea)); // shot glasses
+      b.box(.12, .1, .12, -9.6, .57, .98, 0x8a5a2a); // a tin of something pickled
+      b.box(.8, .08, .22, -11, .3, 1.58, 0x4d2c1e); b.box(.8, .3, .05, -11, .5, 1.67, 0x4d2c1e); [-.35, .35].forEach(dx => b.box(.05, .26, .2, -11 + dx, .13, 1.58, DK)); // bench
+      b.box(.5, .36, .01, -11, .95, 1.69, CRM); b.box(.4, .14, .012, -11, 1.02, 1.688, 0xc23030); b.box(.12, .12, .013, -11, .86, 1.687, GD); // poster
+    }
     this.detailRedStar(b, H);
   },
   detailRedStar(b, H) { // lived-in clutter: caged lamps, cable runs, lockers, extinguishers, parachutes, stencilled crates, catwalk grating, posters, dial racks
@@ -14069,6 +14115,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Operation Red Star: a crew lounge off the tail passage, with a roulette wheel and a bottle of vodka (do not drink before manning the guns).',
       'Operation Red Star: the aircraft now half-holds its line when nobody is flying, problems happen at points on the route (so the bomb run is always over New York), one respawn per stage of the flight, and Charlies can no longer take the pilot\'s seat.',
       'Multiplayer: host a room, name it, and it appears on every Join screen with a Join button. Works over a normal secure connection, so it should get through school networks.',
       'Operation Red Star (preview): a Soviet atomic bomber you and friends walk around together, with windows to the outside. Crew stations and the mission are coming.',

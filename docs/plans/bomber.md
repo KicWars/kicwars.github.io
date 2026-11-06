@@ -175,3 +175,6 @@ Built and working in a single-player test; the multi-player treat-a-crewmate pat
 - **Pilot:** drift pushes the aircraft off the flight line (visible bar). Off the line burns more fuel.
 - **Fixes (2026-11-07):** events fire at a distance along the route, not a clock time (storms and the door delay what follows; searchlights land on the coast approach; the bomb fault fires 36 units before the target). With nobody in the pilot's seat the aircraft half-holds the line (`R.inp = clamp(-off/4, ±.35)`), so a crew can step away; storms and hydraulic leaks can still beat it. Respawns are one per act (route progress .1/.35/.62/.85), not per 70 s. Charlies cannot take the pilot's seat (host check in `rsseat` plus the prompt).
 - Fuel and hull are tracked; running out or being shot down loses the mission. Events are timed to the route and scaled by crew size and difficulty.
+
+## Crew lounge (2026-11-07)
+A side cabin off the tail passage (x -12.8 to -9.2, z .6 to 1.7, door at x -11). Roulette table (E bets 10 roubles on red, Shift+E on black, 100 to start, 2D wheel spin on the HUD) and a vodka table (E drinks a shot, up to 5; the view sways and wanders, walking drifts, warm haze; wears off at 1 shot per 40 s). Both are local to each player, not shared. `rsLounge`, `drawLounge`, `RS_WHEEL`, `RS_RED`.
