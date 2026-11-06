@@ -1697,6 +1697,15 @@ function genWarMap(N, seed, BT, nPlayers) {
   for (const n of nodes) for (let y = n.y - 1; y <= n.y + 1; y++) for (let x = n.x - 1; x <= n.x + 1; x++) { tree[y * N + x] = 0; road[y * N + x] = 0; }
   return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes, ruins};
 }
+// Test room: an 80x80 floor ringed by tall blank walls (blocked cells), nothing else on the map.
+function sandboxRoom(M) {
+  const N = M.N, a = Math.round(N * .19), b = N - a;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x, inside = x > a && x < b && y > a && y < b;
+    M.water[i] = 0; M.block[i] = 0; M.road[i] = 0; M.tree[i] = 0; M.bio[i] = BIO.DESERT; M.h[i] = inside ? 1 : 14; M.occ[i] = x > a + 1 && x < b - 1 && y > a + 1 && y < b - 1 ? 0 : 1; // blocked one cell before the wall face, so you cannot stand on the ramp
+  }
+  M.nodes = []; M.ruins = [];
+}
 function genMap(N, seed, nPlayers) { const M = genMap0(N, seed, nPlayers); finishRoads(M); return M; }
 function genMap0(N, seed, nPlayers) {
   const BT = Math.floor(seed / 1e7);
@@ -2160,7 +2169,7 @@ function chaffLeft(e, t) { if (e.chaff === undefined) { e.chaff = CHAFF_N; e.cha
 function Sim(opts) {
   this.N = opts.size || 128;
   this.seed = opts.seed || 1;
-  this.M = genMap(this.N, this.seed, opts.players.length);
+  this.M = genMap(this.N, this.seed, opts.players.length); if (opts.sandbox) sandboxRoom(this.M);
   this.F = new Fields(this.M);
   this.rnd = mulberry(this.seed * 31 + 7);
   this.t = 0; this.tick = 0; this.nextId = 1;
@@ -5330,7 +5339,7 @@ function encodeSnap(sim, sendSlow) {
 // ---------- mirror (client) ----------
 function Mirror(o) {
   this.N = o.size; this.seed = o.seed;
-  this.M = genMap(this.N, this.seed, o.players.length);
+  this.M = genMap(this.N, this.seed, o.players.length); if (o.sandbox) sandboxRoom(this.M);
   this.t = 0; this.ents = new Map(); this.smokes = []; this.over = null; this.nukes = [];
   this.players = o.players.map((p, i) => {
     const nat = NATIONS[p.nation];
@@ -11810,7 +11819,7 @@ const UI = {
         box.appendChild(b);
       }
     } catch (e) { $('roomListBox').classList.remove('hidden'); $('roomList').innerHTML = '<p class="small" style="color:#ff8a80">Cannot reach the room server (' + (e && e.message || 'network error') + '). Check your internet. School and work networks can block it: tell me if so.</p>'; }
-    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-g';
+    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-h';
     clearTimeout(this.rlT); this.rlT = setTimeout(() => this.refreshRooms(), 3000);
   },
   openJoin() {
@@ -11915,7 +11924,7 @@ const UI = {
     Sfx.init();
     if (Direct.isTouch()) { try { const d = document.documentElement, r = d.requestFullscreen && d.requestFullscreen(); if (r && r.then) r.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); } catch (e) {} }
     const mv = $('optMap').value, mt = mv === 'r' ? MAP_KEYS[(Math.random() * MAP_KEYS.length) | 0] : +mv;
-    const L = this.lobby, sb = !!this.testRoom, seed = sb ? 4242 : ((Math.random() * 1e6) | 0) + mt * 1e7, size = sb ? 96 : Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : mt >= 11 ? 144 : 0);
+    const L = this.lobby, sb = !!this.testRoom, seed = sb ? 4242 : ((Math.random() * 1e6) | 0) + mt * 1e7, size = sb ? 128 : Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : mt >= 11 ? 144 : 0);
     const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked, eco: s.kind === 'bot' ? null : $('optEco').value}));
     this.playersIds = L.slots.map(s => s.id || null);
     if (sb) for (const p of players) { p.team = 0; p.open = true; }
