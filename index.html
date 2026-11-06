@@ -396,6 +396,12 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
         <div id="slots"></div>
         <button id="addBot">+ Add bot</button>
         <div id="invPanel" class="hidden">
+          <div id="roomBox" class="hidden"><h3>Friends join with this room code</h3>
+            <div class="big" id="roomBig" style="font-size:44px;letter-spacing:.2em;font-weight:700;text-align:center;margin:6px 0"></div>
+            <div class="row"><button id="bCopyRoom" class="primary">Copy invite link</button></div>
+            <div id="roomStat" class="msg"></div>
+            <p class="small">They press <b>Join a Friend</b> and type the code, or just open the link. Works on school Wi-Fi.</p></div>
+          <details id="oldInv"><summary>Other ways to connect (no server)</summary>
           <h3>Invite a friend (no server needed)</h3>
           <ol class="steps">
             <li><button id="bInvite" class="primary">1. Make invite code</button></li>
@@ -414,6 +420,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
             <label class="small"><input type="checkbox" id="ghRemH"> Remember on this computer</label>
             <button id="bRelay">Start GitHub relay</button>
             <div id="relayStatus" class="msg"></div>
+          </details>
           </details>
         </div>
         <h3>Battlefield</h3>
@@ -506,8 +513,8 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
 
 <div id="joinScr" class="screen hidden"><div class="mcard wide">
   <h2>Join a friend</h2>
-  <p class="msg">Paste the invite code or link your friend sent you. For a second tab on this computer, type the 5-letter room code.</p>
-  <textarea id="joinIn" rows="3" placeholder="JJFANWARS-... invite code, invite link, or room code"></textarea>
+  <p class="msg">Type the 5-letter room code your friend sees on their screen. (Older long invite codes still work too.)</p>
+  <textarea id="joinIn" rows="2" placeholder="Room code, e.g. KQXMB" style="text-transform:uppercase"></textarea>
   <button class="big primary" id="bJoinGo">Join</button>
   <div id="joinReply" class="hidden">
     <p><b>Send this reply code back to your friend</b>, then wait here:</p>
@@ -610,8 +617,16 @@ function cleanInvite(s) { // accept a bare code, a code with the tag, or a full 
   if (s.startsWith(INVITE_TAG)) s = s.slice(INVITE_TAG.length); else if (s.startsWith('KICWARS-')) s = s.slice(8); // old codes still work
   return s;
 }
+// Rooms relay (Cloudflare Worker, see relay/). WebSocket over 443, so it works on school networks. Empty = fall back to the old paste-a-code links.
+const RELAY_URL = '';
 const Net = {
   stun: true,
+  relay() { // localhost can point at a test relay with ?relay=ws://127.0.0.1:8787
+    try {
+      if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) { const q = /[?&]relay=([^&]+)/.exec(location.search); if (q) return decodeURIComponent(q[1]).replace(/\/$/, ''); }
+    } catch (e) {}
+    return RELAY_URL;
+  },
   rtcConfig() { return {iceServers: this.stun ? [{urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302']}] : []}; },
   // wait for ICE gathering, but never more than a few seconds (STUN may be blocked)
   gather(pc) {
@@ -694,6 +709,8 @@ function readInbox(text, lastSeq, fn, out) {
 // ---------- host ----------
 function HostLink(code, h) {
   this.code = code; this.h = h; this.peers = new Map(); this.closed = false; this.invites = new Map(); this.online = 'ready';
+  this.wsState = Net.relay() ? 'connecting' : 'off'; this.wsTries = 0;
+  if (this.wsState !== 'off') this.openWs();
   this.bc = new BroadcastChannel('warsim-' + code);
   this.bc.onmessage = ev => {
     const m = ev.data;
@@ -703,6 +720,30 @@ function HostLink(code, h) {
     else h.onMsg(m.from, m.d);
   };
 }
+// Room on the relay: friends type the 5-letter code. Reconnects by itself if the link drops; the relay remembers who is in the room.
+HostLink.prototype.openWs = function () {
+  if (this.closed) return;
+  const ws = this.sock = new WebSocket(Net.relay() + '/room/' + this.code + '?role=host'); ws.binaryType = 'arraybuffer';
+  const st = s => { this.wsState = s; this.h.onStatus && this.h.onStatus(); };
+  ws.onopen = () => { this.wsTries = 0; clearInterval(this.wsPing); this.wsPing = setInterval(() => { try { ws.send('ping'); } catch (e) {} }, 20000); st('up'); };
+  ws.onmessage = ev => {
+    if (typeof ev.data === 'string') {
+      let c; try { c = JSON.parse(ev.data); } catch (e) { return; }
+      const id = 'w' + c.id;
+      if (c.c === 'join') { if (!this.peers.has(id)) { this.peers.set(id, {type: 'ws', id, gid: c.id}); this.h.onJoin(id); } }
+      else if (c.c === 'leave') { if (this.peers.delete(id)) this.h.onLeave(id); }
+      return;
+    }
+    const b = new Uint8Array(ev.data), n = b[0], id = 'w' + new TextDecoder().decode(b.subarray(1, 1 + n)); let m;
+    try { m = unpackMsg(b.slice(1 + n).buffer); } catch (e) { console.warn('bad message', e); return; }
+    this.h.onMsg(id, m);
+  };
+  ws.onclose = () => {
+    clearInterval(this.wsPing);
+    if (this.closed || this.sock !== ws) return;
+    st('retry'); setTimeout(() => this.openWs(), Math.min(5000, 500 * ++this.wsTries));
+  };
+};
 // Make a WebRTC invite. Resolves to {id, code}. Later call acceptReply(replyCode).
 HostLink.prototype.invite = async function () {
   const id = 'r' + Math.random().toString(36).slice(2, 8), pc = new RTCPeerConnection(Net.rtcConfig());
@@ -785,11 +826,16 @@ HostLink.prototype.send = function (id, d) {
   if (!p) return;
   if (p.type === 'bc') this.bc.postMessage({to: id, d});
   else if (p.type === 'rtc') rtcSend(p.ch, d);
+  else if (p.type === 'ws') {
+    const s = this.sock; if (!s || s.readyState !== 1) return;
+    if (d.g && s.bufferedAmount > 1 << 18) return; // congested: the next snapshot replaces this one
+    try { const pl = new Uint8Array(packMsg(d)), idb = new TextEncoder().encode(p.gid), o = new Uint8Array(1 + idb.length + pl.length); o[0] = idb.length; o.set(idb, 1); o.set(pl, 1 + idb.length); s.send(o); } catch (e) {}
+  }
   else if (p.type === 'gist') { const c = this.relay.clients.get(p.gid); if (c) c.out.push(d); }
 };
 HostLink.prototype.broadcast = function (d) { for (const id of this.peers.keys()) this.send(id, d); };
 HostLink.prototype.close = function () {
-  this.closed = true; this.bc.close();
+  this.closed = true; this.bc.close(); clearInterval(this.wsPing); if (this.sock) try { this.sock.close(); } catch (e) {}
   for (const inv of this.invites.values()) try { inv.pc.close(); } catch (e) {}
   if (this.relay && this.relay.id) this.relay.gh.req('DELETE', '/gists/' + this.relay.id).catch(() => {});
   this.peers.clear();
@@ -801,8 +847,43 @@ function ClientLink(code, h, opts) {
   this.h = h; this.id = 'c' + Math.random().toString(36).slice(2, 9); this.mode = null; this.closed = false;
   code = cleanInvite(code);
   if (/^G:[0-9a-f]+$/i.test(code)) { this.mode = 'gist'; this.joinRelay(code.slice(2), opts && opts.token).catch(e => h.onFail(e.message)); return; }
-  if (/^[A-Z]{5}$/i.test(code)) {
-    this.bc = new BroadcastChannel('warsim-' + code.toUpperCase());
+  if (/^[A-Z]{5}$/i.test(code) && Net.relay()) { this.mode = null; this.room = code.toUpperCase(); this.wsTries = 0; this.openWs(); return; }
+  if (/^[A-Z]{5}$/i.test(code)) { this.joinBc(code); return; }
+  this.mode = 'rtc';
+  this.answer(code).catch(e => h.onFail(e.message));
+}
+ClientLink.prototype.openWs = function () {
+  const h = this.h, ws = this.sock = new WebSocket(Net.relay() + '/room/' + this.room + '?role=guest&id=' + this.id); ws.binaryType = 'arraybuffer';
+  let opened = false;
+  clearTimeout(this.tm); this.tm = setTimeout(() => { if (!opened && this.sock === ws) { try { ws.close(); } catch (e) {} } }, 8000);
+  ws.onopen = () => { opened = true; clearInterval(this.wsPing); this.wsPing = setInterval(() => { try { ws.send('ping'); } catch (e) {} }, 20000); };
+  ws.onmessage = ev => {
+    if (typeof ev.data === 'string') {
+      let c; try { c = JSON.parse(ev.data); } catch (e) { return; }
+      if (c.c === 'host') {
+        if (c.up) { this.hostUp = true; clearTimeout(this.tm); if (this.mode !== 'ws') { this.mode = 'ws'; h.onOpen(); } else h.onHostDown && h.onHostDown(false); }
+        else { this.hostUp = false; h.onHostDown && h.onHostDown(true); }
+      }
+      return;
+    }
+    let m; try { m = unpackMsg(ev.data); } catch (e) { console.warn('bad message', e); return; }
+    h.onMsg(m);
+  };
+  ws.onclose = ev => {
+    clearInterval(this.wsPing);
+    if (this.closed || this.sock !== ws) return;
+    if (this.mode === 'ws') { // dropped mid-game: try to slip back in under the same id
+      if (this.wsTries++ < 8) { setTimeout(() => this.openWs(), Math.min(4000, 400 * this.wsTries)); h.onHostDown && h.onHostDown(true); } else h.onClose && h.onClose();
+      return;
+    }
+    if (ev.code === 4429) { h.onFail('That room is full.'); return; }
+    if (ev.code === 4404) { h.onFail('No room with that code. Check the letters, and make sure the host has opened the lobby.'); return; }
+    this.joinBc(this.room, true); // relay unreachable: still works for a second tab on this computer
+  };
+};
+ClientLink.prototype.joinBc = function (code, fromRelay) {
+  const h = this.h; code = code.toUpperCase();
+  {('warsim-' + code.toUpperCase());
     this.bc.onmessage = ev => {
       const m = ev.data;
       if (m.to !== this.id) return;
@@ -810,12 +891,9 @@ function ClientLink(code, h, opts) {
       h.onMsg(m.d);
     };
     this.bc.postMessage({to: 'host', from: this.id, hello: 1});
-    this.tm = setTimeout(() => { if (!this.mode) h.onFail('No game with that room code on this computer. For a friend on another computer, paste the long invite code they sent you.'); }, 1500);
-    return;
+    this.tm = setTimeout(() => { if (!this.mode) h.onFail(fromRelay ? 'Could not reach the game server. Check your connection, or ask the host for a link.' : 'No game with that room code on this computer. For a friend on another computer, paste the long invite code they sent you.'); }, 1500);
   }
-  this.mode = 'rtc';
-  this.answer(code).catch(e => h.onFail(e.message));
-}
+};
 ClientLink.prototype.answer = async function (code) {
   let o;
   try { o = JSON.parse(await unzip(code)); } catch (e) { throw new Error('That invite code is not complete. Copy the whole code (it starts with JJFANWARS-).'); }
@@ -855,10 +933,11 @@ ClientLink.prototype.joinRelay = async function (hostGist, token) {
 ClientLink.prototype.send = function (d) {
   if (this.mode === 'bc') this.bc.postMessage({to: 'host', from: this.id, d});
   else if (this.mode === 'rtc') rtcSend(this.ch, d);
+  else if (this.mode === 'ws') { const s = this.sock; if (!s || s.readyState !== 1) return; if (d.g && s.bufferedAmount > 1 << 18) return; try { s.send(packMsg(d)); } catch (e) {} }
   else if (this.mode === 'gist' && this.out) this.out.push(d);
 };
 ClientLink.prototype.close = function () {
-  this.closed = true; clearTimeout(this.tm); clearTimeout(this.failT);
+  this.closed = true; clearTimeout(this.tm); clearTimeout(this.failT); clearInterval(this.wsPing); if (this.sock) try { this.sock.close(); } catch (e) {}
   if (this.bc) { if (this.mode === 'bc') this.bc.postMessage({to: 'host', from: this.id, bye: 1}); this.bc.close(); }
   if (this.pc) try { this.pc.close(); } catch (e) {}
   if (this.gh && this.gid) this.gh.req('DELETE', '/gists/' + this.gid).catch(() => {});
@@ -11479,10 +11558,13 @@ const UI = {
     $('bCopyInv').onclick = () => this.copy($('invCode'), $('bCopyInv'));
     $('bCopyLink').onclick = () => { const ta = document.createElement('textarea'); ta.value = location.href.split('#')[0].split('?')[0] + '#join=' + this.inv.code.replace(INVITE_TAG, ''); this.copy(ta, $('bCopyLink')); };
     $('bConnect').onclick = () => this.acceptReply();
+    $('bCopyRoom').onclick = () => { const ta = document.createElement('textarea'); ta.value = location.href.split('#')[0].split('?')[0] + '#room=' + this.code; this.copy(ta, $('bCopyRoom')); };
     $('bRelay').onclick = () => this.startRelay();
     for (const id of ['joinIn', 'replyIn', 'ghTokH', 'ghTokC', 'relayIn', 'invCode', 'replyOut']) { $(id).addEventListener('keydown', e => e.stopPropagation()); $(id).addEventListener('keyup', e => e.stopPropagation()); }
     try { const t = localStorage.getItem('warsim-gh-token'); if (t) { $('ghTokH').value = $('ghTokC').value = t; $('ghRemH').checked = $('ghRemC').checked = true; } } catch (e) {}
     // opened from an invite link: go straight to joining
+    const hr = /[#&]room=([A-Za-z]{5})/.exec(location.hash);
+    if (hr) setTimeout(() => { this.openJoin(); $('joinIn').value = hr[1].toUpperCase(); history.replaceState(null, '', location.pathname + location.search); this.join($('joinIn').value); }, 50);
     const hj = /[#&]join=([A-Za-z0-9_-]+)/.exec(location.hash);
     if (hj) setTimeout(() => { this.openJoin(); $('joinIn').value = INVITE_TAG + hj[1]; history.replaceState(null, '', location.pathname + location.search); this.join($('joinIn').value); }, 50);
     $('lBack').onclick = () => this.leaveLobby();
@@ -11576,6 +11658,7 @@ const UI = {
       const code = this.code = makeCode();
       $('lCode').textContent = 'Room ' + code; $('lCode').classList.remove('hidden'); $('lTitle').textContent = 'Play with friends';
       $('roomCode').textContent = code;
+      { const on = !!Net.relay(); $('roomBox').classList.toggle('hidden', !on); $('oldInv').open = !on; $('roomBig').textContent = code; $('roomStat').textContent = on ? 'Connecting to the game server...' : ''; }
       this.lobby.slots[1].team = 1;
       this.inv = null; $('invStep2').classList.add('hidden'); $('invStep3').classList.add('hidden'); $('invStatus').textContent = ''; $('relayStatus').textContent = '';
       $('invPanel').classList.remove('hidden');
@@ -11656,7 +11739,13 @@ const UI = {
     try { await this.link.acceptReply($('replyIn').value); this.invMsg('Connecting to your friend...'); }
     catch (e) { this.invMsg(e.message, 'bad'); }
   },
+  roomStatus() {
+    const l = this.link; if (!l || !l.wsState || l.wsState === 'off') return;
+    const m = $('roomStat'); if (!m) return;
+    m.textContent = l.wsState === 'up' ? 'Room is open. Waiting for friends...' : 'Reconnecting to the game server...'; m.className = 'msg ' + (l.wsState === 'up' ? 'good' : 'bad');
+  },
   inviteStatus() {
+    this.roomStatus();
     const inv = this.inv;
     if (inv && inv.state === 'failed') this.invMsg('The direct link failed. Your networks probably block peer-to-peer. Try: both on the same Wi-Fi, or a phone hotspot, then make a new invite. Or use the GitHub relay below.', 'bad');
     const R = this.link && this.link.relay;
@@ -11734,7 +11823,7 @@ const UI = {
     code = (code || '').trim();
     if (!code) { this.joinMsg('Paste the invite code first.', 'bad'); return; }
     if (this.link) { this.link.close(); this.link = null; }
-    this.joinMsg(/^G:/i.test(code) ? 'Connecting through GitHub...' : 'Reading the invite...');
+    this.joinMsg(/^G:/i.test(code) ? 'Connecting through GitHub...' : /^[A-Za-z]{5}$/.test(code) ? 'Joining room ' + code.toUpperCase() + '...' : 'Reading the invite...');
     $('bJoinGo').disabled = true;
     this.net = 'client';
     const room = /^[A-Za-z]{5}$/.test(code) ? code.toUpperCase() : '';
@@ -11743,6 +11832,7 @@ const UI = {
       onReply: r => { $('replyOut').value = r; $('joinReply').classList.remove('hidden'); this.joinMsg('Now send the reply code above to your friend. This screen connects by itself when they paste it.'); this.copy($('replyOut'), $('bCopyReply')); },
       onWait: () => this.joinMsg('Still waiting. Has your friend pasted your reply and pressed Connect? If they did, the direct link is blocked on one of your networks: try the same Wi-Fi, a phone hotspot, or the GitHub relay below.', 'bad'),
       onFail: e => { this.joinMsg(e, 'bad'); this.net = 'off'; $('bJoinGo').disabled = false; },
+      onHostDown: down => { if (this.g && !this.demo) this.addAlert(down ? 'Connection hiccup: reconnecting...' : 'Reconnected', down ? 'bad' : 'good'); },
       onClose: () => { if (this.g && !this.demo) { this.addAlert('Lost connection to the host', 'bad'); this.showLost(); } },
       onMsg: m => this.onClientMsg(m, room || (this.link && this.link.room) || ''),
     }, opts);
@@ -13265,6 +13355,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Multiplayer rooms: the host gets a 5-letter room code (or a link) and friends just type it. No more pasting codes back and forth, and it runs over a normal secure web connection so it works on school Wi-Fi. Drops reconnect on their own.',
       'Harbor Havoc: you now start as a soldier on your base island. Walk up to your runway or your boat spawner and a menu opens to pick your aircraft or boat (number keys). Far fewer bot planes, and the islands are now round tropical islets with flat green tops, sandy beaches and palms.',
       'Boats: every boat now has a machine gun and a big gun that fire together when you hold fire, plus unlimited missiles on the alt button. Destroyers and carriers have fully built interiors: bridge, combat centre, mess, galley, bunks, engine room, and on the carrier a ready room, briefing room and a hangar with aircraft.',
       'Missiles that are locked on now always connect. Planes: a much wider first-person field of view.',
