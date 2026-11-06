@@ -1542,8 +1542,8 @@ function redstarMap(N, seed, np) {
   for (const R2 of ruins) R2.z = h[Math.round(R2.y) * N + Math.round(R2.x)];
   // the Siberian airfield: a level strip with a runway
   const ax = Math.round(N * .06), ay = Math.round(N * .5);
-  for (let y = ay - 8; y <= ay + 8; y++) for (let x = ax - 6; x <= ax + 22; x++) { const i = y * N + x; h[i] = 1.4; water[i] = 0; tree[i] = 0; bio[i] = BIO.SNOW; }
-  for (let x = ax; x <= ax + 18; x++) for (let y = ay - 1; y <= ay + 1; y++) road[y * N + x] = 1;
+  for (let y = ay - 8; y <= ay + 8; y++) for (let x = ax - 6; x <= ax + 40; x++) { const i = y * N + x; h[i] = 1.4; water[i] = 0; tree[i] = 0; bio[i] = BIO.SNOW; }
+  for (let x = ax; x <= ax + 36; x++) for (let y = ay - 1; y <= ay + 1; y++) road[y * N + x] = 1;
   // Polar Base 7: a Soviet ice runway right under the flight plan, where the bomber can land to refuel and repair
   const bx = Math.round(N * .40), by = Math.round(N * .2);
   for (let y = by - 9; y <= by + 9; y++) for (let x = bx - 34; x <= bx + 34; x++) { const i = y * N + x; h[i] = 1.4; water[i] = 0; tree[i] = 0; bio[i] = BIO.SNOW; }
@@ -1551,7 +1551,7 @@ function redstarMap(N, seed, np) {
   for (const [ox, oy, w, d, hh] of [[-8, 5, 5, 3, 1.4], [-2, 5.5, 4, 3, 1.2], [10, -4.5, 1.2, 1.2, 3.2], [-15, -5, 1.4, 1.4, .9], [-13, -5, 1.4, 1.4, .9], [16, 5, 3, 2, .8], [20, 5, 3, 2, .8]]) tw(bx + ox, by + oy, w, d, hh, 1.4); // hangars, tower, fuel tanks, barracks
   const P = n => [Math.round(N * n[0]), Math.round(N * n[1])];
   const M = {N, seed, h, bio, tree, water, block, road, occ, spawns: Array.from({length: np}, () => ({x: ax + 4, y: ay})), nodes: [], ruins, lite: true};
-  M.rsRoute = [[.07, .5], [.14, .32], [.30, .2], [.50, .2], [.62, .4], [.72, .62], [.88, .74], [.915, .6], [.915, (cy - 14) / N]].map(P); M.rsTarget = {x: cx, y: cy - 14}; M.rsBase = {x: bx, y: by}; // long way round over the Arctic, then up the harbour and Manhattan to Central Park
+  M.rsRoute = [[(ax + 1) / N, ay / N], [(ax + 44) / N, ay / N], [.14, .32], [.30, .2], [.50, .2], [.62, .4], [.72, .62], [.88, .74], [.915, .6], [.915, (cy - 14) / N]].map(P); M.rsTarget = {x: cx, y: cy - 14}; M.rsBase = {x: bx, y: by}; // long way round over the Arctic, then up the harbour and Manhattan to Central Park
   finishRoads(M);
   return M;
 }
@@ -2358,7 +2358,7 @@ Sim.prototype.setupSandbox = function () {
 // Operation Red Star (work in progress): one Soviet bomber that flies a slow circle while the crew walk around inside it.
 Sim.prototype.setupRedstar = function () {
   this.rs = {t: 0, fuel: 100, hull: 100, off: 0, drift: 0, inp: 0, lit: 0, beams: [], lights: null, lockOn: 0, lockT: 0, jamF: .5, jamT: .5, jamP: 0, sig: 0, storm: 0, stormT: 0, flT: 3, door: 0, doorP: 0, leaks: [], hurt: {}, seat: {}, hold: {}, spent: {}, sched: null, bullets: [], fighters: [], gcd: {}, seq: 1, state: 'fly', kills: 0, bf: null, vod: {}, rub: {}, roul: null, dark: 0, darkP: 0, arm: null, chute: {}, bail: {}, stock: this.players.length, land: null, landUsed: 0, fallT: 0};
-  this.rsEnemy = this.players.length - 1; this.redstar = 1; this.rsS = 0; const R0 = this.M.rsRoute[0], b = this.addUnit('bomber', 0, R0[0], R0[1]); b.z = RS_ALT; b.rs = 1; b.h = 0; this.rsB = b;
+  this.rsEnemy = this.players.length - 1; this.redstar = 1; this.rsS = 0; const R0 = this.M.rsRoute[0], b = this.addUnit('bomber', 0, R0[0], R0[1]); b.z = hAt(this.M, R0[0], R0[1]) + .7; b.rs = 1; b.h = 0; this.rsB = b;
   const RT = this.M.rsRoute, BS = this.M.rsBase; if (BS) { let acc = 0, best = 1e9, bs = 0; for (let i = 0; i < RT.length - 1; i++) { const ax = RT[i][0], ay = RT[i][1], dx = RT[i + 1][0] - ax, dy = RT[i + 1][1] - ay, L = Math.hypot(dx, dy), t = clamp(((BS.x - ax) * dx + (BS.y - ay) * dy) / (L * L), 0, 1), d = Math.hypot(ax + dx * t - BS.x, ay + dy * t - BS.y); if (d < best) { best = d; bs = acc + L * t; } acc += L; } this.rs.baseS = bs; } // route distance to Polar Base 7
 };
 // ---------- Operation Red Star: mission director, systems, fighters, crew states ----------
@@ -2423,6 +2423,7 @@ Sim.prototype.rsStep = function () {
   const pilot = Object.keys(R.seat).find(k => R.seat[k] === 'pilot'); if (pilot === undefined) R.inp = clamp(-R.off / 4, -.35, .35);
   R.drift += (rnd() - .5) * dt * (.35 + R.storm * 1.5 + (R.leaks.some(l => l.k === 'hydraulic') ? .6 : 0)); R.drift = clamp(R.drift * .985, -1.4, 1.4);
   R.off = clamp(R.off + ((R.inp || 0) * 2.6 + R.drift) * dt, -9, 9);
+  if ((this.rsS || 0) < 50) { R.off = 0; R.drift = 0; } // no drifting off the runway during the take-off roll
   // --- fuel and hull
   const off = Math.abs(R.off) > 4.5 ? .15 : 0;
   R.fuel -= (.045 + off + R.leaks.reduce((a, l) => a + (l.k === 'fuel' ? .5 : .15), 0)) * dt;
@@ -2516,12 +2517,14 @@ Sim.prototype.redstarStep = function () { // follows the flight plan at a steady
   const b = [...this.ents.values()].find(e => e.rs), RT = this.M.rsRoute; if (!b || !RT) return;
   const RS = this.rs; if (RS && RS.state === 'lost') return;
   const L2 = RS && RS.land, bs = RS && RS.baseS; let spd = .12 * (RS && RS.door ? .75 : 1) * (RS && RS.storm ? .92 : 1);
+  const TO = 30; if (this.rsS < TO) spd *= .3 + .7 * this.rsS / TO; // take-off roll: start slow on the Siberian runway
   if (L2) spd *= L2.ph === 'gnd' ? 0 : L2.ph === 'app' ? clamp((bs - this.rsS) / 40, .3, 1) : clamp((this.rsS - bs) / 40, .3, 1);
   this.rsS = (this.rsS || 0) + spd; if (L2 && L2.ph === 'app' && this.rsS >= bs) { this.rsS = bs; L2.ph = 'gnd'; L2.t = 0; } if (L2 && L2.ph === 'up' && this.rsS - bs > 40) RS.land = null;
   let s = this.rsS, x, y, hd;
   for (let i = 0; i < RT.length - 1; i++) { const dx = RT[i + 1][0] - RT[i][0], dy = RT[i + 1][1] - RT[i][1], L = Math.hypot(dx, dy); if (s <= L) { x = RT[i][0] + dx / L * s; y = RT[i][1] + dy / L * s; hd = Math.atan2(dy, dx); break; } s -= L; }
   if (x === undefined) { const T = this.M.rsTarget, a = (s / 16) + 2.2; x = T.x + Math.cos(a) * 16; y = T.y + Math.sin(a) * 16; hd = a + Math.PI / 2; }
   this.rsH = (this.rsH === undefined ? hd : this.rsH) + angDiff(this.rsH === undefined ? hd : this.rsH, hd) * .06; const pxv = -Math.sin(this.rsH), pyv = Math.cos(this.rsH), off = RS ? RS.off : 0, ox = b.x, oy = b.y; b.x = x + pxv * off; b.y = y + pyv * off; this.rsHd = this.rsH; this.rsV = {x: (b.x - ox) / .1, y: (b.y - oy) / .1}; b.h = this.rsH; let z = RS_ALT;
+  { const RT0 = this.M.rsRoute[0], gz0 = hAt(this.M, RT0[0], RT0[1]) + .7, f0 = clamp((this.rsS - TO) / 110, 0, 1); if (f0 < 1) z = gz0 + (RS_ALT - gz0) * f0 * f0 * (3 - 2 * f0); if (RS && this.rsS >= TO && !RS.wheelsUp) { RS.wheelsUp = 1; this.rsMsg('Wheels up! Climbing to cruise height.', 1); } }
   if (L2 && this.M.rsBase) { const gz = hAt(this.M, this.M.rsBase.x, this.M.rsBase.y) + .7, f = L2.ph === 'gnd' ? 0 : clamp(L2.ph === 'app' ? (bs - this.rsS) / 40 : (this.rsS - bs) / 40, 0, 1); z = gz + (RS_ALT - gz) * f * f * (3 - 2 * f); }
   if (RS && RS.state === 'falling') z = Math.max(hAt(this.M, b.x, b.y) + 1, RS_ALT * Math.max(0, RS.fallT) / 40);
   b.z = z; b.moving = true; b.hp = b.hpm;
@@ -10137,6 +10140,13 @@ const Direct = {
     const vd = this.vodka || 0; if (vd) { const t = performance.now() / 1000; cam.rotateZ(Math.sin(t * .9) * .035 * vd); cam.position.y += Math.sin(t * 1.7) * .01 * vd; } // vodka sways the world
   },
   syncRsFx(I) { // leaks spraying, the jammed bay door, the bomb itself
+    if (!I.propsG) { I.propsG = []; const bm = new THREE.MeshStandardMaterial({color: 0x1c1f22, roughness: .6, metalness: .3}), tm = new THREE.MeshStandardMaterial({color: 0xd8b040, roughness: .5}), dm = new THREE.MeshBasicMaterial({color: 0x2a2d30, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide});
+      const blade = new THREE.BoxGeometry(.04, .68, .11), tip = new THREE.BoxGeometry(.045, .1, .115), disc = new THREE.CircleGeometry(.72, 28);
+      for (const zz of [4.2, 8]) for (const sg of [-1, 1]) { const k = Math.floor((zz - 1.6) / 1.3), xe = 2.8 - k + (8.5 - k * .55) / 2 - 1.2, g2 = new THREE.Group(); g2.position.set(xe + 1.05, .12, sg * zz);
+        for (let i = 0; i < 4; i++) { const arm = new THREE.Group(); arm.rotation.x = i * Math.PI / 2; const bl = new THREE.Mesh(blade, bm); bl.position.y = .36; bl.rotation.y = .35; arm.add(bl); const tp = new THREE.Mesh(tip, tm); tp.position.y = .67; tp.rotation.y = .35; arm.add(tp); g2.add(arm); }
+        const d = new THREE.Mesh(disc, dm); d.rotation.y = Math.PI / 2; g2.add(d); g2.userData.dir = sg; I.scene.add(g2); I.propsG.push(g2); } }
+    { const Rv = this.ui.g.view.rs || {}, t = performance.now() / 1000, dtp = Math.min(.1, t - (I.propT || t)); I.propT = t; const rpm = Rv.state === 'lost' ? 0 : Rv.land && Rv.land.ph === 'gnd' ? 9 : 22; I.propW = (I.propW || 0) + (rpm - (I.propW || 0)) * Math.min(1, dtp * .8); // spin up and down smoothly
+      for (const g2 of I.propsG) g2.rotation.x += g2.userData.dir * I.propW * dtp; }
     if (!I.bombG) {
       const g2 = new THREE.Group(), st = c => new THREE.MeshStandardMaterial({color: c, roughness: .55, metalness: .3}), body = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 14), st(0x3a3f36)); body.scale.set(3, .45, .45); g2.add(body);
       const ring = new THREE.Mesh(new THREE.CylinderGeometry(.46, .46, .14, 18), st(0xa83228)); ring.rotation.z = Math.PI / 2; ring.position.x = 1.4; g2.add(ring);
@@ -11922,7 +11932,7 @@ const Interior = {
     // ---- outside, seen through the windows: wings, four engines with props
     for (const s of [-1, 1]) for (let k = 0; k < 10; k++) { const z0 = 1.6 + k * 1.3, chord = 8.5 - k * .55, xc = 2.8 - k * 1.0; b.box(chord, .14 - k * .006, 1.32, xc, -.14, s * (z0 + .65), SK); } // swept wings
     [[1, 4.2], [2, 8]].forEach(([n, zz]) => [-1, 1].forEach(s => { const k = Math.floor((zz - 1.6) / 1.3), xc = 2.8 - k * 1.0, chord = 8.5 - k * .55, xe = xc + chord / 2 - 1.2, z = s * zz;
-      b.cylX(.5, 4.4, xe - 1.4, .12, z, 0x7d8576); b.add(GEO.sph, 0x555a50, xe + .9, .12, z, .22, .2, .2); b.box(.04, 1.3, .1, xe + 1.05, .12, z, DK); b.box(.04, .1, 1.3, xe + 1.05, .12, z, DK); b.box(.5, .08, .08, xe - 2.4, .62, z, 0xe8c040); }));
+      b.cylX(.5, 4.4, xe - 1.4, .12, z, 0x7d8576); b.add(GEO.sph, 0x555a50, xe + .9, .12, z, .22, .2, .2); /* propeller blades spin: built in syncRsFx */ b.box(.5, .08, .08, xe - 2.4, .62, z, 0xe8c040); }));
     // ---- crew lounge: roulette table, vodka table, bench, rug, poster
     { const FE = 0x1f5a32, WD = 0x6b4a2a, GD = 0xd8b040, CRM = 0xe8e0c8, RN = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
       b.box(2.2, .01, .7, -11, .006, 1.15, 0x7a2a22); b.box(2, .012, .5, -11, .008, 1.15, 0xa8862e); // rug
@@ -14191,6 +14201,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Operation Red Star: the mission now starts on the Siberian runway with a take-off roll and climb, and the propellers spin.',
       'Operation Red Star: fixed getting stuck after leaving the pilot\'s or tail gunner\'s seat, and the outside world is no longer drawn behind the cabin walls (same picture, less work for your graphics card).',
       'Operation Red Star: parachutes and a bail-out hatch in the tail (the aircraft now goes down slowly when it is lost, so you can jump), a Polar Base on the way where the pilot can land (L) to refuel, repair and restock, lightning that knocks the cabin lights out, and two arming keys that must be turned together before the bomb run.',
       'Operation Red Star: a crew lounge off the tail passage, with a roulette wheel and a bottle of vodka the whole crew shares: everyone sees who is drinking, who is drunk, and every spin of the wheel.',

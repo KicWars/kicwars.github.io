@@ -186,3 +186,7 @@ A side cabin off the tail passage (x -12.8 to -9.2, z .6 to 1.7, door at x -11).
 - **Lights out (`dark`):** lightning kills the cabin lights (torch-beam vignette on the HUD) until someone holds E at the breaker in the engineer's bay (3.5, -1.25) for 3 s.
 - **Two-key arming (`arm`):** before the bomb fault, keys in the cockpit (9.1, -1.35) and the tail gunner's room (-13.6, .55) must be held together for 3 s. The bomb fault waits until armed. With one active crew member, key 1 alone works.
 - **Fixes:** standing up from a seat that sits inside its own collision box (pilot, tail gun) now steps you clear. Depth pre-pass (`Direct.prePass`): the cabin's opaque walls are drawn depth-only before the world so hidden world pixels are skipped; frames proven identical with grain and dust frozen.
+
+## Take-off and props (2026-11-07)
+- The route now starts on the Siberian runway (longer strip, to ax+36). The bomber spawns at ground height, rolls the first 30 units at reduced speed (no drift for the first 50), then climbs to `RS_ALT` over 110 units with a "Wheels up" message. Airborne after about 34 s, at cruise height after about 2.5 min.
+- Cabin-view propellers are separate meshes (`I.propsG`, built in `syncRsFx`): 4 blades with yellow tips and a faint blur disc, spinning up smoothly, slower on the ground at Polar Base, stopped when the mission is lost. The outside world model is still the B-52-style jet (`def('bomber')`), so bailed-out crew see jets, not props.
