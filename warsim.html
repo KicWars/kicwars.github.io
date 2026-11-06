@@ -11667,12 +11667,24 @@ const UI = {
     else { this.lobby.slots[this.mySlot].nation = i; this.pushLobby(); }
     this.drawLobby();
   },
+  lobbyView(tr) { // the test room is not a war: hide nations, enemies and battlefield settings
+    const L = $('lobby'), side = L.querySelector('.side'), cols = L.querySelectorAll('.lcol');
+    cols[0].style.display = tr ? 'none' : '';
+    let hide = false;
+    for (const c of side.children) {
+      if (c.tagName === 'H3' && /Battlefield/.test(c.textContent)) hide = true;
+      if (c.id === 'lStatus' || c.id === 'bStart') hide = false;
+      if (hide || c.id === 'enemyRow' || (c.tagName === 'P' && /Pick each enemy/.test(c.textContent))) c.style.display = tr ? 'none' : '';
+    }
+    side.querySelector('h3').textContent = tr ? 'Players in this room' : 'Your enemies';
+    if (tr) $('lTitle').textContent = 'Test room';
+  },
   openLobby(type) {
     this.renderNations();
     $('menu').classList.add('hidden'); $('lobby').classList.remove('hidden');
     this.testRoom = type === 'test'; if (this.testRoom) type = 'host';
     this.lobby = {slots: [{kind: 'human', name: 'You', nation: 3, team: 0, id: 'host'}, {kind: 'bot', level: 'normal', nation: 4, team: 1}]};
-    if (this.testRoom) { this.lobby.slots.pop(); $('optAll').checked = true; $('optTut').checked = false; } // test room: no bots, every unit free
+    if (this.testRoom) { this.lobby.test = 1; this.lobby.slots.pop(); $('optAll').checked = true; $('optTut').checked = false; } // test room: no bots, every unit free
     this.mySlot = 0;
     $('addBot').classList.remove('hidden'); $('bStart').classList.remove('hidden');
     if (type === 'host') {
@@ -11702,6 +11714,7 @@ const UI = {
       if (this.lobby.slots[1]) this.lobby.slots[1].auto = 1;
       { let nm = this.testRoom ? 'Test room' : 'Friendly war'; try { const a = window.prompt('Name your room (everyone online will see this name):', nm); if (a && a.trim()) nm = a.trim().slice(0, 28); } catch (e) {} $('roomName').value = nm; this.link.setMeta({name: nm, open: true}); }
     } else { $('invPanel').classList.add('hidden'); this.net = 'off'; $('lCode').classList.add('hidden'); $('lTitle').textContent = 'Skirmish against bots'; }
+    this.lobbyView(!!this.testRoom);
     this.drawLobby();
   },
   keyHints() {
@@ -11797,7 +11810,7 @@ const UI = {
         box.appendChild(b);
       }
     } catch (e) { $('roomListBox').classList.remove('hidden'); $('roomList').innerHTML = '<p class="small" style="color:#ff8a80">Cannot reach the room server (' + (e && e.message || 'network error') + '). Check your internet. School and work networks can block it: tell me if so.</p>'; }
-    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-e';
+    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-f';
     clearTimeout(this.rlT); this.rlT = setTimeout(() => this.refreshRooms(), 3000);
   },
   openJoin() {
@@ -11891,7 +11904,7 @@ const UI = {
         $('menu').classList.add('hidden'); $('joinScr').classList.add('hidden'); $('lobby').classList.remove('hidden'); $('invPanel').classList.add('hidden');
         $('lTitle').textContent = 'Playing with a friend'; $('lCode').textContent = code ? 'Room ' + code : 'Connected'; $('lCode').classList.remove('hidden');
       }
-      this.lobby = m.lobby; this.mySlot = m.you; this.drawLobby();
+      this.lobby = m.lobby; this.mySlot = m.you; this.lobbyView(!!m.lobby.test); this.drawLobby();
     } else if (m.start) {
       this.launch({mode: 'client', size: m.start.size, seed: m.start.seed, players: m.start.players, me: m.start.you, link: this.link, tut: false, sandbox: !!m.start.sandbox});
     } else if (m.g && this.g && this.g.mode === 'client') this.g.onSnap(m.g);
