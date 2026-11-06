@@ -517,6 +517,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
 
 <div id="joinScr" class="screen hidden"><div class="mcard wide">
   <h2>Join a game</h2>
+  <p class="small">Your username: <input id="myName" maxlength="16" placeholder="pick a name" autocomplete="off"> (shown over your head in games)</p>
   <div id="roomListBox" class="hidden"><h3>Open rooms (updates by itself)</h3><p class="small" id="bld"></p><div id="roomList"></div></div>
   <p class="msg">Click a room above to join it. Not listed? Type the 5-letter room code your friend sees.</p>
   <textarea id="joinIn" rows="2" placeholder="Room code, e.g. KQXMB" style="text-transform:uppercase"></textarea>
@@ -2502,7 +2503,7 @@ Sim.prototype.issue = function (c, pi) {
       break;
     }
     case 'pilot': { const e = mine[0]; if (e && c.on && this.players[pi].nat.key === 'charlies' && (e.d.cat === 'air' || e.d.cat === 'heli') && !(this.scen && this.scen.arc)) break; if (e && !e.b) { if (c.on) { if (!e.pilot) { e.hpm *= PILOT_HP; e.hp *= PILOT_HP; } e.chute = 0; e.pilot = pi + 1; this.clearOrders(e); this.ev({k: 'cry', p: pi, id: e.id}); } else { if (e.pilot) { e.hpm /= PILOT_HP; e.hp = Math.min(e.hp / PILOT_HP, e.hpm); } e.pilot = 0; if (e.air) e.hold = {x: e.x, y: e.y}; } } break; }
-    case 'pose': { const e = this.ents.get(c.id); if (e && e.o === pi && e.pilot === pi + 1) { e.x = clamp(c.x, 0, this.N - 1); e.y = clamp(c.y, 0, this.N - 1); e.z = c.z; e.h = c.h; e.p = c.p || 0; e.r = c.r || 0; if (c.tu !== undefined) e.tu = c.tu; if (c.m !== undefined) e.moving = c.m; e.ch = c.ch; } break; }
+    case 'pose': { const e = this.ents.get(c.id); if (e && e.o === pi && e.pilot === pi + 1) { e.x = clamp(c.x, 0, this.N - 1); e.y = clamp(c.y, 0, this.N - 1); e.z = c.z; e.h = c.h; e.p = c.p || 0; e.r = c.r || 0; if (c.tu !== undefined) e.tu = c.tu; if (c.m !== undefined) e.moving = c.m; e.ch = c.ch; e.pilT = this.t; if (c.ap !== undefined) e.p = clamp(c.ap, -1.4, 1.4); if (c.f) e.fireT = this.t; if (c.a) e.adsT = this.t; if (c.th && !(e.thrT !== undefined && this.t - e.thrT < .7)) e.thrT = this.t; } break; }
     case 'pfire': this.pilotFire(c, pi); break;
     case 'streak': { // killstreak reward: an artillery barrage walks across the marked ground after a short warning
       const e = this.ents.get(c.id); this.streakAt = this.streakAt || {};
@@ -5314,6 +5315,7 @@ function encodeSnap(sim, sendSlow) {
     if (e.goal || e.task) fl |= 64;
     if (e.drop) fl |= 128;
     fl |= (e.vet || 0) << 8;
+    if (sim.t - (e.fireT === undefined ? -9 : e.fireT) < .28) fl |= 1024; if (sim.t - (e.adsT === undefined ? -9 : e.adsT) < .3) fl |= 2048; if (sim.t - (e.pilT === undefined ? -9 : e.pilT) < .6) fl |= 4096; if (e.thrT !== undefined && sim.t - e.thrT < .65) fl |= 8192;
     out[b + 8] = fl; out[b + 9] = e.tid || 0; out[b + 10] = ((e.tu || 0) % 6.2832) * 1000;
     i++;
     const sig = e.k + '|' + e.o + '|' + (e.hero || '') + '|' + (e.task ? e.task.type : '') + '|' + (e.sq || 0) + '|' + (e.disg === undefined || e.disg === null ? '' : e.disg) + '|' + (e.att || 0);
@@ -5376,7 +5378,7 @@ Mirror.prototype.apply = function (m) {
     seen.add(e.id);
     e.x = a[i + 1] / 100; e.y = a[i + 2] / 100; e.z = a[i + 3] / 100; e.h = a[i + 4] / 1000; e.p = a[i + 5] / 1000; e.r = a[i + 6] / 1000; e.hp = a[i + 7];
     const f = a[i + 8];
-    e.moving = !!(f & 1); e.st = f & 2 ? 2 : 0; e.inside = f & 4 ? 1 : 0; if (f & 8) e.hurtT = m.t; e.nukeReady = !!(f & 16); e.revealed = f & 32 ? m.t + 1 : 0; e.goal = f & 64 ? 1 : null; e.drop = f & 128 ? 1 : 0; e.vet = (f >> 8) & 3;
+    e.moving = !!(f & 1); e.st = f & 2 ? 2 : 0; e.inside = f & 4 ? 1 : 0; if (f & 8) e.hurtT = m.t; e.nukeReady = !!(f & 16); e.revealed = f & 32 ? m.t + 1 : 0; e.goal = f & 64 ? 1 : null; e.drop = f & 128 ? 1 : 0; e.vet = (f >> 8) & 3; if (f & 1024) e.fireT = m.t; if (f & 2048) e.adsT = m.t; if (f & 4096) e.pilT = m.t; if ((f & 8192) && !(e.thrT !== undefined && m.t - e.thrT < .7)) e.thrT = m.t;
     e.tid = a[i + 9]; e.tu = a[i + 10] / 1000;
   }
   for (const id of this.ents.keys()) if (!seen.has(id)) this.ents.delete(id);
@@ -8311,7 +8313,12 @@ Renderer.prototype.drawUnit = function (e, dt, tint) {
     const c = Math.cos(h), s = Math.sin(h);
     if (!Settings.blobs) { // realistic soldier: steady torso with a small walking bob, legs that stride, a flinch when hit
       const bob = mv && !bike ? Math.abs(Math.cos(ph)) * .018 : 0, lean2 = mv ? (bike ? .08 : .07) : 0, fl = hurt ? .12 : 0;
-      this.put(key + '|h' + (lo ? '|lo' : ''), () => soldierHuman(k, nat, lo).geo(), 64, null, x, y + bob, z, h, -lean2 - fl + (e.st === 2 ? .03 : 0), 0, sc, tint);
+      const vt = this.view.t, ag = a0 => a0 === undefined ? 99 : vt - a0, aim = ag(e.adsT) < .3, fire = ag(e.fireT) < .28, tg = ag(e.thrT);
+      let pit = Math.max(-.8, Math.min(.8, e.rp || 0)) * .55 + (aim ? -.07 : 0) - (fire ? .05 * (1 - ag(e.fireT) / .28) : 0); // look up/down bends the body at the hip
+      if (tg < .65) pit += tg < .22 ? .55 * (tg / .22) : tg < .42 ? .55 - 1 * ((tg - .22) / .2) : -.45 * (1 - (tg - .42) / .23); // grenade throw: wind back, swing through, recover
+      if (fire && tg > 1 && !lo && this.time - (e._fx || 0) > .08) { e._fx = this.time; this.muzzleFlash(e.rx + Math.cos(e.ry) * .5, e.ryy + Math.sin(e.ry) * .5, e.rz + .42 * sc, .55); }
+      const hh = HUM.hip * sc, pdx = hh * Math.sin(pit), pdy = hh * (1 - Math.cos(pit));
+      this.put(key + '|h' + (lo ? '|lo' : ''), () => soldierHuman(k, nat, lo).geo(), 64, null, x + c * pdx, y + bob + pdy, z - s * pdx, h, -lean2 - fl + (e.st === 2 ? .03 : 0) + pit, 0, sc, tint);
       if (bike) for (const f of [.3, -.3]) this.put('bwheel', () => bikeWheel().geo(), 128, null, x + c * f * sc, y + .16 * sc, z - s * f * sc, h, -this.time * (mv ? 14 : 0), 0, sc, tint);
       else if (!lo || mv) for (const sd of [-1, 1]) {
         const sw = mv ? Math.sin(ph + (sd > 0 ? 0 : Math.PI)) * .55 : 0, hz = .045 * sd * sc, hh = (HUM.hip + bob) * sc;
@@ -9293,6 +9300,12 @@ Settings.blobs = true; // the troops are always blob guys
 const BIND_LABELS = {ammo: 'Tanks: switch AP / HE shells', vlock: 'Planes: lock view on target', w4: 'Aircraft: 4th weapon', spot: 'Spot enemy for your team (or middle click)', fire: 'Fire', alt: 'Secondary weapon', ads: 'Aim / scope (toggle)', reload: 'Reload / aircraft: 3rd weapon', jump: 'Jump / climb', sprint: 'Sprint / descend', view: 'First / third person', exit: 'Back to command', free: 'Free cursor', cycle: 'Cycle lock target', special: 'National special ability', walk: "Ships: leave / sit in captain's chair", fwd: 'Forward / throttle up', back: 'Back / throttle down', left: 'Left / roll left', right: 'Right / roll right', chooser: 'Unit chooser', chaff: 'Aircraft: chaff (beats missiles)'};
 
 const _v3 = new THREE.Vector3(), _v3b = new THREE.Vector3();
+// Username: saved in this browser, sent to the host when you join, shown over your head and in the lobby. No password, nothing stored online.
+const Profile = {
+  name() { try { return localStorage.getItem('jjf_name') || ''; } catch (e) { return ''; } },
+  set(v) { v = String(v || '').replace(/[^A-Za-z0-9 _.-]/g, '').trim().slice(0, 16); try { localStorage.setItem('jjf_name', v); } catch (e) {} return v; },
+  ask() { if (this.name()) return this.name(); let a = ''; try { a = window.prompt('Pick a username (friends see it over your head):', ''); } catch (e) {} return this.set(a); },
+};
 const Direct = {
   on: false, id: 0, e: null, mode: '', yaw: 0, pitch: 0, roll: 0, speed: 0, vz: 0, mx: 0, my: 0, keys: {}, sendT: 0, batt: 0,
   pose: {x: 0, y: 0, z: 0, h: 0, p: 0, r: 0, tu: 0}, look: 'off', mouseX: 0, mouseY: 0, mouseDown: false,
@@ -9710,7 +9723,8 @@ const Direct = {
     this.sendT -= dt;
     if (this.sendT <= 0) {
       this.sendT = .066; const p = this.pose;
-      g.issue({c: 'pose', id: this.id, x: p.x, y: p.y, z: p.z, h: p.h, p: p.p, r: p.r, tu: p.tu, m: !!this.mv, ch: this.jump === 'fall' ? 0 : this.jump === 'canopy' ? 1 : undefined});
+      const sold = this.mode === 'soldier', ago = performance.now() - (this.shotAt || -1e5), cw = sold && this.W && this.W[this.slot] && this.W[this.slot].w;
+      g.issue({c: 'pose', id: this.id, x: p.x, y: p.y, z: p.z, h: p.h, p: p.p, r: p.r, tu: p.tu, m: !!this.mv, ch: this.jump === 'fall' ? 0 : this.jump === 'canopy' ? 1 : undefined, ap: sold ? this.pitch : undefined, f: sold && ago < 280 ? 1 : 0, a: sold && this.ads ? 1 : 0, th: sold && cw && cw.snd === 'throw' && ago < 650 ? 1 : 0});
     }
     this.weapons(dt, g, e);
     this.msgT = (this.msgT || 0) - dt;
@@ -9780,6 +9794,7 @@ const Direct = {
     const free = (x, y) => walk(Math.round(y) * N + Math.round(x)) || !walk(Math.round(p.y) * N + Math.round(p.x));
     { const mv = Math.hypot(nx - p.x, ny - p.y); if (mv > 1e-4 && this.onGround !== false) { const gr = (gAt(M, nx, ny) - gAt(M, p.x, p.y)) / mv; if (gr > .7) { const f = Math.max(.3, 1 - (gr - .7) * .45); nx = p.x + (nx - p.x) * f; ny = p.y + (ny - p.y) * f; } } }
     if (free(nx, ny)) { p.x = nx; p.y = ny; } else if (free(nx, p.y)) { p.x = nx; this.vel.y *= .3; } else if (free(p.x, ny)) { p.y = ny; this.vel.x *= .3; } else { this.vel.x = this.vel.y = 0; }
+    { const V = this.ui.g.view; for (const o of V.ents.values()) { if (o.id === this.id || o.b || !o.d || o.d.cat !== 'inf' || o.pilT === undefined || V.t - o.pilT > .8) continue; const ddx = p.x - o.x, ddy = p.y - o.y, dd = Math.hypot(ddx, ddy), RR = .7; if (dd < RR) { const ux = dd > 1e-3 ? ddx / dd : 1, uy = dd > 1e-3 ? ddy / dd : 0, qx = o.x + ux * RR, qy = o.y + uy * RR; if (!M.occ[Math.round(qy) * N + Math.round(qx)]) { p.x = qx; p.y = qy; } } } } // other players are solid
     const spd = Math.hypot(this.vel.x, this.vel.y);
     this.mv = spd > .3; this.sprinting = sprint && this.mv; this.moveK = Math.min(1, spd / Math.max(1, d.spd));
     p.h = this.yaw; p.tu = this.yaw;
@@ -10123,6 +10138,7 @@ const Direct = {
     if (fp) {
       cx = E.x; cy = E.y; cz = E.z;
       if (this.mode === 'soldier' && this.mv && this.onGround !== false) cz += Math.abs(Math.sin(this.bobT)) * .012 * (1 - this.adsK);
+      if (this.mode === 'soldier') cz = Math.max(cz, gAt(M, cx + fw.x * .2, cy + fw.y * .2) + .08); // never let the eye sink into a wall or bank right in front of you
     } else {
       const back = {plane: 8, heli: 6.5, ship: 9, vehicle: 5, soldier: 2.1}[this.mode], up = {plane: 1.6, heli: 1.8, ship: 3.2, vehicle: 1.8, soldier: .55}[this.mode];
       const side = this.mode === 'soldier' ? .55 * (1 - this.adsK * .4) : 0, sx = -Math.sin(yaw) * side, sy = Math.cos(yaw) * side;
@@ -10156,7 +10172,8 @@ const Direct = {
     if (!this.ads) this.zoom2 = this.zoom2 || 1;
     const z = (W && W.zoom ? 1 + (W.zoom - 1) * this.adsK : 1) * (1 - (1 - (this.zoom2 || 1)) * this.adsK); // scoped: the wheel (or Z) zooms further
     this.curZoom = z;
-    cam.fov = base * z * (this.sprinting ? 1.06 : 1) + (this.fovPunch || 0) * (this.mode === 'soldier' ? 1 : .3) + (this.mode === 'plane' && !this.bsight ? clamp((this.speed / this.e.d.spd - 1) * 5, -1, 3) + clamp((6 - (this.agl === undefined ? 99 : this.agl)) * .3, 0, 1.5) * clamp(this.speed / this.e.d.spd, 0, 1.2) : 0); // speed rush cam.near = fp ? .03 : .1; cam.updateProjectionMatrix();
+    cam.fov = base * z * (this.sprinting ? 1.06 : 1) + (this.fovPunch || 0) * (this.mode === 'soldier' ? 1 : .3) + (this.mode === 'plane' && !this.bsight ? clamp((this.speed / this.e.d.spd - 1) * 5, -1, 3) + clamp((6 - (this.agl === undefined ? 99 : this.agl)) * .3, 0, 1.5) * clamp(this.speed / this.e.d.spd, 0, 1.2) : 0); // speed rush
+    cam.near = this.firstPerson() ? .05 : .1; cam.updateProjectionMatrix(); // a tight near plane: at the default .2 a wall or the ground right in front of you gets cut away and the world looks see-through
     if (this.mode === 'plane' && (this.stalled || (this.gLoad || 1) > 2.6 || this.afterburner)) { const sh = this.stalled ? .5 : this.afterburner ? .06 : clamp(((this.gLoad || 1) - 2.6) * .15, 0, .4); cam.position.x += (Math.random() - .5) * sh; cam.position.y += (Math.random() - .5) * sh; cam.rotateZ((Math.random() - .5) * sh * .04); } // buffet in stalls, hard pulls and afterburner
     if (R.shake > .01) { cam.position.x += (Math.random() - .5) * R.shake * .25; cam.position.y += (Math.random() - .5) * R.shake * .25; }
     R.camTarget = R.camTarget || new THREE.Vector3(); R.camTarget.set(p.x, p.z, p.y);
@@ -10302,7 +10319,7 @@ const Direct = {
     this.fovPunch = Math.min(5, (this.fovPunch || 0) + (W.kick || .3) * (W.scope ? .4 : 1.1));
     if (g.R) g.R.shake = Math.min(.6, (g.R.shake || 0) + (W.kick || .3) * .025);
     this.bloom = Math.min(6, this.bloom + (W.kick || .3) * .35);
-    this.kick = 1; this.flashT = .05;
+    this.kick = 1; this.flashT = .05; this.shotAt = performance.now();
     VM.fired(W);
   },
   // what the crosshair is on for this weapon: 'hit', 'far' (enemy out of range), 'immune' (this gun cannot hurt it), 'friend' or ''
@@ -10515,6 +10532,7 @@ const Direct = {
     // health bars over nearby enemies you have hurt or are aiming at; friends get a small blue tag
     for (const t of g.R.visEnts || []) {
       if (t.id === this.id || t.b) continue;
+      if (t.d.cat === 'inf' && t.pilT !== undefined && g.view.t - t.pilT < .8) { const pl = g.view.players[t.o], nd = Math.hypot(t.rx - this.pose.x, t.ryy - this.pose.y); if (pl && !pl.bot && pl.name && nd < 70 && nd > .5) { const nm = this.toScreen(t.rx, t.ryy, t.rz + 1.05), fr = g.view.friendly(t.o, g.me); if (nm) { c.save(); c.font = '700 13px system-ui'; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.75)'; c.fillStyle = fr ? '#8fe3ff' : '#ff8a80'; c.globalAlpha = clamp(1.4 - nd / 70, .4, 1); c.strokeText(pl.name, nm.x, nm.y); c.fillText(pl.name, nm.x, nm.y); c.restore(); } } }
       const enemy = !g.view.friendly(t.o, g.me), dd = Math.hypot(t.rx - this.pose.x, t.ryy - this.pose.y);
       if (!enemy && dd > 12 && dd <= 110) { const mk = this.toScreen(t.rx, t.ryy, t.rz + (t.air ? 1.2 : t.d.cat === 'inf' ? 2.2 : 3)); if (mk) { c.save(); c.fillStyle = '#5fd3ff'; c.globalAlpha = clamp(1.2 - dd / 110, .35, 1); c.beginPath(); c.moveTo(mk.x, mk.y); c.lineTo(mk.x - 5, mk.y - 8); c.lineTo(mk.x + 5, mk.y - 8); c.closePath(); c.fill(); if (dd < 45 && t.d.cat === 'inf') { c.font = '700 10px system-ui'; c.textAlign = 'center'; c.fillText(Math.round(dd * 4 / 10) * 10 + 'm', mk.x, mk.y - 12); } c.restore(); } continue; }
       if (dd > 32 || (!enemy && dd > 12)) continue;
@@ -11692,7 +11710,7 @@ const UI = {
     this.renderNations();
     $('menu').classList.add('hidden'); $('lobby').classList.remove('hidden');
     this.testRoom = type === 'test'; if (this.testRoom) type = 'host';
-    this.lobby = {slots: [{kind: 'human', name: 'You', nation: 3, team: 0, id: 'host'}, {kind: 'bot', level: 'normal', nation: 4, team: 1}]};
+    this.lobby = {slots: [{kind: 'human', name: Profile.name() || 'Host', nation: 3, team: 0, id: 'host'}, {kind: 'bot', level: 'normal', nation: 4, team: 1}]};
     if (this.testRoom) { this.lobby.test = 1; this.lobby.slots.pop(); $('optAll').checked = true; $('optTut').checked = false; } // test room: no bots, every unit free
     this.mySlot = 0;
     $('addBot').classList.remove('hidden'); $('bStart').classList.remove('hidden');
@@ -11721,6 +11739,7 @@ const UI = {
         onStatus: () => this.inviteStatus(),
       });
       if (this.lobby.slots[1]) this.lobby.slots[1].auto = 1;
+      Profile.ask(); if (this.lobby.slots[0]) this.lobby.slots[0].name = Profile.name() || 'Host';
       { let nm = this.testRoom ? 'Test room' : 'Friendly war'; try { const a = window.prompt('Name your room (everyone online will see this name):', nm); if (a && a.trim()) nm = a.trim().slice(0, 28); } catch (e) {} $('roomName').value = nm; this.link.setMeta({name: nm, open: true}); }
     } else { $('invPanel').classList.add('hidden'); this.net = 'off'; $('lCode').classList.add('hidden'); $('lTitle').textContent = 'Skirmish against bots'; }
     this.lobbyView(!!this.testRoom);
@@ -11819,11 +11838,11 @@ const UI = {
         box.appendChild(b);
       }
     } catch (e) { $('roomListBox').classList.remove('hidden'); $('roomList').innerHTML = '<p class="small" style="color:#ff8a80">Cannot reach the room server (' + (e && e.message || 'network error') + '). Check your internet. School and work networks can block it: tell me if so.</p>'; }
-    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-h';
+    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-i';
     clearTimeout(this.rlT); this.rlT = setTimeout(() => this.refreshRooms(), 3000);
   },
   openJoin() {
-    $('menu').classList.add('hidden'); $('joinScr').classList.remove('hidden'); this.refreshRooms();
+    $('menu').classList.add('hidden'); $('joinScr').classList.remove('hidden'); this.refreshRooms(); this._nameSent = 0; $('myName').value = Profile.name(); $('myName').oninput = e => Profile.set(e.target.value);
     $('joinReply').classList.add('hidden'); this.joinMsg(''); $('bJoinGo').disabled = false;
     setTimeout(() => $('joinIn').focus(), 30);
   },
@@ -11838,7 +11857,7 @@ const UI = {
     if (i >= 0) { this.lobby.slots.splice(i, 1); this.pushLobby(); }
   },
   onHostMsg(id, m) {
-    if (m.lobbySet && this.lobby) { const s = this.lobby.slots.find(s => s.id === id); if (s) { Object.assign(s, m.lobbySet); this.pushLobby(); } }
+    if (m.lobbySet && this.lobby) { const s = this.lobby.slots.find(s => s.id === id); if (m.lobbySet.name !== undefined) m.lobbySet.name = String(m.lobbySet.name).replace(/[^A-Za-z0-9 _.-]/g, '').trim().slice(0, 16) || (s && s.name); if (s) { Object.assign(s, m.lobbySet); this.pushLobby(); } }
     else if (m.cmd && this.g && this.g.sim && this.playersIds) { const i = this.playersIds.indexOf(id); if (i >= 0) this.g.sim.issue(m.cmd, i); }
   },
   pushLobby() {
@@ -11914,6 +11933,7 @@ const UI = {
         $('lTitle').textContent = 'Playing with a friend'; $('lCode').textContent = code ? 'Room ' + code : 'Connected'; $('lCode').classList.remove('hidden');
       }
       this.lobby = m.lobby; this.mySlot = m.you; this.lobbyView(!!m.lobby.test); this.drawLobby();
+      if (!this._nameSent && this.link && this.link.send) { this._nameSent = 1; const un = Profile.ask(); if (un) this.link.send({lobbySet: {name: un}}); }
     } else if (m.start) {
       this.launch({mode: 'client', size: m.start.size, seed: m.start.seed, players: m.start.players, me: m.start.you, link: this.link, tut: false, sandbox: !!m.start.sandbox});
     } else if (m.g && this.g && this.g.mode === 'client') this.g.onSnap(m.g);
