@@ -23,6 +23,8 @@ Status: plan only. Today the whole flight is about 4.7 minutes (route 338 units 
 | 4. Coast approach | 62 to 85% | Peak pressure | Searchlights, flak, ace fighter, door jam, two problems at once allowed. |
 | 5. Run-in | 85 to 100% | Everything at once, then silence | Bay doors open, bomb run (hold the line over the target), bomb fault finale, drop, flash. |
 
+Built 2026-11-07: events trigger by route distance (step 1 of the director's "position, not clock" principle). Budget, queue, breathers and difficulty-based length are not built.
+
 ## Director (replaces the fixed schedule)
 - Events are a table: `{at: progress, kind, weight, minGap}` plus optional random fillers in each act.
 - **Budget:** max open problems (leaks, jam, lock, lights, fighters) is 2 until act 5. New events wait in a queue.

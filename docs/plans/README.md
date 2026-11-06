@@ -4,7 +4,7 @@ Saved design plans. Nothing here is built unless it says so. Status last updated
 
 | Plan | Status | File |
 |---|---|---|
-| **Operation Red Star**: Soviet atomic bomber crew co-op, bomb New York | Detailed plan, build first | [bomber.md](bomber.md) |
+| **Operation Red Star**: Soviet atomic bomber crew co-op, bomb New York | Playable preview: flight, complications, bomb finale. Roles (navigator, engineer, bombardier), flak and the code challenge not built | [bomber.md](bomber.md) |
 | **Convoy escort** co-op | Chosen, needs detail | below |
 | **Submarine crew** co-op | Chosen, needs detail | below |
 | **Heist** co-op | Chosen, needs detail | below |
