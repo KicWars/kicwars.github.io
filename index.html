@@ -10,6 +10,21 @@
 html,body{margin:0;height:100%;overflow:hidden;background:#0a0f14;color:var(--tx);font:14px/1.35 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;user-select:none;-webkit-user-select:none}
 #gl,#ov{position:fixed;inset:0;width:100%;height:100%;display:block}
 #ov{pointer-events:none}
+#vig{position:fixed;inset:0;pointer-events:none;display:none;z-index:1;background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 58%,rgba(8,6,4,.32) 100%)}
+body.neo #vig{display:block}
+body.neo .res,body.neo #selpanel,body.neo #cards,body.neo #selBar button,body.neo #mmwrap{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:10px}
+body.neo .res{background:linear-gradient(180deg,rgba(40,46,52,.72),rgba(14,16,20,.72));border-color:rgba(255,226,170,.16)}
+body.neo #selpanel,body.neo #cards{background:linear-gradient(180deg,rgba(30,34,40,.78),rgba(10,12,15,.84));border-color:rgba(255,226,170,.14);box-shadow:0 8px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,240,210,.08)}
+body.neo #cards{border-top:2px solid #e9b85a}
+body.neo .card{border-radius:9px;background:linear-gradient(180deg,rgba(255,250,240,.1),rgba(255,255,255,.02))}
+body.neo .card:hover{border-color:rgba(255,214,140,.55);box-shadow:0 0 0 1px rgba(255,214,140,.25),0 4px 14px rgba(0,0,0,.4)}
+body.neo #selBar button{background:linear-gradient(180deg,rgba(40,46,52,.75),rgba(14,16,20,.75));border-color:rgba(255,226,170,.14)}
+body.neo #selBar button:hover{border-color:rgba(255,214,140,.5)}
+body.neo .primary{background:linear-gradient(180deg,#d9a441,#a8741f);border-color:#f0c86a;color:#1b1206;font-weight:700}
+body.neo .primary:hover{background:linear-gradient(180deg,#e8b552,#b8822a)}
+body.neo .brand h1{background:linear-gradient(180deg,#fff6e4,#d9b77a);-webkit-background-clip:text;background-clip:text}
+body.neo .big{border-radius:10px;background:linear-gradient(180deg,rgba(30,34,40,.82),rgba(12,14,18,.86));border-color:rgba(255,226,170,.14)}
+body.neo .big:hover{border-color:rgba(255,214,140,.5)}
 #whiteout{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:40}
 .hidden{display:none!important}
 #timeCtl{display:inline-flex;gap:2px;pointer-events:auto}#timeCtl button{padding:3px 7px;font-size:12px;min-width:30px}#timeCtl button.on{outline:2px solid var(--acc);background:rgba(255,255,255,.16)}
@@ -316,6 +331,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="cbDeut" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0.367 0.861 -0.228 0 0  0.280 0.673 0.047 0 0  -0.012 0.043 0.969 0 0  0 0 0 1 0"/></filter></svg>
 <canvas id="gl"></canvas>
 <canvas id="ov"></canvas>
+<div id="vig"></div>
 <div id="whiteout"></div>
 
 <!-- main menu -->
@@ -343,7 +359,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
       <button class="big sm" id="bFb">🐞 Bug report / idea</button>
     </div>
     <div id="xpLine"></div>
-    <div class="mquick"><label>🔊 Sound <input type="range" id="hmVol" min="0" max="100" step="5"></label><label>🖥 Graphics <select id="hmQ"><option value="auto">Auto</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low (older laptops)</option></select></label></div>
+    <div class="mquick"><label>🔊 Sound <input type="range" id="hmVol" min="0" max="100" step="5"></label><label>🖥 Graphics <select id="hmQ"><option value="auto">Auto</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low (older laptops)</option></select></label><label title="New: richer lighting, grass, swaying trees, smooth rocks, sharper ground. Classic: the old graphics.">🎨 Look <select id="hmLook"><option value="neo">New</option><option value="classic">Classic</option></select></label></div>
     <details class="how"><summary>How to play</summary>
       <ul>
         <li><b>Quick Battle</b>: pick a unit and fight it yourself straight away. <b>P</b> reopens the unit chooser; when you die it comes back.</li>
@@ -7188,6 +7204,14 @@ const Sfx = {
 <script>// Three.js renderer. Reads any "view" (a Sim or a network mirror) and draws it; never changes game state.
 const SUN = new THREE.Vector3(.55, .8, .35).normalize();
 const SKY_TOP = 0x56789a, HORIZON = 0xc3ccd2; // overcast, hazy
+// New look (default) vs Classic graphics. Toggle in the menu Graphics settings; stored in localStorage 'jj-look'.
+const LOOK = {neo: (() => { try { const q = new URLSearchParams(location.search).get('look'); if (q) return q !== 'classic'; return localStorage.getItem('jj-look') !== 'classic'; } catch (e) { return true; } })()};
+const LOOKS = {
+  classic:  {top: SKY_TOP, hor: HORIZON, sun: [.55, .8, .35], sunC: 0xffe8cc, sunI: 1.9, hs: 0xc4d2de, hg: 0x4a4434, hi: .8, exp: 1.05},
+  day:      {top: 0x3a6fb4, hor: 0xd3dde4, sun: [.52, .74, .42], sunC: 0xfff1d8, sunI: 2.2, hs: 0xbcd6f2, hg: 0x544a34, hi: .7, exp: 1.04},
+  golden:   {top: 0x3b5c92, hor: 0xeec7a2, sun: [.78, .36, .3], sunC: 0xffc98e, sunI: 2.7, hs: 0xd6c6b8, hg: 0x4c3b2a, hi: .62, exp: 1.12},
+  overcast: {top: 0x6a7d8f, hor: 0xc9d0d6, sun: [.42, .85, .32], sunC: 0xeef0f2, sunI: 1.45, hs: 0xd0d9e2, hg: 0x52524a, hi: 1.05, exp: 1.12},
+};
 
 function Renderer(canvas, quality) {
   const r = this.r = new THREE.WebGLRenderer({canvas, antialias: true, powerPreference: 'high-performance'});
@@ -7200,7 +7224,7 @@ function Renderer(canvas, quality) {
   this.scene.background = new THREE.Color(HORIZON);
   this.scene.fog = new THREE.Fog(HORIZON, 110, 420);
   this.cam = new THREE.PerspectiveCamera(46, 1, .2, 1400);
-  const hemi = new THREE.HemisphereLight(0xc4d2de, 0x4a4434, .8); this.scene.add(hemi);
+  const hemi = this.hemi = new THREE.HemisphereLight(0xc4d2de, 0x4a4434, .8); this.scene.add(hemi);
   const sun = this.sun = new THREE.DirectionalLight(0xffe8cc, 1.9);
   sun.castShadow = quality !== 'low';
   sun.shadow.mapSize.set(2048, 2048);
@@ -7209,6 +7233,7 @@ function Renderer(canvas, quality) {
   this.scene.add(sun); this.scene.add(sun.target);
   this.fogU = {fogMap: {value: null}, fogNN: {value: 128}};
   this.matV = this.fogged(new THREE.MeshStandardMaterial({vertexColors: true, roughness: .72, metalness: .08}));
+  this.swayT = {value: 0};
   this.time = 0; this.pools = new Map(); this.bmeshes = new Map(); this.fxShots = []; this.rings = [];
   this.shake = 0; this.flashA = 0; this.fp = null; this.alerts = [];
   this.buildSky();
@@ -7247,17 +7272,94 @@ Renderer.prototype.loadWorld = function (view) {
   this.view = view;
   const M = view.M, N = view.N;
   this.world = new THREE.Group(); this.scene.add(this.world);
+  this.applyLook(M, N);
   this.buildTerrain(M, N);
   this.buildWater(M, N);
   this.buildTrees(M, N);
   this.buildRuins(M);
   this.buildRocks(M, N);
+  this.buildGrass(M, N);
   this.buildNodes(M);
   this.buildFog(N);
   this.buildSelection();
   this.buildVillagers();
   this.scene.fog.near = Math.min(N * 1.1, 420); this.scene.fog.far = Math.min(N * 3.6, 1300);
+  if (this.waterMat) this.waterMat.uniforms.fogC.value.set(this.lookP.hor);
   this.me = view.me === undefined ? 0 : view.me;
+};
+
+// Lighting preset for this map: classic, or (new look) clear day / golden hour / overcast chosen from the map seed; snowy maps are overcast.
+Renderer.prototype.applyLook = function (M, N) {
+  let k = 'classic';
+  if (LOOK.neo) { let sn = 0; for (let i = 0; i < M.bio.length; i += 7) if (M.bio[i] === BIO.SNOW) sn++; k = sn * 7 > M.bio.length * .3 ? 'overcast' : ['day', 'day', 'golden', 'day', 'overcast'][Math.abs(M.seed | 0) % 5]; }
+  const P = this.lookP = LOOKS[k]; this.lookK = k;
+  SUN.set(P.sun[0], P.sun[1], P.sun[2]).normalize();
+  const U = this.sky.material.uniforms; U.top.value.set(P.top); U.hor.value.set(P.hor);
+  this.scene.background.set(P.hor); this.scene.fog.color.set(P.hor);
+  this.sun.color.set(P.sunC); this.sun.intensity = P.sunI;
+  this.hemi.color.set(P.hs); this.hemi.groundColor.set(P.hg); this.hemi.intensity = P.hi;
+  this.r.toneMappingExposure = P.exp;
+  document.body.classList.toggle('neo', LOOK.neo);
+};
+// New look: a swaying, fogged material for trees and grass. amp: sway strength, y0: height where sway starts.
+Renderer.prototype.swayMat = function (amp, y0, rough) {
+  const m = this.fogged(new THREE.MeshStandardMaterial({vertexColors: true, roughness: rough || .85, metalness: 0})), f = m.onBeforeCompile, T = this.swayT;
+  m.onBeforeCompile = sh => { f(sh); sh.uniforms.uT = T;
+    sh.vertexShader = 'uniform float uT;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nfloat sw=max(transformed.y-' + y0.toFixed(2) + ',0.);sw*=sw;\n#ifdef USE_INSTANCING\nvec3 ip=instanceMatrix[3].xyz;\n#else\nvec3 ip=vec3(0.);\n#endif\ntransformed.x+=sin(uT*1.6+ip.x*.55+ip.z*.31)*' + amp.toFixed(3) + '*sw;transformed.z+=cos(uT*1.25+ip.z*.47)*' + (amp * .8).toFixed(3) + '*sw;'); };
+  return m;
+};
+// New look: terrain lit per pixel, with fine world-space bumps so close-up ground has relief instead of a blur.
+Renderer.prototype.terrainMat = function (tex) {
+  if (!LOOK.neo || this.quality === 'low') return this.fogged(new THREE.MeshLambertMaterial({map: tex}));
+  const m = this.fogged(new THREE.MeshStandardMaterial({map: tex, roughness: .96, metalness: 0})), f = m.onBeforeCompile;
+  m.onBeforeCompile = sh => { f(sh);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+      { vec2 q=vWP.xz; float e=.06, dd=clamp(1.-length(vViewPosition)/70.,0.,1.);
+        #define TH(p) (gv((p)*2.7)*.55+gv((p)*8.3)*.3+gv((p)*23.)*.15)
+        float hx=TH(q+vec2(e,0.))-TH(q-vec2(e,0.)), hz=TH(q+vec2(0.,e))-TH(q-vec2(0.,e));
+        normal=normalize(normal+(viewMatrix*vec4(-hx*1.3*dd,0.,-hz*1.3*dd,0.)).xyz); }`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+      { float dd=clamp(1.-length(vViewPosition)/55.,0.,1.); float sp=gv(vWP.xz*31.)*.6+gv(vWP.xz*71.)*.4; diffuseColor.rgb*=mix(1.,.82+.36*sp,dd); }`);
+  };
+  return m;
+};
+// New look: grass tufts on grassland and swamp, sparse dry tufts in desert. Visual only; hidden where you dig.
+Renderer.prototype.buildGrass = function (M, N) {
+  if (this.grassM) { this.world.remove(this.grassM); this.grassM.dispose(); this.grassM = null; }
+  if (!LOOK.neo || this.quality === 'low' || M.lite) return;
+  const r = mulberry(M.seed + 77), L = [], dens = this.quality === 'high' ? 2.6 : 1.2;
+  for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) {
+    const i = y * N + x, b = M.bio[i];
+    if (M.water[i] || M.occ[i] || M.road[i] || M.h[i] < .55 || b === BIO.SNOW || b === BIO.ROCK) continue;
+    const sl = Math.hypot(M.h[i + 1] - M.h[i - 1], M.h[i + N] - M.h[i - N]) * .5; if (sl > .9) continue;
+    const n = (b === BIO.DESERT ? .25 : 1) * dens * (M.tree[i] ? 1.4 : 1);
+    for (let k = 0; k < 3; k++) if (r() < n / 3) L.push([x + r() - .5, y + r() - .5, b, i]);
+  }
+  if (!L.length) return;
+  // one tuft: 5 thin blades leaning out, dark at the root and light at the tip
+  const P = [], C = [];
+  for (let j = 0; j < 8; j++) {
+    const a = j / 8 * 6.283 + (j % 2) * .5, o = .03 + (j % 3) * .025, ox = Math.cos(a) * o, oz = Math.sin(a) * o, lx = Math.cos(a) * .07, lz = Math.sin(a) * .07, w = .022, h = .16 + ((j * 5) % 4) * .045, px = -Math.sin(a) * w, pz = Math.cos(a) * w;
+    P.push(ox - px, 0, oz - pz, ox + px, 0, oz + pz, ox + lx, h, oz + lz, ox + px, 0, oz + pz, ox - px, 0, oz - pz, ox + lx, h, oz + lz); for (let q2 = 0; q2 < 2; q2++) C.push(.3, .32, .25, .3, .32, .25, .72, .78, .55); // both windings: lit the same from either side
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.computeVertexNormals();
+  { const nr = g.attributes.normal; for (let i = 0; i < nr.count; i++) nr.setXYZ(i, nr.getX(i) * .3, 1, nr.getZ(i) * .3); } // lit like the ground under it
+  const mat = this.swayMat(.5, 0, .95);
+  const im = this.grassM = new THREE.InstancedMesh(g, mat, L.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), v = new THREE.Vector3(), sc = new THREE.Vector3(), c = new THREE.Color();
+  this.grassSlots = new Map();
+  L.forEach(([x, y, b, cell], k) => {
+    q.setFromAxisAngle(up, r() * 6.28); const s = .6 + r() * .6; sc.set(s, s * (.7 + r() * .6), s);
+    m4.compose(v.set(x, hAt(M, x, y) - .02, y), q, sc); im.setMatrixAt(k, m4);
+    const t = r(); if (b === BIO.DESERT) c.setRGB(.5 + t * .1, .44 + t * .08, .26); else if (b === BIO.SWAMP) c.setRGB(.25, .33 + t * .06, .2); else c.setRGB(.26 + t * .1, .4 + t * .1, .16 + t * .04);
+    im.setColorAt(k, c.convertSRGBToLinear());
+    let sl = this.grassSlots.get(cell); if (!sl) this.grassSlots.set(cell, sl = []); sl.push(k);
+  });
+  im.receiveShadow = true; im.castShadow = false; this.world.add(im);
+};
+Renderer.prototype.hideGrass = function (cells) {
+  if (!this.grassM) return; const z = new THREE.Matrix4().makeScale(0, 0, 0); let d = false;
+  for (const i of cells) { const sl = this.grassSlots.get(i); if (!sl) continue; for (const k of sl) this.grassM.setMatrixAt(k, z); this.grassSlots.delete(i); d = true; }
+  if (d) this.grassM.instanceMatrix.needsUpdate = true;
 };
 
 Renderer.prototype.buildTerrain = function (M, N) {
@@ -7308,7 +7410,7 @@ Renderer.prototype.buildTerrain = function (M, N) {
   const uv = g.attributes.uv;
   for (let i = 0; i < uv.count; i++) { uv.setXY(i, pos.getX(i) / N, pos.getZ(i) / N); }
   tex.flipY = false;
-  const m = this.terrain = new THREE.Mesh(g, this.fogged(new THREE.MeshLambertMaterial({map: tex})));
+  const m = this.terrain = new THREE.Mesh(g, this.terrainMat(tex));
   m.receiveShadow = true; m.castShadow = this.quality === 'high';
   this.world.add(m);
   // seabed beyond the edge of the map
@@ -7324,6 +7426,26 @@ Renderer.prototype.buildTerrain = function (M, N) {
 };
 
 // Boulders and rock outcrops on steep mountainsides and scattered across open ground (visual only).
+// New look: a rounded boulder with lumpy, noise-displaced faces, cracks and lichen-dark bottoms (smooth shading).
+function rockGeoNeo() {
+  if (rockGeoNeo.g) return rockGeoNeo.g;
+  const g = new THREE.IcosahedronGeometry(1, 2), P = g.attributes.position, r = mulberry(4242), nz = makeNoise(r), cols = [];
+  const v = new THREE.Vector3(), CUTS = [];
+  for (let j = 0; j < 7; j++) { const a = r() * 6.283, b = (r() - .3) * 1.4, d = .62 + r() * .2; CUTS.push([Math.cos(a) * Math.cos(b), Math.sin(b), Math.sin(a) * Math.cos(b), d]); }
+  for (let i = 0; i < P.count; i++) {
+    v.fromBufferAttribute(P, i); const n = nz(v.x * 1.3 + 5, v.z * 1.3 + v.y * .7 + 3, 3), k = .78 + n * .42 + (v.y > .55 ? -.12 : 0);
+    v.multiplyScalar(k);
+    for (const [px, py, pz, d] of CUTS) { const dd = v.x * px + v.y * py + v.z * pz - d; if (dd > 0) { v.x -= px * dd; v.y -= py * dd; v.z -= pz * dd; } } // flat fractured faces
+    v.y *= .72; if (v.y < -.25) v.y = -.25 - (v.y + .25) * .3; P.setXYZ(i, v.x, v.y, v.z);
+    const c = .7 + n * .4 - (v.y < 0 ? .2 : 0) + (v.y > .4 ? .06 : 0); cols.push(c, c * .97, c * .92);
+  }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+  g.computeVertexNormals(); // flat (the icosahedron is unindexed): average the normals of vertices that share a position for smooth shading
+  const N = g.attributes.normal, acc = new Map(), key = i => Math.round(P.getX(i) * 1e4) + ',' + Math.round(P.getY(i) * 1e4) + ',' + Math.round(P.getZ(i) * 1e4);
+  for (let i = 0; i < P.count; i++) { const k = key(i), a = acc.get(k) || [0, 0, 0]; a[0] += N.getX(i); a[1] += N.getY(i); a[2] += N.getZ(i); acc.set(k, a); }
+  for (let i = 0; i < P.count; i++) { const a = acc.get(key(i)), l = Math.hypot(a[0], a[1], a[2]) || 1, fx = N.getX(i) * .55 + a[0] / l * .45, fy = N.getY(i) * .55 + a[1] / l * .45, fz = N.getZ(i) * .55 + a[2] / l * .45, L2 = Math.hypot(fx, fy, fz) || 1; N.setXYZ(i, fx / L2, fy / L2, fz / L2); } // half flat, half smooth: crisp but not blocky
+  return (rockGeoNeo.g = g);
+}
 Renderer.prototype.buildRocks = function (M, N) {
   if (this.rockMesh) { this.world.remove(this.rockMesh); this.rockMesh.dispose(); }
   if (M.lite) return; // huge air maps: rocks are too small to see from a plane
@@ -7335,7 +7457,7 @@ Renderer.prototype.buildRocks = function (M, N) {
   }
   if (!L.length) return;
   const b = new Batch(); b.add(GEO.ico, 0xffffff, 0, 0, 0, 1, .62, .85, .2, .3, .1); b.add(GEO.ico, 0xe8e4dc, .45, .12, .2, .5, .42, .45, .9, 1.4, .3); b.add(GEO.ico, 0xd8d4cc, -.4, .05, -.25, .42, .3, .4, .4, .2, 1.1);
-  const im = this.rockMesh = new THREE.InstancedMesh(b.geo(), this.matV, L.length), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), c = new THREE.Color();
+  const im = this.rockMesh = new THREE.InstancedMesh(LOOK.neo ? rockGeoNeo() : b.geo(), this.matV, L.length), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), c = new THREE.Color();
   const tints = [[.42, .4, .37], [.48, .45, .41], [.36, .35, .33], [.5, .47, .4]];
   L.forEach(([x, y, s], k) => {
     e.set(r() * .6, r() * 6.28, r() * .6); q.setFromEuler(e);
@@ -7427,7 +7549,7 @@ Renderer.prototype.flushDig = function () {
     g.fillStyle = `rgba(${86 - k * 40 | 0},${66 - k * 34 | 0},${46 - k * 26 | 0},.9)`; g.beginPath(); g.arc(x * q, y * q, q * .85, 0, 6.3); g.fill();
     if (d >= TUNNEL_D) tun.add(i); else tun.delete(i);
     if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; }
-  pos.needsUpdate = true; this.fixNormals(bx0, by0, bx1, by1); this.texDirty = true; this.texT = Math.min(this.texT, .6);
+  pos.needsUpdate = true; this.fixNormals(bx0, by0, bx1, by1); this.texDirty = true; this.texT = Math.min(this.texT, .6); this.hideGrass(seen);
   // timber roofs over every tunnel cell
   if (!this.tunnelsInit) { this.tunnelsInit = 1; if (M.dug) for (let i = 0; i < N * N; i++) if (M.dug[i] >= TUNNEL_D) tun.add(i); }
   const cells = [...tun];
@@ -7493,11 +7615,12 @@ Renderer.prototype.buildTrees = function (M, N) {
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), col = new THREE.Color();
   this.treeM = lists.map((L, t) => {
     if (!L.length) return null;
-    const im = new THREE.InstancedMesh(treeGeo(t), this.matV, L.length);
+    const neo = LOOK.neo, im = new THREE.InstancedMesh(treeGeo(t), neo ? (this.treeMat || (this.treeMat = this.swayMat(.022, .7))) : this.matV, L.length);
     L.forEach((e, i) => {
       q.setFromAxisAngle(up, e.r); p.set(e.x, hAt(M, e.x, e.y) - .03, e.y); s.setScalar(e.s);
+      if (neo) { s.y *= .85 + rnd() * .35; s.x *= .92 + rnd() * .16; }
       m4.compose(p, q, s); im.setMatrixAt(i, m4);
-      col.setHSL(0, 0, .85 + rnd() * .3); im.setColorAt(i, col);
+      const vv = .85 + rnd() * .3; if (neo) { const hu = rnd() - .5; col.setRGB(vv * (1 + hu * .18), vv * (1 + hu * .05), vv * (1 - hu * .12)); } else col.setHSL(0, 0, vv); im.setColorAt(i, col);
       let sl = this.treeSlots.get(e.cell);
       if (!sl) this.treeSlots.set(e.cell, sl = []);
       sl.push([t, i]);
@@ -7517,6 +7640,7 @@ Renderer.prototype.updateTrees = function () {
     this.treeSlots.delete(cell);
   }
   for (const t of dirty) this.treeM[t].instanceMatrix.needsUpdate = true;
+  if (this.grassSlots) { const h = []; for (const c of this.grassSlots.keys()) if (M.occ[c]) h.push(c); if (h.length) this.hideGrass(h); }
 };
 
 Renderer.prototype.buildNodes = function (M) {
@@ -8088,7 +8212,7 @@ Renderer.prototype.stepShots = function (dt) {
 
 // ---------- main draw ----------
 Renderer.prototype.draw = function (dt, view) {
-  this.time += dt;
+  this.time += dt; this.swayT.value = this.time;
   const v = this.view = view, t = this.time;
   this.waterMat.uniforms.t.value = t;
   this.updateFog(dt);
@@ -10877,6 +11001,8 @@ const UI = {
       else $('codeIn').placeholder = v ? 'Unknown code' : 'Enter code'; };
     $('codeGo').onclick = code; $('codeIn').onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') code(); };
     $('hmQ').value = $('optQ').value; $('hmQ').onchange = () => { $('optQ').value = $('hmQ').value; $('optQ').onchange(); };
+    $('hmLook').value = LOOK.neo ? 'neo' : 'classic'; document.body.classList.toggle('neo', LOOK.neo);
+    $('hmLook').onchange = () => { LOOK.neo = $('hmLook').value === 'neo'; try { localStorage.setItem('jj-look', LOOK.neo ? 'neo' : 'classic'); } catch (e) {} document.body.classList.toggle('neo', LOOK.neo); if (this.demo) this.startDemo(); };
     try { const vv = localStorage.getItem('warsim-vol'); if (vv !== null) Sfx.vol = +vv; } catch (e) {}
     $('hmVol').value = Math.round(Sfx.vol / .6 * 100);
     $('hmVol').oninput = () => { Sfx.vol = $('hmVol').value / 100 * .6; if (Sfx.master) Sfx.master.gain.value = Sfx.vol; try { localStorage.setItem('warsim-vol', Sfx.vol); } catch (e) {} };
@@ -12611,6 +12737,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'New look: each map gets clear day, golden hour or overcast lighting. Grass sways in the wind, trees sway and vary, rocks are chiseled boulders, and the ground has fine relief when seen close up. There is a soft vignette and a warmer HUD. Want the old graphics back? Main menu → 🎨 Look → Classic (applies from the next battle).',
       'Workers: choose how many are builders and how many are miners (− / + in the worker build menu). Builders build and repair on their own and mine when there is nothing to do. Idle workers always go back to mining, so nobody stands around.',
       'First person: moving the mouse always turns the view, even when the browser has not locked the mouse. No click needed. Hold the cursor at the screen edge to keep turning.',
       'Defences: Man defences (bottom bar, or H with infantry selected) fills every bunker, pillbox and watchtower with the nearest infantry, then lines your trenches and sandbags. Bunkers, pillboxes and watchtowers have a Fill button too.',
