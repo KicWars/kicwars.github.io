@@ -11327,18 +11327,20 @@ const WarRoom = {
 const Interior = {
   cache: {}, EYE: .62, H: 1.25,
   layout(k) {
-    if (k === 'redstar') return {sub: false, chair: [10.5, -.7], worldUp: 1.1, // the Soviet atomic bomber: nose and cockpit, radio/nav, engineer's bay, bomb bay, tail gunner
+    if (k === 'redstar') { const tb = [], nw = x => .35 + 1.35 * (1 - Math.pow((x - 13.5) / 2.3, 2)); for (let xa = 13.5; xa < 15.79; xa += .46) { const wd = nw(Math.min(15.8, xa + .46)); tb.push([xa, xa + .46, wd, 1.8], [xa, xa + .46, -1.8, -wd]); }
+      return {sub: false, chair: [10.5, -.7], worldUp: 1.1, // the Soviet atomic bomber: nose and cockpit, radio/nav, engineer's bay, bomb bay, tail gunner
       rooms: [
-        {n: 'Cockpit and glass nose', x0: 8, x1: 15.5, z0: -1.7, z1: 1.7, win: [['x', 15.5, -1.5, 1.5, .1, 1.12], ['z', -1.7, 9, 11.8], ['z', 1.7, 9, 11.8], ['z', -1.7, 12.4, 14.8, .12, 1.1], ['z', 1.7, 12.4, 14.8, .12, 1.1]]},
+        {n: 'Cockpit', x0: 8, x1: 13.5, z0: -1.7, z1: 1.7, win: [['z', -1.7, 9, 12.9, .4, 1.15], ['z', 1.7, 9, 12.9, .4, 1.15]]},
+        {n: 'Glass nose', x0: 13.5, x1: 15.8, z0: -1.7, z1: 1.7, win: [['x', 15.8, -1.7, 1.7, .06, 1.45], ['z', -1.7, 13.5, 15.8, .06, 1.45], ['z', 1.7, 13.5, 15.8, .06, 1.45]]},
         {n: 'Radio and navigation', x0: 4, x1: 8, z0: -1.6, z1: 1.6, win: [['z', -1.6, 6.2, 7.8], ['z', 1.6, 6.2, 7.8]]},
         {n: "Engineer's bay", x0: -2, x1: 4, z0: -1.6, z1: 1.6, win: [['z', -1.6, 3, 3.7], ['z', 1.6, 3, 3.7]]},
         {n: 'Bomb bay', x0: -9, x1: -2, z0: -1.3, z1: 1.3},
         {n: 'Tail passage', x0: -13, x1: -9, z0: -.6, z1: .6},
         {n: 'Tail gunner', x0: -16, x1: -13, z0: -.9, z1: .9, win: [['x', -16, -.7, .7], ['z', -.9, -15.5, -13.5], ['z', .9, -15.5, -13.5]]},
       ],
-      doors: [['x', 8, -.5, .5], ['x', 4, -.5, .5], ['x', -2, -.5, .5], ['x', -9, -.5, .5], ['x', -13, -.4, .4]],
-      blocks: [[12.2, 12.7, -1.6, -.5], [12.2, 12.7, .5, 1.6], [10.1, 10.9, -1.05, -.35], [10.1, 10.9, .35, 1.05], [10.1, 10.9, -.2, .2], [8.4, 9.6, 1.1, 1.7], [14.6, 15.4, -.55, .55], [4.2, 5.8, -1.6, -1.1], [4.2, 5.8, 1.2, 1.6], [-.8, 2.8, -1.6, -1.2], [-.9, 3.1, .9, 1.5], [-8.6, -2.5, -.5, .5], [-14.9, -14.1, -.45, .45]],
-      crew: []};
+      doors: [['x', 13.5, -1.5, 1.5], ['x', 8, -.5, .5], ['x', 4, -.5, .5], ['x', -2, -.5, .5], ['x', -9, -.5, .5], ['x', -13, -.4, .4]],
+      blocks: [[12.2, 12.7, -1.6, -.5], [12.2, 12.7, .5, 1.6], [10.1, 10.9, -1.05, -.35], [10.1, 10.9, .35, 1.05], [10.1, 10.9, -.2, .2], [8.4, 9.6, 1.1, 1.7], [14.7, 15.3, -.5, .5], [4.2, 5.8, -1.6, -1.1], [4.2, 5.8, 1.2, 1.6], [-.8, 2.8, -1.6, -1.2], [-.9, 3.1, .9, 1.5], [-8.6, -2.5, -.5, .5], [-14.9, -14.1, -.45, .45]].concat(tb),
+      crew: []}; }
     const sub = !!UNITS[k].sub, long = k === 'nukesub';
     if (k === 'destroyer') return {sub, chair: [6.2, 0], worldUp: 1.2,
       rooms: [
@@ -11415,15 +11417,34 @@ const Interior = {
     };
     return m;
   },
+  archSkin(b, r, H, col) { // the curved fuselage skin over a compartment: an arch of panels, ribs and stringers (the glass nose gets a glazed frame instead)
+    const w = (r.z1 - r.z0) / 2, len = r.x1 - r.x0, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2, y0 = 1.15, rise = H + .3 - y0, n = 8, DK = 0x1c1f22, MT = 0x9aa3a8;
+    const pt = tt => [cz - w * Math.cos(tt), y0 + rise * Math.sin(tt)];
+    if (r.n === 'Glass nose') { // glazing bars sweeping over the nose, tighter toward the tip
+      const nw = x => .35 + 1.35 * (1 - Math.pow((x - 13.5) / 2.3, 2));
+      for (let i = 0; i <= 5; i++) { const x = 13.5 + i * .46, ww = nw(x), sc = ww / 1.7; let prev = null;
+        for (let j = 0; j <= 8; j++) { const tt = j / 8 * Math.PI, p = [x, y0 - .1 + (rise + .1) * Math.sin(tt) * (.55 + .45 * sc), cz - ww * Math.cos(tt)]; if (prev) limb(b, prev, p, .028, DK); prev = p; } }
+      for (let j = 1; j < 8; j++) { const tt = j / 8 * Math.PI; let prev = null; for (let i = 0; i <= 5; i++) { const x = 13.5 + i * .46, ww = nw(x), sc = ww / 1.7, p = [x, y0 - .1 + (rise + .1) * Math.sin(tt) * (.55 + .45 * sc), cz - ww * Math.cos(tt)]; if (prev) limb(b, prev, p, .022, DK); prev = p; } }
+      for (let i = 0; i < 5; i++) { const xa = 13.5 + i * .46, xb = xa + .46; for (const s of [-1, 1]) { limb(b, [xa, .06, s * nw(xa)], [xb, .06, s * nw(xb)], .035, DK); limb(b, [xa, 1.15, s * nw(xa)], [xb, 1.15, s * nw(xb)], .03, DK); } }
+      for (let i = 0; i <= 5; i++) { const x = 13.5 + i * .46, ww = nw(x); for (const s of [-1, 1]) b.box(.05, 1.1, .05, x, .6, s * ww, DK); }
+      return;
+    }
+    for (let i = 0; i < n; i++) {
+      const a = pt(i / n * Math.PI), c = pt((i + 1) / n * Math.PI), my = (a[1] + c[1]) / 2, mz = (a[0] + c[0]) / 2, chord = Math.hypot(c[0] - a[0], c[1] - a[1]), ph = Math.atan2(c[1] - a[1], c[0] - a[0]);
+      b.add(GEO.box, col, cx, my, mz, len, .03, chord + .02, -ph, 0, 0);
+      for (let x = r.x0 + .75; x < r.x1; x += 1.5) b.add(GEO.box, DK, x, my - .02, mz, .07, .06, chord + .03, -ph, 0, 0);
+      if (i > 0) b.cylX(.03, len, cx, a[1] - .02, a[0], i % 2 ? MT : DK);
+    }
+  },
   furnishRedStar(b, P, H, screen) {
     const ST = 0x3a3f44, DK = 0x1c1f22, MT = 0x9aa3a8, OL = 0x56604a, BR = 0xb08a3a, RD = 0xc23030, AM = 0xffb040, GL = 0x7fd8ff, PAD = 0x4a3a2c, SK = 0x8b9482, GRN = 0x46ff9a, CY = 0x5ad0ff, SEAT = 0x7a2020;
-    const sec = [[8, 15.5, 1.7], [4, 8, 1.6], [-2, 4, 1.6], [-9, -2, 1.3], [-13, -9, .6], [-16, -13, .9]];
+    const sec = [[8, 13.5, 1.7], [4, 8, 1.6], [-2, 4, 1.6], [-9, -2, 1.3], [-13, -9, .6], [-16, -13, .9]];
     // riveted frames and floor plates along every compartment
     for (const [x0, x1, w] of sec) {
-      for (let x = x0 + .75; x < x1; x += 1.5) { b.box(.05, .07, w * 2, x, H - .03, 0, DK); b.box(.05, H, .05, x, H / 2, w - .03, DK); b.box(.05, H, .05, x, H / 2, -w + .03, DK); }
+      for (let x = x0 + .75; x < x1; x += 1.5) { b.box(.05, 1.15, .05, x, .575, w - .03, DK); b.box(.05, 1.15, .05, x, .575, -w + .03, DK); }
       for (const z of [-w * .5, w * .5]) b.box(x1 - x0 - .2, .012, .03, (x0 + x1) / 2, .006, z, DK);
     }
-    for (let x = -13; x <= 14; x += 3.4) b.box(.5, .02, .12, x, H - .045, 0, 0xfff6dc); // ceiling lamps
+    for (let x = -13; x <= 12; x += 3.4) b.box(.5, .02, .12, x, H + .26, 0, 0xfff6dc); // ceiling lamps
     // flag and star on the flight-deck bulkhead
     b.box(.02, .4, .6, 8.06, .75, -1.2, RD); b.add(GEO.sph, 0xe8c040, 8.08, .78, -1.2, .04, .04, .02);
     // ---- flight deck: pilot (the chair), co-pilot, throttles, instrument panel, overhead switches, navigator table, bomb sight
@@ -11435,8 +11456,7 @@ const Interior = {
     b.box(.4, .22, .3, 10.5, .3, 0, ST); [0, 1, 2, 3].forEach(i => b.box(.03, .2, .03, 10.5, .5, -.12 + i * .08, [RD, AM, MT, MT][i]));
     b.box(1.1, .42, .6, 9, .21, 1.4, OL); b.box(1.1, .03, .6, 9, .43, 1.4, 0xe8dfc0); b.box(.5, .005, .02, 9, .447, 1.4, RD); b.cyl(.03, .14, 8.7, .5, 1.2, DK); b.add(GEO.sph, AM, 8.7, .6, 1.2, .045, .045, .045);
     b.box(.5, .45, .9, 14.9, .22, 0, ST); b.cylX(.07, .4, 14.6, .55, 0, DK); b.add(GEO.sph, GL, 14.4, .55, 0, .04, .04, .04); b.box(.7, .1, .6, 14.1, .08, 0, PAD); b.box(.3, .14, .2, 14.9, .5, .3, DK); b.add(GEO.sph, RD, 14.75, .58, -.3, .03, .03, .03);
-    b.box(.08, .06, 3.1, 15.5, .1, 0, DK); b.box(.08, .06, 3.1, 15.5, 1.12, 0, DK); [-1.5, -.5, .5, 1.5].forEach(z => b.box(.07, 1.02, .07, 15.5, .61, z, DK));   // glass nose frame: low glass so the bombardier can see the ground
-    [-1.7, 1.7].forEach(z => { [9, 10.4, 11.8].forEach(x => b.box(.07, .55, .07, x, .8, z, DK)); [12.4, 13.2, 14, 14.8].forEach(x => b.box(.07, 1, .07, x, .61, z, DK)); b.box(2.4, .06, .08, 13.6, .12, z, DK); b.box(2.8, .06, .08, 10.4, .55, z, DK); });
+    [-1.7, 1.7].forEach(z => { [9, 10.4, 11.8, 12.9].forEach(x => b.box(.07, .75, .07, x, .78, z, DK)); b.box(3.9, .06, .08, 10.95, .4, z, DK); b.box(3.9, .06, .08, 10.95, 1.15, z, DK); });
     // ---- radio and navigation: the radio desk, set, key and headset, a map cabinet, oxygen bottles
     b.box(1.8, .45, .5, 5, .22, -1.35, ST); b.box(.5, .28, .3, 5, .6, -1.42, DK);
     [0, 1, 2].forEach(i => { b.cyl(.04, .02, 4.8 + i * .2, .64, -1.26, 0xd8d0a0, Math.PI / 2); b.box(.02, .06, .01, 4.8 + i * .2, .66, -1.25, RD); });
@@ -11469,8 +11489,9 @@ const Interior = {
     [-.14, .14].forEach(z => { b.cylX(.025, 1.0, -15.6, .6, z, DK); b.cyl(.12, .1, -15.1, .4, z * 2.4, MT, Math.PI / 2); });
     b.box(.1, .1, .3, -15.2, .75, 0, ST); b.box(.01, .12, .14, -15, .83, 0, GL);
     // ---- outside, seen through the windows: wings, four engines with props
-    b.box(8.5, .14, 24, 2.8, -.14, 0, SK);
-    [-8, -4.2, 4.2, 8].forEach(z => { b.cylX(.5, 4.8, 3.4, .12, z, 0x7d8576); b.add(GEO.sph, 0x555a50, 6.0, .12, z, .2, .2, .2); b.box(.04, 1.3, .1, 6.15, .12, z, DK); b.box(.04, .1, 1.3, 6.15, .12, z, DK); b.box(.5, .08, .08, 1, .62, z, 0xe8c040); });
+    for (const s of [-1, 1]) for (let k = 0; k < 10; k++) { const z0 = 1.6 + k * 1.3, chord = 8.5 - k * .55, xc = 2.8 - k * 1.0; b.box(chord, .14 - k * .006, 1.32, xc, -.14, s * (z0 + .65), SK); } // swept wings
+    [[1, 4.2], [2, 8]].forEach(([n, zz]) => [-1, 1].forEach(s => { const k = Math.floor((zz - 1.6) / 1.3), xc = 2.8 - k * 1.0, chord = 8.5 - k * .55, xe = xc + chord / 2 - 1.2, z = s * zz;
+      b.cylX(.5, 4.4, xe - 1.4, .12, z, 0x7d8576); b.add(GEO.sph, 0x555a50, xe + .9, .12, z, .22, .2, .2); b.box(.04, 1.3, .1, xe + 1.05, .12, z, DK); b.box(.04, .1, 1.3, xe + 1.05, .12, z, DK); b.box(.5, .08, .08, xe - 2.4, .62, z, 0xe8c040); }));
   },
   furnishDestroyer(b, P, H, screen) {
     const ST = 0x3a3f44, DK = 0x1c1f22, WD = 0x7a5a3a, MT = 0x9aa3a8;
@@ -11537,7 +11558,7 @@ const Interior = {
     b.box(5.8, .01, .12, -23, .006, 0, 0xf4f4f0); for (let x = -25.5; x < -20.4; x += .85) { b.cyl(.015, .35, x, .17, -3.95, MT); b.cyl(.015, .35, x, .17, 3.95, MT); } b.cylX(.012, 5.4, -23, .34, -3.95, MT); b.cylX(.012, 5.4, -23, .34, 3.95, MT);
   },
   build(k, nat) {
-    const L = this.layout(k), P = palette(nat), H = this.H, b = new Batch(), T = .08, sub = L.sub;
+    const L = this.layout(k), P = palette(nat), H = k === 'redstar' ? 1.45 : this.H, b = new Batch(), T = .08, sub = L.sub;
     const rs = k === 'redstar', wallC = rs ? 0x66705f : sub ? 0x5d6a66 : 0x8a949c, floorC = rs ? 0x33382f : sub ? 0x2c3331 : 0x4a525a, roofC = rs ? 0x7a826f : sub ? 0x3b4442 : 0xa8b0b6, DK = 0x1c1f22, ST = 0x3a3f44;
     const edge = (room, axis, at, a, c) => {
       const top = room.open ? .45 : H, cuts = [];
@@ -11555,9 +11576,10 @@ const Interior = {
     };
     for (const r of L.rooms) {
       b.box(r.x1 - r.x0, .05, r.z1 - r.z0, (r.x0 + r.x1) / 2, -.025, (r.z0 + r.z1) / 2, r.open ? 0x6f7a84 : floorC);
-      if (!r.open) b.box(r.x1 - r.x0, .05, r.z1 - r.z0, (r.x0 + r.x1) / 2, H + .025, (r.z0 + r.z1) / 2, roofC);
+      if (!r.open && !rs) b.box(r.x1 - r.x0, .05, r.z1 - r.z0, (r.x0 + r.x1) / 2, H + .025, (r.z0 + r.z1) / 2, roofC);
       edge(r, 'x', r.x0, r.z0, r.z1); edge(r, 'x', r.x1, r.z0, r.z1); edge(r, 'z', r.z0, r.x0, r.x1); edge(r, 'z', r.z1, r.x0, r.x1);
     }
+    if (rs) for (const r of L.rooms) this.archSkin(b, r, H, roofC);
     // captain's chair: every vessel has one
     const [cx, cz] = L.chair;
     b.cyl(.05, .3, cx, .15, cz, DK); b.box(.42, .07, .42, cx, .34, cz, 0x7a2020); b.box(.07, .5, .42, cx - .2, .6, cz, 0x7a2020); b.box(.3, .05, .05, cx + .02, .47, cz + .2, DK); b.box(.3, .05, .05, cx + .02, .47, cz - .2, DK);
