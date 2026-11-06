@@ -2389,9 +2389,9 @@ Sim.prototype.rsStep = function () {
     const G = {train: 180, std: 120, brutal: 75}[rso.diff] || 120, shrink = 1 - G / flyT; R.grace = G;
     R.sched = R.sched.map(s => s[1] === 'bombfault' ? s : [Math.round(G + s[0] * shrink), s[1], s[2]]);
     R.sched.push([6, 'tip', 'Welcome aboard. The flight to New York takes about 16 minutes. Nothing goes wrong for the first couple of minutes: learn your stations.'], [28, 'tip', 'Seats: walk up and press E. Pilot: A/D shifts the aircraft sideways. Radio: A/D tunes the jammer. Tail and waist gunners: hold the mouse to fire and lead the target.'], [58, 'tip', 'Problems: hold E beside a leak or the bomb bay door to fix it. Hold E beside an injured crewmate to treat them.'], [88, 'tip', 'Coming up: fighters, radar locks, storms and searchlights. Decide who sits where.'], [Math.max(10, G - 6), 'tip', 'Here it comes. Stay sharp.']);
-    R.sched.sort((a, b) => a[0] - b[0]);
+    R.sched = R.sched.map(s => [s[0] * 1.2, s[1], s[2]]).sort((a, b) => a[0] - b[0]); R.RL = RL; // route distance at the nominal 1.2 units/s
   }
-  while (R.sched.length && R.sched[0][0] <= T && R.state === 'fly') {
+  while (R.sched.length && R.sched[0][0] <= (this.rsS || 0) && R.state === 'fly') {
     const [, kind, arg] = R.sched.shift();
     if (kind === 'leak') { const used = R.leaks.map(l => l.sp), free = RS_SPOTS.map((s, i) => i).filter(i => !used.includes(i)), i = free[(rnd() * free.length) | 0], s = RS_SPOTS[i]; R.leaks.push({id: R.seq++, sp: i, x: s[0], z: s[1], k: s[2], n: s[3], p: 0}); this.rsMsg('A ' + s[2] + ' line is leaking in the ' + s[3] + '! Find it and patch it (hold E).', 1); }
     else if (kind === 'fighters') { this.rsMsg('BANDITS! ' + arg + ' fighter' + (arg > 1 ? 's' : '') + ' closing. Man the guns!', 1); for (let i = 0; i < arg; i++) { const e = this.addUnit('fighter', this.rsEnemy, B.x, B.y); e.rsS = 1; e.hpm = e.hp = 80; R.fighters.push({id: e.id, ph: 'in', d: 26 + i * 4, ang: (rnd() < .5 ? -1 : 1) * (.5 + rnd() * 2.2), sw: rnd() < .5 ? -1 : 1, dz: (rnd() - .5) * 5, pass: 0, max: 2 + (rnd() < .5 ? 1 : 0), cd: 1}); } }
@@ -2403,7 +2403,7 @@ Sim.prototype.rsStep = function () {
     else if (kind === 'bombfault') { R.bf = {st: 'fault', p: 0, rider: -1, sp: 5, dt: 0}; this.rsMsg('BOMB ELECTRONICS DEAD! The release will not fire. Someone must climb onto the bomb in the bay and rewire it by hand (hold E on it).', 1); }
   }
   // --- pilot, drift and the flight line
-  const pilot = Object.keys(R.seat).find(k => R.seat[k] === 'pilot'); if (pilot === undefined) R.inp = 0;
+  const pilot = Object.keys(R.seat).find(k => R.seat[k] === 'pilot'); if (pilot === undefined) R.inp = clamp(-R.off / 4, -.35, .35);
   R.drift += (rnd() - .5) * dt * (.35 + R.storm * 1.5 + (R.leaks.some(l => l.k === 'hydraulic') ? .6 : 0)); R.drift = clamp(R.drift * .985, -1.4, 1.4);
   R.off = clamp(R.off + ((R.inp || 0) * 2.6 + R.drift) * dt, -9, 9);
   // --- fuel and hull
@@ -2481,7 +2481,7 @@ Sim.prototype.rsStep = function () {
     if (!used['t' + k]) hs.p = Math.max(0, hs.p - dt * .1);
     if (hs.st === 'hurt' && T > hs.until) delete R.hurt[k];
     else if (hs.st === 'down') { hs.bleed -= dt; if (hs.bleed <= 0) {
-      const rule = rso.fail || 'retry', ph = Math.floor(T / 70), ok = rule === 'check' || (rule === 'retry' && R.spent[k] !== ph); delete R.seat[k];
+      const rule = rso.fail || 'retry', pg = (this.rsS || 0) / (R.RL || 1), ph = [.1, .35, .62, .85].filter(q => pg >= q).length, ok = rule === 'check' || (rule === 'retry' && R.spent[k] !== ph); delete R.seat[k];
       if (ok) { R.spent[k] = ph; delete R.hurt[k]; this.ev({k: 'rsresp', p: +k}); this.rsMsg('You bled out and came back at the crew bunk.', 1, +k); }
       else { hs.st = 'out'; this.rsMsg('You are out for the rest of the mission.', 1, +k); if (humans.every(i => R.hurt[i] && R.hurt[i].st === 'out')) { R.state = 'lost'; this.rsMsg('The whole crew is down. The mission is lost.', 1); } } } }
   }
@@ -2649,7 +2649,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'gather': { const n = this.M.nodes[c.n]; if (n) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'gather', node: n.id}; } break; }
     case 'build': this.cmdBuild(mine, p, c.b, c.x, c.y, !!c.q, +c.rot || 0); break;
     case 'harden': this.cmdHarden(p, c.id); break;
-    case 'rsseat': { const R = this.rs; if (!R) break; const sid = c.id; if (!sid) { delete R.seat[pi]; break; } const S2 = RS_SEATS[sid], cw = this.crew && this.crew[pi]; if (!S2 || !cw || Math.hypot(cw.x - S2.x, cw.z - S2.z) > 1.7) break; if (Object.keys(R.seat).some(k => R.seat[k] === sid && +k !== pi)) break; const hs = R.hurt[pi]; if (hs && hs.st !== 'hurt') break; R.seat[pi] = sid; break; }
+    case 'rsseat': { const R = this.rs; if (!R) break; const sid = c.id; if (!sid) { delete R.seat[pi]; break; } const S2 = RS_SEATS[sid], cw = this.crew && this.crew[pi]; if (!S2 || !cw || Math.hypot(cw.x - S2.x, cw.z - S2.z) > 1.7) break; if (Object.keys(R.seat).some(k => R.seat[k] === sid && +k !== pi)) break; const hs = R.hurt[pi]; if (hs && hs.st !== 'hurt') break; if (sid === 'pilot' && this.players[pi].nat.key === 'charlies') break; R.seat[pi] = sid; break; }
     case 'rshold': { const R = this.rs; if (R) R.hold[pi] = c.id ? {id: String(c.id), t: this.t} : null; break; }
     case 'rsctl': { const R = this.rs; if (R && R.seat[pi] === 'pilot') R.inp = clamp(+c.v || 0, -1, 1); break; }
     case 'rsjam': { const R = this.rs; if (R && R.seat[pi] === 'radio') R.jamF = clamp(+c.f || 0, 0, 1); break; }
@@ -10009,7 +10009,7 @@ const Direct = {
     if (R.door && Math.hypot(-8.3 - px, 1 - pz) < 1.6) tgt = {id: 'door', hold: 1, text: 'Hold E: crank the bomb bay door shut (' + Math.round(R.doorP * 100) + '%)'};
     if (R.bf && R.bf.st === 'fault' && Math.abs(px + 5.5) < 3.2 && Math.abs(pz) < 1.4) tgt = {id: 'bomb', hold: 1, text: 'Hold E: climb on the bomb and rewire the release (' + Math.round(R.bf.p * 100) + '%)'};
     for (const kk of Object.keys(R.hurt || {})) { if (+kk === me) continue; const cc = cr[kk], h2 = R.hurt[kk]; if (cc && h2.st !== 'out' && Math.hypot(cc.x - px, cc.z - pz) < 1.7) tgt = {id: 'treat:' + kk, hold: 1, text: 'Hold E: treat ' + ((V.players[kk] && V.players[kk].name) || 'your crewmate') + ' (' + Math.round(h2.p * 100) + '%)'}; }
-    if (!tgt && !lockedOut) for (const s2 of Object.keys(RS_SEATS)) { const S = RS_SEATS[s2]; if (Math.hypot(S.x - px, S.z - pz) < 1.4) { const taken = Object.keys(R.seat || {}).some(q => R.seat[q] === s2); if (!taken) tgt = {id: 'seat:' + s2, text: 'E: take the ' + RS_NAMES[s2] + ' seat'}; break; } }
+    if (!tgt && !lockedOut) for (const s2 of Object.keys(RS_SEATS)) { const S = RS_SEATS[s2]; if (Math.hypot(S.x - px, S.z - pz) < 1.4) { const taken = Object.keys(R.seat || {}).some(q => R.seat[q] === s2); if (s2 === 'pilot' && V.players[me] && V.players[me].nat.key === 'charlies') { tgt = {id: 'nopilot', hold: 1, text: "Charlies are colourblind: no pilot's seat. Any other seat is yours."}; break; } if (!taken) tgt = {id: 'seat:' + s2, text: 'E: take the ' + RS_NAMES[s2] + ' seat'}; break; } }
     this.rsPrompt = drop ? null : tgt;
     if (tgt && tgt.hold && k.KeyE && !lockedOut) { this.holdT = (this.holdT || 0) - dt; if (this.rsHoldId !== tgt.id || this.holdT <= 0) { this.rsHoldId = tgt.id; this.holdT = .25; g.issue({c: 'rshold', id: tgt.id}); } }
     else if (this.rsHoldId) { this.rsHoldId = null; g.issue({c: 'rshold', id: null}); }
@@ -14069,6 +14069,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Operation Red Star: the aircraft now half-holds its line when nobody is flying, problems happen at points on the route (so the bomb run is always over New York), one respawn per stage of the flight, and Charlies can no longer take the pilot\'s seat.',
       'Multiplayer: host a room, name it, and it appears on every Join screen with a Join button. Works over a normal secure connection, so it should get through school networks.',
       'Operation Red Star (preview): a Soviet atomic bomber you and friends walk around together, with windows to the outside. Crew stations and the mission are coming.',
       'Multiplayer test room: a plain walled room, no bots, where friends walk around and see each other.',
