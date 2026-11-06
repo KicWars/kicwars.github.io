@@ -1493,27 +1493,45 @@ function genBattleMap(N, seed, BT) {
 }
 // ---------- Operation Red Star map: a Siberian airfield, Arctic ice, the Atlantic, and New York ----------
 // A big low-detail air map (M.lite). Deterministic from the seed so the host and every guest build the same one. M.rsRoute is the flight plan, M.rsTarget the aim point.
+const RS_RUN = 32; // runway length in cells; the bomber starts at the west end and the flight plan begins at the east end
 function redstarMap(N, seed, np) {
   const A = N * N, h = new Float32Array(A), bio = new Uint8Array(A), tree = new Uint8Array(A), water = new Uint8Array(A), block = new Uint8Array(A), road = new Uint8Array(A), occ = new Int32Array(A), ruins = [];
   const rnd = mulberry(seed + 5);
   const hs = (i, j) => { let n = (Math.imul(i, 374761393) + Math.imul(j, 668265263) + Math.imul(seed | 0, 144665)) | 0; n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967295; };
   const vn = (x, y) => { const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy), a = hs(i, j), b = hs(i + 1, j), c = hs(i, j + 1), d = hs(i + 1, j + 1); return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy; };
   const fbm = (x, y) => vn(x / 40, y / 40) * .55 + vn(x / 18, y / 18) * .3 + vn(x / 7, y / 7) * .15;
-  const isl = [[.4, .28, .07, 3.2], [.55, .68, .045, 2.2], [.3, .72, .035, 1.8], [.62, .24, .03, 1.5]];
+  const sm = (e0, e1, x) => { const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
+  // a world, not a strip: Siberia and the Arctic ice cap in the north and west, a rugged Atlantic coast with bays and capes, Greenland and Iceland, Europe along the south, America in the east, lakes and rivers inland
+  const isl = [[.43, .17, .085, 3.4, 1], [.52, .34, .04, 2.4, 2], [.33, .66, .03, 1.8, 3], [.62, .24, .028, 1.6, 4], [.4, .5, .02, 1.5, 5], [.55, .8, .03, 1.8, 6], [.47, .9, .025, 1.6, 7]];
+  const lakes = [[.07, .24, .03], [.12, .72, .025], [.9, .24, .035], [.93, .84, .025], [.16, .12, .02]];
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const i = y * N + x, u = x / N, v = y / N, wc = .15 + (fbm(x + 500, y) - .5) * .12, ec = .79 + (fbm(x, y + 900) - .5) * .1;
+    const i = y * N + x, u = x / N, v = y / N;
+    let wc = .2 + (vn(y / 130, 3.1) - .5) * .2 + (fbm(x + 500, y) - .5) * .07;                         // west coast
+    let ec = .85 + (vn(y / 120, 9.7) - .5) * .09 + (fbm(x, y + 900) - .5) * .05; ec += (.835 - ec) * sm(.26, .34, v) * (1 - sm(.66, .74, v)); // east coast (pulled to New York's shore)
+    const nc = .09 + (vn(x / 110, 5.5) - .5) * .09 + (fbm(x, y + 40) - .5) * .04;                       // edge of the Arctic ice cap
+    const sc = .92 + (vn(x / 140, 12.3) - .5) * .13 + (fbm(x + 40, y) - .5) * .05;                      // Europe's north shore
     let land = -1.6 - fbm(x + 40, y + 40) * .8;
     if (u < wc) land = .8 + fbm(x, y) * 3.2 * Math.min(1, (wc - u) * 12);
     else if (u > ec) land = .8 + fbm(x + 77, y) * 2.2 * Math.min(1, (u - ec) * 12);
-    for (const [iu, iv, r, ht] of isl) { const d = Math.hypot(u - iu, v - iv); if (d < r) land = Math.max(land, ht * (1 - d / r) * (.7 + .6 * fbm(x, y)) + .3); }
-    if (land < 0 && v < .5 && u > .17 && u < .6 && fbm(x * 1.7 + 300, y * 1.7) > .62) land = .25; // ice floes
+    if (v < nc) land = Math.max(land, .5 + fbm(x + 9, y) * 1.4 * Math.min(1, (nc - v) * 14));
+    if (v > sc) land = Math.max(land, .7 + fbm(x + 33, y) * 2.6 * Math.min(1, (v - sc) * 14));
+    for (const [iu, iv, r, ht, sd] of isl) { const d = Math.hypot(u - iu, v - iv) / (r * (.72 + .7 * vn(x / 22 + sd * 40, y / 22 + sd * 17))); if (d < 1) land = Math.max(land, ht * (1 - d) * (.7 + .6 * fbm(x, y)) + .3); }
+    // ranges (the Urals inland of Siberia, the Appalachians) and rolling highlands
+    land += (Math.exp(-Math.pow((u - .13) / .03, 2)) * Math.exp(-Math.pow((v - .3) / .17, 2)) + Math.exp(-Math.pow((u - .17) / .03, 2)) * Math.exp(-Math.pow((v - .78) / .12, 2)) + Math.exp(-Math.pow((u - .89) / .03, 2)) * Math.exp(-Math.pow((v - .22) / .14, 2))) * (3 + fbm(x * 1.5, y * 1.5) * 5) * (land > .5 ? 1 : 0);
+    for (const [lu, lv, lr] of lakes) { const d = Math.hypot(u - lu, (v - lv) * .8) / (lr * (.75 + .6 * fbm(x + 11, y + 29))); if (d < 1 && land > .5) land = -.9 + d * 1.2; }
+    if (land < 0 && v < .5 && u > .2 && u < .6 && fbm(x * 1.7 + 300, y * 1.7) > .62) land = .25; // ice floes
+    // the outer rim of the world is flat ground, so the endless country beyond joins on cleanly
+    const eg = Math.min(sm(0, .03, u), sm(0, .03, 1 - u), sm(0, .03, v), sm(0, .03, 1 - v));
+    if (eg < 1) { const rim = v < .5 ? 1.05 : 1.65; land = rim + (Math.max(land, rim) - rim) * eg; }
     h[i] = land;
-    bio[i] = u < .2 || (v < .55 && u < .62) ? BIO.SNOW : land > 3 ? BIO.ROCK : BIO.GRASS;
+    bio[i] = land > 5.5 ? BIO.SNOW : land > 3 ? BIO.ROCK : v < .24 || (u < .14 && v < .62) ? BIO.SNOW : v > .88 || (u > .86 && v > .78) ? BIO.DESERT : BIO.GRASS;
   }
+  // a few rivers that run from the highlands to the sea
+  for (const rv of [[[.1, .35], [.14, .42], [.12, .5], [.16, .6]], [[.84, .08], [.88, .14], [.9, .3], [.87, .4]], [[.2, .76], [.16, .82], [.2, .88], [.2, .95]]]) for (let k = 0; k + 1 < rv.length; k++) { const [u0, v0] = rv[k], [u1, v1] = rv[k + 1], n = Math.ceil(Math.hypot(u1 - u0, v1 - v0) * N); for (let q = 0; q <= n; q++) { const px = (u0 + (u1 - u0) * q / n) * N + Math.sin(q * .15) * 2.5, py = (v0 + (v1 - v0) * q / n) * N; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const xx = Math.round(px) + dx, yy = Math.round(py) + dy; if (xx > 0 && yy > 0 && xx < N - 1 && yy < N - 1 && Math.hypot(dx, dy) <= 2.1) { const i = yy * N + xx; if (h[i] > -.5) h[i] = Math.min(h[i], -.5 + Math.hypot(dx, dy) * .35); } } } }
   // New York: Manhattan between the Hudson and the East River, the harbour to the south, Jersey, Brooklyn and Queens around it
   const cx = Math.round(N * .915), cy = Math.round(N * .5);
   for (let y = cy - 130; y <= cy + 130; y++) for (let x = cx - 80; x <= cx + 46; x++) {
-    if (x < 1 || y < 1 || x >= N - 1 || y >= N - 1) continue; const i = y * N + x, dx = x - cx, dy = y - cy; let land = 1.3;
+    if (x < 1 || y < 1 || x >= N - 1 || y >= N - 1) continue; const i = y * N + x, dx = x - cx, dy = y - cy; let land = dx > -64 || h[i] > 0 ? 1.3 : h[i];
     if (dx >= -19 && dx <= -10 && dy < 84) land = -1.4;                         // the Hudson
     else if (dx >= 10 && dx <= 17 && dy > -58 && dy < 84) land = -1.4;          // the East River
     else if (dy >= 84 && Math.abs(dx) < 50) land = -1.5;                        // the harbour
@@ -1523,7 +1541,7 @@ function redstarMap(N, seed, np) {
     h[i] = land; bio[i] = BIO.GRASS;
   }
   const t2 = new Float32Array(h); for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) { const i = y * N + x; h[i] = (t2[i] * 2 + t2[i - 1] + t2[i + 1] + t2[i - N] + t2[i + N]) / 6; }
-  for (let i = 0; i < A; i++) { if (h[i] < 0) water[i] = 1; else if (bio[i] === BIO.GRASS && h[i] > .7 && h[i] < 2.8 && rnd() < .1) tree[i] = 1; else if (bio[i] === BIO.SNOW && h[i] > 1 && rnd() < .05) tree[i] = 1; }
+  for (let i = 0; i < A; i++) { if (h[i] < 0) water[i] = 1; else { const f = vn((i % N) / 26 + 7, ((i / N) | 0) / 26); if (bio[i] === BIO.GRASS && h[i] > .7 && h[i] < 3.2 && rnd() < (f > .5 ? .38 : .04)) tree[i] = 1; else if (bio[i] === BIO.SNOW && h[i] > 1 && h[i] < 4 && rnd() < (f > .55 ? .3 : .03)) tree[i] = 1; } }
   // the city: Manhattan's towers (tallest at midtown and downtown), Central Park, bridges, and the low-rise boroughs around
   const tw = (x, y, w, d, hh, z) => ruins.push({x, y, w, d, h: hh, kind: 'sky', z});
   const park = (dx, dy) => Math.abs(dx) < 6.5 && dy > -36 && dy < -12;
@@ -1540,13 +1558,22 @@ function redstarMap(N, seed, np) {
   for (const R2 of ruins) { const c0 = Math.round(R2.y) * N + Math.round(R2.x); for (const o of [0, 1, -1, N, -N]) tree[c0 + o] = 0; }
   for (let y = cy - 36; y < cy - 12; y++) for (let x = cx - 6; x <= cx + 6; x++) if (rnd() < .3) tree[y * N + x] = 1; // Central Park
   for (const R2 of ruins) R2.z = h[Math.round(R2.y) * N + Math.round(R2.x)];
-  // the Siberian airfield: a level strip with a runway
-  const ax = Math.round(N * .06), ay = Math.round(N * .5);
-  for (let y = ay - 8; y <= ay + 8; y++) for (let x = ax - 6; x <= ax + 22; x++) { const i = y * N + x; h[i] = 1.4; water[i] = 0; tree[i] = 0; bio[i] = BIO.SNOW; }
-  for (let x = ax; x <= ax + 18; x++) for (let y = ay - 1; y <= ay + 1; y++) road[y * N + x] = 1;
+  // villages on both continents and along Europe's shore (houses only, so they stay cheap)
+  const village = (u, v, n) => { for (let k = 0; k < n; k++) { const xx = u * N + (rnd() - .5) * 16, yy = v * N + (rnd() - .5) * 16; if (h[Math.round(yy) * N + Math.round(xx)] < .8) continue; ruins.push({x: xx, y: yy, w: 2.6 + rnd() * 1.4, d: 3 + rnd() * 1.4, h: 2 + rnd() * 1.4, kind: 'house', z: h[Math.round(yy) * N + Math.round(xx)]}); } };
+  for (const [u, v] of [[.1, .4], [.13, .62], [.07, .74], [.09, .16], [.86, .18], [.88, .8], [.84, .66], [.3, .95], [.62, .96], [.45, .94], [.2, .9]]) village(u, v, 9);
+  // the Siberian airfield: a level apron and a long runway, with the ground eased into the surrounding country
+  const ax = Math.round(N * .06), ay = Math.round(N * .5), RUN = RS_RUN;
+  for (let y = ay - 24; y <= ay + 24; y++) for (let x = ax - 20; x <= ax + RUN + 50; x++) {
+    const i = y * N + x, w = Math.min(1, Math.min(sm(-1, 12, Math.min(x - (ax - 8), ax + RUN + 24 - x)), sm(-1, 12, 8 - Math.abs(y - ay) + 12))); if (w <= 0) continue;
+    h[i] += (1.4 - h[i]) * w; if (w > .6) { water[i] = 0; tree[i] = 0; bio[i] = BIO.SNOW; }
+  }
+  for (const R2 of ruins) if (Math.abs(R2.y - ay) < 24 && R2.x > ax - 20 && R2.x < ax + RUN + 50) R2.x = -999;
+  for (let i = ruins.length - 1; i >= 0; i--) if (ruins[i].x === -999) ruins.splice(i, 1);
+  for (let x = ax - 2; x <= ax + RUN + 6; x++) for (let y = ay - 1; y <= ay + 1; y++) road[y * N + x] = 1;
+  for (const R2 of ruins) R2.z = h[Math.round(R2.y) * N + Math.round(R2.x)];
   const P = n => [Math.round(N * n[0]), Math.round(N * n[1])];
   const M = {N, seed, h, bio, tree, water, block, road, occ, spawns: Array.from({length: np}, () => ({x: ax + 4, y: ay})), nodes: [], ruins, lite: true};
-  M.rsRoute = [[.07, .5], [.14, .32], [.30, .2], [.50, .2], [.62, .4], [.72, .62], [.88, .74], [.915, .6], [.915, (cy - 14) / N]].map(P); M.rsTarget = {x: cx, y: cy - 14}; // long way round over the Arctic, then up the harbour and Manhattan to Central Park
+  M.rsRoute = [[0, 0], [.14, .32], [.30, .2], [.50, .2], [.62, .4], [.72, .62], [.88, .74], [.915, .6], [.915, (cy - 14) / N]].map(P); M.rsRoute[0] = [ax + RUN, ay]; M.rsTarget = {x: cx, y: cy - 14}; // long way round over the Arctic, then up the harbour and Manhattan to Central Park
   finishRoads(M);
   return M;
 }
@@ -2353,9 +2380,10 @@ Sim.prototype.setupSandbox = function () {
 // Operation Red Star (work in progress): one Soviet bomber that flies a slow circle while the crew walk around inside it.
 Sim.prototype.setupRedstar = function () {
   this.rs = {t: 0, fuel: 100, hull: 100, off: 0, drift: 0, inp: 0, lit: 0, beams: [], lights: null, lockOn: 0, lockT: 0, jamF: .5, jamT: .5, jamP: 0, sig: 0, storm: 0, stormT: 0, flT: 3, door: 0, doorP: 0, leaks: [], hurt: {}, seat: {}, hold: {}, spent: {}, sched: null, bullets: [], fighters: [], gcd: {}, seq: 1, state: 'fly', kills: 0, bf: null};
-  this.rsEnemy = this.players.length - 1; this.redstar = 1; this.rsS = 0; const R0 = this.M.rsRoute[0], b = this.addUnit('bomber', 0, R0[0], R0[1]); b.z = RS_ALT; b.rs = 1; b.h = 0; this.rsB = b;
+  this.rsEnemy = this.players.length - 1; this.redstar = 1; const R0 = this.M.rsRoute[0], b = this.addUnit('bomber', 0, R0[0] - RS_RUN, R0[1]); b.z = RS_GND; b.rs = 1; b.h = 0; this.rsB = b; this.rsS = -RS_RUN; this.rsAir = 0; this.rsVel = 0;
 };
 // ---------- Operation Red Star: mission director, systems, fighters, crew states ----------
+const RS_GND = 2.6; // wheels on the runway
 const RS_ALT = 48; // cruising altitude: high above the city's towers
 const RS_SEATS = {pilot: {x: 10.5, z: -.7, yaw: 0, arc: 1.3}, radio: {x: 5, z: -.55, yaw: -Math.PI / 2, arc: 1.3}, tail: {x: -14.4, z: 0, yaw: Math.PI, arc: 1.0, gun: 1}, wl: {x: 3.3, z: -.9, yaw: -Math.PI / 2, arc: 1.0, gun: 1}, wr: {x: 3.3, z: .9, yaw: Math.PI / 2, arc: 1.0, gun: 1}};
 const RS_NAMES = {pilot: "pilot's", radio: 'radio', tail: "tail gunner's", wl: 'left waist gun', wr: 'right waist gun'};
@@ -2370,11 +2398,12 @@ Sim.prototype.rsHurt = function (pi) {
 Sim.prototype.rsPub = function () {
   const R = this.rs;
   return {t: Math.round(R.t), fuel: Math.round(R.fuel), hull: Math.round(R.hull), off: +R.off.toFixed(1), lit: +R.lit.toFixed(2), lockOn: R.lockOn, lockT: Math.round(R.lockT), jamP: +R.jamP.toFixed(2), sig: +R.sig.toFixed(2), storm: R.storm, door: R.door, doorP: +R.doorP.toFixed(2),
-    leaks: R.leaks.map(l => ({id: l.id, x: l.x, z: l.z, k: l.k, n: l.n, p: +l.p.toFixed(2)})), hurt: R.hurt, seat: R.seat, beams: R.beams, grace: R.grace || 0, bf: R.bf ? {st: R.bf.st, p: +R.bf.p.toFixed(2), rider: R.bf.rider} : null, state: R.state, fighters: R.fighters.length, kills: R.kills};
+    leaks: R.leaks.map(l => ({id: l.id, x: l.x, z: l.z, k: l.k, n: l.n, p: +l.p.toFixed(2)})), hurt: R.hurt, seat: R.seat, beams: R.beams, grace: R.grace || 0, bf: R.bf ? {st: R.bf.st, p: +R.bf.p.toFixed(2), rider: R.bf.rider} : null, state: R.state, fighters: R.fighters.length, kills: R.kills, air: this.rsAir ? 1 : 0, vel: +(this.rsVel || 0).toFixed(2)};
 };
 Sim.prototype.rsStep = function () {
   const R = this.rs, B = this.rsB, dt = .1, n = this.players.length - 1, rso = this.rso || {}, rnd = () => this.rnd();
   if (!R || !B || R.state === 'lost' || R.state === 'won') return;
+  if (!this.rsAir) { R.ground = (R.ground || 0) + dt; if (R.ground > 4 && !R.tip0) { R.tip0 = 1; this.rsMsg('Pilot: sit in the cockpit seat (E), then hold W for throttle. A/D steer along the runway. Take off before anything else happens.', 1); } return; }
   R.t += dt; const T = R.t, hd = this.rsHd || 0;
   const humans = []; for (let i = 0; i < n; i++) humans.push(i);
   const dmgK = {train: .6, std: 1, brutal: 1.4}[rso.diff] || 1;
@@ -2403,7 +2432,7 @@ Sim.prototype.rsStep = function () {
     else if (kind === 'bombfault') { R.bf = {st: 'fault', p: 0, rider: -1, sp: 5, dt: 0}; this.rsMsg('BOMB ELECTRONICS DEAD! The release will not fire. Someone must climb onto the bomb in the bay and rewire it by hand (hold E on it).', 1); }
   }
   // --- pilot, drift and the flight line
-  const pilot = Object.keys(R.seat).find(k => R.seat[k] === 'pilot'); if (pilot === undefined) R.inp = 0;
+  const pilot = Object.keys(R.seat).find(k => R.seat[k] === 'pilot'); if (pilot === undefined) { R.inp = 0; R.thr = 0; }
   R.drift += (rnd() - .5) * dt * (.35 + R.storm * 1.5 + (R.leaks.some(l => l.k === 'hydraulic') ? .6 : 0)); R.drift = clamp(R.drift * .985, -1.4, 1.4);
   R.off = clamp(R.off + ((R.inp || 0) * 2.6 + R.drift) * dt, -9, 9);
   // --- fuel and hull
@@ -2486,13 +2515,23 @@ Sim.prototype.rsStep = function () {
       else { hs.st = 'out'; this.rsMsg('You are out for the rest of the mission.', 1, +k); if (humans.every(i => R.hurt[i] && R.hurt[i].st === 'out')) { R.state = 'lost'; this.rsMsg('The whole crew is down. The mission is lost.', 1); } } } }
   }
 };
-Sim.prototype.redstarStep = function () { // follows the flight plan at a steady crawl, then circles New York
+Sim.prototype.redstarStep = function () { // the bomber rolls down the runway under the pilot's throttle, lifts off, then follows the flight plan at a steady crawl and circles New York
   const b = [...this.ents.values()].find(e => e.rs), RT = this.M.rsRoute; if (!b || !RT) return;
   const RS = this.rs; if (RS && RS.state === 'lost') return;
-  this.rsS = (this.rsS || 0) + .12 * (RS && RS.door ? .75 : 1) * (RS && RS.storm ? .92 : 1); let s = this.rsS, x, y, hd;
-  for (let i = 0; i < RT.length - 1; i++) { const dx = RT[i + 1][0] - RT[i][0], dy = RT[i + 1][1] - RT[i][1], L = Math.hypot(dx, dy); if (s <= L) { x = RT[i][0] + dx / L * s; y = RT[i][1] + dy / L * s; hd = Math.atan2(dy, dx); break; } s -= L; }
-  if (x === undefined) { const T = this.M.rsTarget, a = (s / 16) + 2.2; x = T.x + Math.cos(a) * 16; y = T.y + Math.sin(a) * 16; hd = a + Math.PI / 2; }
-  this.rsH = (this.rsH === undefined ? hd : this.rsH) + angDiff(this.rsH === undefined ? hd : this.rsH, hd) * .06; const pxv = -Math.sin(this.rsH), pyv = Math.cos(this.rsH), off = RS ? RS.off : 0, ox = b.x, oy = b.y; b.x = x + pxv * off; b.y = y + pyv * off; this.rsHd = this.rsH; this.rsV = {x: (b.x - ox) / .1, y: (b.y - oy) / .1}; b.h = this.rsH; b.z = RS_ALT; b.moving = true; b.hp = b.hpm;
+  const dt = .1, sm = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+  let vel;
+  if (!this.rsAir) {
+    const pilot = RS && Object.keys(RS.seat).some(k => RS.seat[k] === 'pilot'), thr = pilot && RS.thr;
+    this.rsVel = Math.max(0, Math.min(1.2, (this.rsVel || 0) + (thr ? .045 : -.03) * dt)); vel = this.rsVel;
+    if (RS) RS.off = clamp(RS.off + (pilot ? RS.inp || 0 : 0) * 1.4 * dt, -1.3, 1.3);
+    if (vel >= 1.08) { this.rsAir = 1; this.rsLift = this.rsS; if (RS) { RS.off = clamp(RS.off, -1.3, 1.3); } this.rsMsg('Airborne! Gear up. The flight to New York begins.', 1); }
+  } else { vel = 1.2 * (RS && RS.door ? .75 : 1) * (RS && RS.storm ? .92 : 1); this.rsVel = vel; }
+  this.rsS += vel * dt; let s = this.rsS, x, y, hd = 0;
+  if (s < 0) { x = RT[0][0] + s; y = RT[0][1]; hd = 0; }
+  else { for (let i = 0; i < RT.length - 1; i++) { const dx = RT[i + 1][0] - RT[i][0], dy = RT[i + 1][1] - RT[i][1], L = Math.hypot(dx, dy); if (s <= L) { x = RT[i][0] + dx / L * s; y = RT[i][1] + dy / L * s; hd = Math.atan2(dy, dx); break; } s -= L; }
+    if (x === undefined) { const T = this.M.rsTarget, a = (s / 16) + 2.2; x = T.x + Math.cos(a) * 16; y = T.y + Math.sin(a) * 16; hd = a + Math.PI / 2; } }
+  this.rsH = (this.rsH === undefined ? hd : this.rsH) + angDiff(this.rsH === undefined ? hd : this.rsH, hd) * .06; const pxv = -Math.sin(this.rsH), pyv = Math.cos(this.rsH), off = RS ? RS.off : 0, ox = b.x, oy = b.y; b.x = x + pxv * off; b.y = y + pyv * off; this.rsHd = this.rsH; this.rsV = {x: (b.x - ox) / .1, y: (b.y - oy) / .1}; b.h = this.rsH;
+  b.z = this.rsAir ? RS_GND + (RS_ALT - RS_GND) * sm((this.rsS - this.rsLift) / 40) : RS_GND; b.moving = true; b.hp = b.hpm;
 };
 Sim.prototype.setupPlayer = function (p) {
   const s = p.spawn;
@@ -2651,7 +2690,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'harden': this.cmdHarden(p, c.id); break;
     case 'rsseat': { const R = this.rs; if (!R) break; const sid = c.id; if (!sid) { delete R.seat[pi]; break; } const S2 = RS_SEATS[sid], cw = this.crew && this.crew[pi]; if (!S2 || !cw || Math.hypot(cw.x - S2.x, cw.z - S2.z) > 1.7) break; if (Object.keys(R.seat).some(k => R.seat[k] === sid && +k !== pi)) break; const hs = R.hurt[pi]; if (hs && hs.st !== 'hurt') break; R.seat[pi] = sid; break; }
     case 'rshold': { const R = this.rs; if (R) R.hold[pi] = c.id ? {id: String(c.id), t: this.t} : null; break; }
-    case 'rsctl': { const R = this.rs; if (R && R.seat[pi] === 'pilot') R.inp = clamp(+c.v || 0, -1, 1); break; }
+    case 'rsctl': { const R = this.rs; if (R && R.seat[pi] === 'pilot') R.inp = clamp(+c.v || 0, -1, 1); R.thr = c.t ? 1 : 0; break; }
     case 'rsjam': { const R = this.rs; if (R && R.seat[pi] === 'radio') R.jamF = clamp(+c.f || 0, 0, 1); break; }
     case 'rsfire': { const R = this.rs, sid = R && R.seat[pi], S2 = sid && RS_SEATS[sid], B = this.rsB; if (!S2 || !S2.gun || !B || (R.gcd[pi] || 0) > this.t) break; R.gcd[pi] = this.t + .1; const wy = +c.yaw || 0, wp = clamp(+c.pitch || 0, -1, 1), hd = this.rsHd || 0, sx = S2.x * .2, sz = S2.z * .2, ox = B.x + Math.cos(hd) * sx - Math.sin(hd) * sz, oy = B.y + Math.sin(hd) * sx + Math.cos(hd) * sz, oz = B.z + 1, dx = Math.cos(wy) * Math.cos(wp), dy = Math.sin(wy) * Math.cos(wp), dz = Math.sin(wp), sp = 38, vB = this.rsV || {x: 0, y: 0}; R.bullets.push({x: ox, y: oy, z: oz, vx: dx * sp + vB.x, vy: dy * sp + vB.y, vz: dz * sp, t: 0}); this.ev({k: 'rstr', x0: ox, y0: oy, z0: oz, x1: ox + dx * 16, y1: oy + dy * 16, z1: oz + dz * 16, c: 'g'}); break; }
     case 'icrew': (this.crew = this.crew || {})[pi] = {x: +c.x || 0, z: +c.z || 0, yaw: +c.yaw || 0, t: this.t}; break; // where this player is walking inside the shared aircraft
@@ -7947,6 +7986,7 @@ Renderer.prototype.buildTerrain = function (M, N) {
   if (M.rsRoute) { // Operation Red Star: land and sea go on forever. Snow beyond the west edge, farmland beyond the east, a far fog and a long view distance.
     const skirt = (x, col, y) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(3000, 6000), new THREE.MeshLambertMaterial({color: col})); m.rotation.x = -Math.PI / 2; m.position.set(x, y, N / 2); this.world.add(m); };
     skirt(-1500, 0xdde4e8, 1.05); skirt(N + 1500, 0x587a3c, 1.65);
+    const capN = (z, col, y) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(N + 6, 3000), new THREE.MeshLambertMaterial({color: col})); m.rotation.x = -Math.PI / 2; m.position.set(N / 2, y, z); this.world.add(m); }; capN(-1500, 0xdde4e8, 1.05); capN(N + 1500, 0x587a3c, 1.65); // the ice cap beyond the north edge, Europe beyond the south
     if (this.scene.fog) { this.scene.fog.near = 300; this.scene.fog.far = 1300; } this.cam.far = Math.max(this.cam.far, 2600); this.cam.updateProjectionMatrix();
   }
   // seabed beyond the edge of the map
@@ -9988,12 +10028,12 @@ const Direct = {
       const S = RS_SEATS[sid]; if (this.seatId !== sid) { this.seatId = sid; A.x = S.x; A.z = S.z; A.yaw = S.yaw; A.pitch = 0; }
       A.yaw = S.yaw + clamp(angDiff(S.yaw, A.yaw), -S.arc, S.arc); A.pitch = clamp(A.pitch, S.gun ? -.6 : -.9, S.gun ? .8 : .6);
       if (edgeE) g.issue({c: 'rsseat', id: null});
-      if (sid === 'pilot') { const v = (k[B.right] ? 1 : 0) - (k[B.left] ? 1 : 0); if (v !== this.rsVin) { this.rsVin = v; g.issue({c: 'rsctl', v}); } }
+      if (sid === 'pilot') { const v = (k[B.right] ? 1 : 0) - (k[B.left] ? 1 : 0), t = k[B.fwd] ? 1 : 0; if (v !== this.rsVin || t !== this.rsTin) { this.rsVin = v; this.rsTin = t; g.issue({c: 'rsctl', v, t}); } }
       else if (sid === 'radio') { this.jamF = clamp((this.jamF === undefined ? .5 : this.jamF) + ((k[B.right] ? 1 : 0) - (k[B.left] ? 1 : 0)) * dt * .3, 0, 1); this.jamT = (this.jamT || 0) - dt; if (this.jamT <= 0) { this.jamT = .15; g.issue({c: 'rsjam', f: +this.jamF.toFixed(3)}); } }
       else if (S.gun && this.mouseDown) { this.gunT = (this.gunT || 0) - dt; if (this.gunT <= 0) { this.gunT = .11; g.issue({c: 'rsfire', yaw: this.viewYaw, pitch: this.viewPitch}); Sfx.beep(260); } }
-      this.rsPrompt = {text: 'E: leave the seat' + (S.gun ? ' · hold the mouse button to fire' : sid === 'pilot' ? ' · A / D shift the aircraft sideways' : ' · A / D tune the dial')}; this.rsHoldId = null; return;
+      this.rsPrompt = {text: 'E: leave the seat' + (S.gun ? ' · hold the mouse button to fire' : sid === 'pilot' ? (R.air === 0 ? ' · hold W for throttle · A / D steer on the runway' : ' · A / D shift the aircraft sideways') : ' · A / D tune the dial')}; this.rsHoldId = null; return;
     }
-    if (this.seatId) { this.seatId = null; if (this.rsVin) { this.rsVin = 0; g.issue({c: 'rsctl', v: 0}); } }
+    if (this.seatId) { this.seatId = null; if (this.rsVin || this.rsTin) { this.rsVin = 0; this.rsTin = 0; g.issue({c: 'rsctl', v: 0, t: 0}); } }
     const bfs = R.bf, drop = !!(bfs && bfs.st === 'drop'), rides = drop && bfs.rider === me, onB = !!(bfs && bfs.st === 'fault' && k.KeyE && !lockedOut && Math.abs(A.x + 5.5) < 3.2 && Math.abs(A.z) < 1.4);
     if (drop) { if (this.dropS === undefined) this.dropS = performance.now(); this.dropT = (performance.now() - this.dropS) / 1000; if (rides) A.pitch += (-.75 - A.pitch) * Math.min(1, dt * 2); } else { this.dropT = undefined; this.dropS = undefined; }
     if (onB) { this.onBomb = true; A.z += (0 - A.z) * Math.min(1, dt * 6); }
@@ -10862,6 +10902,7 @@ const Direct = {
       const nf = Array.isArray(R.fighters) ? R.fighters.length : R.fighters; if (nf) line('BANDITS ' + nf, '#ff8a65'); if (R.lockOn) line('RADAR LOCK ' + Math.max(0, Math.round(35 - R.lockT)) + 's', '#ff5a4a'); if (R.beams && R.beams.length) line('SEARCHLIGHTS', '#ffe27a');
       if (R.storm) line('STORM', '#9fc9ff'); if (R.grace && R.t < R.grace) line('PREPARE: first trouble in about ' + Math.ceil(R.grace - R.t) + 's', '#9fe39f'); if (R.door) line('BAY DOOR JAMMED', '#ffb74d'); if (R.bf && R.bf.st === 'fault') line('BOMB ELECTRONICS DEAD ' + Math.round(R.bf.p * 100) + '%', '#ff6b6b'); for (const l of R.leaks || []) line(l.k.toUpperCase() + ' LEAK: ' + l.n, '#ffb74d');
       for (const k of Object.keys(R.hurt || {})) if (+k !== me) line(((V.players[k] && V.players[k].name) || 'CREW') + (R.hurt[k].st === 'hurt' ? ' HURT' : R.hurt[k].st === 'down' ? ' DOWN' : ' OUT'), '#ff6a5a');
+      if (R.air === 0) line('ON THE RUNWAY: pilot, hold W to take off  ·  speed ' + Math.round((R.vel || 0) / 1.08 * 100) + '%', '#9fe39f');
       if (R.state === 'lost') line('MISSION LOST', '#ff3b30');
     }
     c.textAlign = 'center'; c.font = '700 15px system-ui'; c.fillStyle = '#fff';
@@ -14069,6 +14110,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Operation Red Star: the bomber now starts on the runway. The pilot sits in the cockpit, holds W for throttle and steers with A/D, and the plane lifts off before the mission begins. The map is now a proper world with coasts, islands, lakes, rivers, forests, mountains and villages.',
       'Multiplayer: host a room, name it, and it appears on every Join screen with a Join button. Works over a normal secure connection, so it should get through school networks.',
       'Operation Red Star (preview): a Soviet atomic bomber you and friends walk around together, with windows to the outside. Crew stations and the mission are coming.',
       'Multiplayer test room: a plain walled room, no bots, where friends walk around and see each other.',
