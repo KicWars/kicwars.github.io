@@ -9802,6 +9802,7 @@ const Direct = {
   },
 
   // ---------- camera ----------
+  hFov(h, asp) { return clamp(2 * Math.atan(Math.tan(h * Math.PI / 360) / (asp || 1.78)) * 180 / Math.PI, 38, 72); }, // vertical FOV for a horizontal one
   eye() { // where shots start and the first-person camera sits
     const p = this.pose, e = this.e, d = e.d;
     if (this.mode === 'soldier') {
@@ -9839,7 +9840,7 @@ const Direct = {
       cx = E.x; cy = E.y; cz = E.z;
       if (this.mode === 'soldier' && this.mv && this.onGround !== false) cz += Math.abs(Math.sin(this.bobT)) * .012 * (1 - this.adsK);
     } else {
-      const back = {plane: 6.5, heli: 6.5, ship: 9, vehicle: 5, soldier: 2.1}[this.mode], up = {plane: 1.6, heli: 1.8, ship: 3.2, vehicle: 1.8, soldier: .55}[this.mode];
+      const back = {plane: 8, heli: 6.5, ship: 9, vehicle: 5, soldier: 2.1}[this.mode], up = {plane: 1.6, heli: 1.8, ship: 3.2, vehicle: 1.8, soldier: .55}[this.mode];
       const side = this.mode === 'soldier' ? .55 * (1 - this.adsK * .4) : 0, sx = -Math.sin(yaw) * side, sy = Math.cos(yaw) * side;
       const ax = this.mode === 'soldier' ? E.x : p.x, ay = this.mode === 'soldier' ? E.y : p.y, az = this.mode === 'soldier' ? E.z : p.z + (this.mode === 'plane' ? .5 : 1);
       const bk = back * (1 - this.adsK * .45);
@@ -9866,12 +9867,12 @@ const Direct = {
     else if (this.mode === 'plane') cam.rotateZ(-(p.r) * (fp ? 1 : .35));
     else if (this.mode === 'heli' && fp) cam.rotateZ(-p.r * .5);
     // field of view: aiming zooms; scopes zoom a lot; sprint widens a touch
-    const W = this.W[this.slot] && this.W[this.slot].w, base = this.mode === 'fpv' ? 92 : this.mode === 'plane' ? (this.bsight && !this.grounded ? 24 : fp ? 74 : 66) : 72;
+    const W = this.W[this.slot] && this.W[this.slot].w, base = this.mode === 'fpv' ? 92 : this.mode === 'plane' ? (this.bsight && !this.grounded ? 24 : this.hFov(fp ? 85 : 80, cam.aspect)) : 72; // planes: WT-style fixed horizontal FOV (≈80° chase, 85° cockpit), so the world is not fish-eyed and wide screens see more at the sides
     this.adsK += ((this.ads ? 1 : 0) - this.adsK) * Math.min(1, dt * 12);
     if (!this.ads) this.zoom2 = this.zoom2 || 1;
     const z = (W && W.zoom ? 1 + (W.zoom - 1) * this.adsK : 1) * (1 - (1 - (this.zoom2 || 1)) * this.adsK); // scoped: the wheel (or Z) zooms further
     this.curZoom = z;
-    cam.fov = base * z * (this.sprinting ? 1.06 : 1) + (this.fovPunch || 0) * (this.mode === 'soldier' ? 1 : .3) + (this.mode === 'plane' ? clamp((this.speed / this.e.d.spd - 1) * 14, -3, 9) + clamp((6 - (this.agl === undefined ? 99 : this.agl)) * 1.1, 0, 6) * clamp(this.speed / this.e.d.spd, 0, 1.4) : 0); // speed rush cam.near = fp ? .03 : .1; cam.updateProjectionMatrix();
+    cam.fov = base * z * (this.sprinting ? 1.06 : 1) + (this.fovPunch || 0) * (this.mode === 'soldier' ? 1 : .3) + (this.mode === 'plane' && !this.bsight ? clamp((this.speed / this.e.d.spd - 1) * 5, -1, 3) + clamp((6 - (this.agl === undefined ? 99 : this.agl)) * .3, 0, 1.5) * clamp(this.speed / this.e.d.spd, 0, 1.2) : 0); // speed rush cam.near = fp ? .03 : .1; cam.updateProjectionMatrix();
     if (this.mode === 'plane' && (this.stalled || (this.gLoad || 1) > 2.6 || this.afterburner)) { const sh = this.stalled ? .5 : this.afterburner ? .06 : clamp(((this.gLoad || 1) - 2.6) * .15, 0, .4); cam.position.x += (Math.random() - .5) * sh; cam.position.y += (Math.random() - .5) * sh; cam.rotateZ((Math.random() - .5) * sh * .04); } // buffet in stalls, hard pulls and afterburner
     if (R.shake > .01) { cam.position.x += (Math.random() - .5) * R.shake * .25; cam.position.y += (Math.random() - .5) * R.shake * .25; }
     R.camTarget = R.camTarget || new THREE.Vector3(); R.camTarget.set(p.x, p.z, p.y);
@@ -12977,6 +12978,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Planes: the camera field of view now matches War Thunder (about 80° across in chase view, 85° in the cockpit) instead of a fish-eye wide view, and the speed effect is subtler.',
       'Real roads: paved asphalt with edge lines and a centre line, levelled into the ground. Where a road crosses a river, strait or ravine it now runs over a proper bridge with railings and piers, and boats can sail underneath. Workers can build bridges across rivers (8 steel per section).',
       'Smoother frame rate with the same graphics: trees, rocks and grass now skip whatever is off screen, including in the shadow pass. Far-away trees and troops use lighter models. Craters and digging no longer cause a hitch, and fog of war and the HUD do less work each frame.',
       'New look: each map gets clear day, golden hour or overcast lighting. Grass sways in the wind, trees sway and vary, rocks are chiseled boulders, and the ground has fine relief when seen close up. There is a soft vignette and a warmer HUD. Want the old graphics back? Main menu → 🎨 Look → Classic (applies from the next battle).',
