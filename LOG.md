@@ -1,7 +1,7 @@
 # KICwars log
 
 ## Start here
-- **Play:** https://kicwars.github.io/
+- **Play:** https://jjfanwars.github.io/
 - **Fastest start:** open the link, press **Quick Battle: jump in**, pick a unit, and play it. Just move the mouse to aim, **Space** fires, **Alt** frees the cursor, **F** switches to commanding your army. Or press *Play vs Bots* to choose nations and opponents.
 - **With a friend (no extra server, works over github.io only):**
   1. You: open the link, press **Play with a Friend: host**, then **1. Make invite code** and **Copy code** (or **Copy link**).
@@ -10,7 +10,7 @@
   - If it says the direct link failed, your networks block peer-to-peer. Try both on the same Wi-Fi or a phone hotspot, or use **GitHub relay** (slower, each player pastes their own GitHub token with only the *gist* scope; the on-screen text explains how).
   - Two tabs on one computer: host in one tab, then in the other tab Join a Friend and type the 5-letter room code shown in the lobby.
 - Source pull request: https://github.com/finndoolan-m/warsim/pull/1
-- Single-file copy: https://kicwars.github.io/warsim.html (save it and open from disk).
+- Single-file copy: https://jjfanwars.github.io/warsim.html (save it and open from disk).
 
 ## Log (newest first, Sydney time)
 

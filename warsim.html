@@ -4455,11 +4455,33 @@ Sim.prototype.arcStep = function () {
     if (e.b || e.pilot || e.o > 1 || e.o < 0 || e.gt || e.inside) continue;
     if ((e.tid && this.ents.get(e.tid)) || e.goal) continue;
     if (air && (e.k === 'bomber' || e.k === 'a10') || e.strike) { let best = null, bd = 1e9; for (const t of this.ents.values()) if (t.o === 1 - e.o && (t.base || t.gt || (!air && !t.air && !t.b))) { const d = Math.hypot(t.x - e.x, t.y - e.y) - (t.base ? 30 : 0); if (d < bd) { bd = d; best = t; } } if (best) { this.cmdMove([e], best.x, best.y, true, false); continue; } }
+    if (air && this.rnd() < .65) { let best = null, bd = 140; for (const t of this.ents.values()) if (t.air && t.o === 1 - e.o && t.hp > 0) { const d = Math.hypot(t.x - e.x, t.y - e.y) - (t.pilot ? 25 : 0); if (d < bd) { bd = d; best = t; } } // fighters go looking for a dogfight (players draw them in)
+      if (best) { this.cmdMove([e], best.x, best.y, true, false); continue; } }
     if (air || e.air) { const en = H[1 - e.o], f = .3 + this.rnd() * .6; this.cmdMove([e], clamp(H[e.o].x + (en.x - H[e.o].x) * f + (this.rnd() - .5) * N * .5, 4, N - 5), clamp(H[e.o].y + (en.y - H[e.o].y) * f + (this.rnd() - .5) * N * .5, 4, N - 5), true, false); continue; }
-    let best = null, bd = 1e9; for (const C of S.caps) { if (C.own === e.o && Math.abs(C.prog) >= 1 && this.rnd() < .8) continue; const d = Math.hypot(C.x - e.x, C.y - e.y) + this.rnd() * 20; if (d < bd) { bd = d; best = C; } }
-    if (!best) best = S.caps[Math.floor(this.rnd() * S.caps.length)];
-    if (best) this.cmdMove([e], best.x + (this.rnd() - .5) * 6, best.y + (this.rnd() - .5) * 6, true, false);
+    if ((e.holdT || 0) > this.t) continue; // sitting in a firing position
+    this.arcTankGoal(e);
   }
+};
+// Tank bots play their lane and their role instead of all driving at the same point:
+// push = onto the point, spread round its edge; flank = swing wide round the side; over = sit on high ground behind it and snipe.
+Sim.prototype.arcTankGoal = function (e) {
+  const S = this.scen, caps = S.caps, H = this.M.spawns, N = this.N, M = this.M; if (!caps.length) return;
+  let C = caps[(e.lane || 0) % caps.length];
+  const held = c => c.own === e.o && Math.abs(c.prog) >= 1;
+  if (held(C)) { const open = caps.filter(c => !held(c)); if (open.length && this.rnd() < .6) { C = open.reduce((a, b) => Math.hypot(a.x - e.x, a.y - e.y) < Math.hypot(b.x - e.x, b.y - e.y) ? a : b); e.lane = caps.indexOf(C); } }
+  const home = H[e.o], hx = home.x - C.x, hy = home.y - C.y, hl = Math.hypot(hx, hy) || 1, ux = hx / hl, uy = hy / hl; // unit vector from point back to our spawn
+  const ok = (x, y) => x > 3 && y > 3 && x < N - 4 && y < N - 4 && this.landOk(x, y);
+  let gx = C.x, gy = C.y, hold = 0;
+  if (e.role === 'over') { // best high ground 16-34 back from the point
+    let bh = -1e9; for (let i = 0; i < 14; i++) { const a = Math.atan2(uy, ux) + (this.rnd() - .5) * 2.2, r = 16 + this.rnd() * 18, x = C.x + Math.cos(a) * r, y = C.y + Math.sin(a) * r; if (!ok(x, y)) continue; const z = hAt(M, x, y) + this.rnd() * .4; if (z > bh) { bh = z; gx = x; gy = y; } }
+    hold = 14 + this.rnd() * 12;
+  } else if (e.role === 'flank') { // round the side of the point, away from the middle of the map
+    const side = ((C.x - N / 2) * -uy + (C.y - N / 2) * ux) >= 0 ? 1 : -1, r = 10 + this.rnd() * 8;
+    gx = C.x - uy * side * r - ux * 4; gy = C.y + ux * side * r - uy * 4;
+    if (!ok(gx, gy)) { gx = C.x; gy = C.y; } hold = 6 + this.rnd() * 6;
+  } else { const a = e.id * 2.39996 + this.rnd() * .5, r = C.r * (.35 + this.rnd() * .5); gx = C.x + Math.cos(a) * r; gy = C.y + Math.sin(a) * r; hold = 5 + this.rnd() * 6; }
+  e.holdT = this.t + hold + Math.hypot(gx - e.x, gy - e.y) / Math.max(1, e.d.spd); // drive time + time spent there
+  this.cmdMove([e], gx, gy, true, false);
 };
 // Tank modules: a heavy hit can knock out the tracks (cannot move), the turret drive (cannot fire) or the engine (crawls). The crew fix it in a few seconds.
 const MODULES = {trk: {n: 'TRACKS', t: 7}, tur: {n: 'TURRET', t: 5}, eng: {n: 'ENGINE', t: 9}};
@@ -4497,7 +4519,13 @@ Sim.prototype.arcSpawn = function (o, k) {
     const e = this.addUnit(k, o, x, y); e.h = h; e.z = Math.max(hAt(this.M, x, y), 0) + 18 + this.rnd() * 6; e.sp = d.spd; e.sq = 0;
     return e;
   }
-  for (let tr = 0; tr < 20; tr++) { const x = sp.x + (this.rnd() - .5) * 12, y = sp.y + (this.rnd() - .5) * 12; if (this.landOk(x, y)) { const e = this.addUnit(k, o, x, y); e.h = h; e.sq = 0; return e; } }
+  // ground: spread the team across the whole spawn line, each tank on the side of the point (lane) it is heading for
+  const S = this.scen, caps = S && S.caps || [], px = -Math.sin(h), py = Math.cos(h);
+  const lane = caps.length ? (S.laneI = (S.laneI || 0) + 1) % caps.length : 0, C = caps[lane];
+  const off = C ? clamp((C.x - sp.x) * px + (C.y - sp.y) * py, -N * .32, N * .32) * .8 : 0;
+  const spot = (j, w) => { for (let tr = 0; tr < 20; tr++) { const s2 = off * j + (this.rnd() - .5) * w, b = (this.rnd() - .3) * 8, x = sp.x + px * s2 - Math.cos(h) * b, y = sp.y + py * s2 - Math.sin(h) * b; if (x > 2 && y > 2 && x < N - 3 && y < N - 3 && this.landOk(x, y)) return {x, y}; } return null; };
+  const q = spot(1, 10) || spot(.5, 12) || spot(0, 12);
+  if (q) { const e = this.addUnit(k, o, q.x, q.y); e.h = h; e.sq = 0; e.lane = lane; const r = this.rnd(); e.role = r < (d.cat === 'veh' && /td|htank/.test(k) ? .5 : .22) ? 'over' : r < .55 ? 'flank' : 'push'; return e; }
   return null;
 };
 </script>
@@ -8544,7 +8572,20 @@ const Direct = {
   },
 
   // ---------- phones and tablets: left stick moves, dragging anywhere else looks, buttons press the bound keys ----------
-  isTouch() { return !!(window.matchMedia && matchMedia('(pointer:coarse)').matches) || new URLSearchParams(location.search).has('touch'); },
+  // Touch controls only when the player is actually using touch: touchscreen laptops report a coarse pointer too, so the last real input decides.
+  isTouch() {
+    if (new URLSearchParams(location.search).has('touch')) return true;
+    if (window.__ptr) return window.__ptr === 'touch';
+    const mm = q => !!(window.matchMedia && matchMedia(q).matches);
+    return mm('(pointer:coarse)') && !mm('(any-pointer:fine)');
+  },
+  inputKind(k) {
+    if (window.__ptr === k) return; window.__ptr = k;
+    if (!this.on) return;
+    const w = document.getElementById('tc');
+    if (k === 'touch') { this.look = 'touch'; if (document.pointerLockElement) document.exitPointerLock(); this.showTouch(); }
+    else { if (w) w.classList.add('hidden'); if (this.look === 'touch') { this.look = 'free'; this.msg('Click the view to lock the mouse', 2.5); } }
+  },
   touchKey(name, down) { const code = Settings.binds[name]; if (this.on) this.onKey({code, repeat: false, preventDefault() {}}, down); },
   buildTouch() {
     let w = document.getElementById('tc');
@@ -8649,7 +8690,7 @@ const Direct = {
       if (e.button === 0) { if (el.focus) el.focus(); el.click(); }
       return;
     }
-    if (this.look === 'free') { this.lockTries = 0; this.requestLock('click'); return; }
+    if (this.look === 'free' || this.look === 'touch' || this.look === 'pending') { this.lockTries = 0; this.requestLock('click'); return; }
     if (this.look === 'offset' && !this.triedClickLock) { this.triedClickLock = true; this.requestLock('click'); }
     if (e.button === 0) this.mouseDown = true;
     else if (e.button === 2) this.toggleAds();
@@ -8888,9 +8929,13 @@ const Direct = {
     const tvx = (c * fy - s * fx) / L * top * (fx || fy ? 1 : 0), tvy = (s * fy + c * fx) / L * top * (fx || fy ? 1 : 0);
     const acc = this.onGround === false ? 2.5 : 12, kk = 1 - Math.exp(-dt * acc);
     this.vel.x += (tvx - this.vel.x) * kk; this.vel.y += (tvy - this.vel.y) * kk;
-    const nx = clamp(p.x + this.vel.x * dt, 1, N - 2), ny = clamp(p.y + this.vel.y * dt, 1, N - 2);
+    let nx = clamp(p.x + this.vel.x * dt, 1, N - 2), ny = clamp(p.y + this.vel.y * dt, 1, N - 2);
     // slide along blocked cells (water, cliffs, buildings) instead of stopping dead
-    const free = (x, y) => passable(M, 2, Math.round(y) * N + Math.round(x)) || !passable(M, 2, Math.round(p.y) * N + Math.round(p.x));
+    // on foot you can climb mountains and cliffs (just slower going up steep ground); only buildings, ruins and walls stop you
+    if (!M.ruinMask) { const R = M.ruinMask = new Uint8Array(N * N); for (const R2 of M.ruins || []) if (R2.kind !== 'rubble') for (let y = Math.round(R2.y - R2.d / 2 + .5); y < Math.round(R2.y + R2.d / 2); y++) for (let x = Math.round(R2.x - R2.w / 2 + .5); x < Math.round(R2.x + R2.w / 2); x++) if (x >= 0 && y >= 0 && x < N && y < N) R[y * N + x] = 1; }
+    const walk = i => !M.occ[i] && !(M.block[i] && M.ruinMask[i]);
+    const free = (x, y) => walk(Math.round(y) * N + Math.round(x)) || !walk(Math.round(p.y) * N + Math.round(p.x));
+    { const mv = Math.hypot(nx - p.x, ny - p.y); if (mv > 1e-4 && this.onGround !== false) { const gr = (hAt(M, nx, ny) - hAt(M, p.x, p.y)) / mv; if (gr > .7) { const f = Math.max(.3, 1 - (gr - .7) * .45); nx = p.x + (nx - p.x) * f; ny = p.y + (ny - p.y) * f; } } }
     if (free(nx, ny)) { p.x = nx; p.y = ny; } else if (free(nx, p.y)) { p.x = nx; this.vel.y *= .3; } else if (free(p.x, ny)) { p.y = ny; this.vel.x *= .3; } else { this.vel.x = this.vel.y = 0; }
     const spd = Math.hypot(this.vel.x, this.vel.y);
     this.mv = spd > .3; this.sprinting = sprint && this.mv; this.moveK = Math.min(1, spd / Math.max(1, d.spd));
@@ -9000,8 +9045,11 @@ const Direct = {
     const sp = Math.max(V.length(), .1), qd = (sp / vc) ** 2, auth = clamp((sp / vc - .22) / .5, .08, 1);
     this.fpP = Math.asin(clamp(V.z / sp, -1, 1));
     // ground proximity warning (time to impact along the path); flight assist then pulls up and levels the wings
-    const ground = Math.max(hAt(M, p.x, p.y), 0), ahead = Math.max(hAt(M, p.x + V.x / sp * sp * 1.5, p.y + V.y / sp * sp * 1.5), 0);
-    this.pullUp = (p.z - Math.max(ground, ahead) < 3 && this.fpP < .1) || (this.fpP < -.2 && (p.z - ground) / (-V.z + .01) < 2.2);
+    // look ahead along the flight path: the terrain we will be over in .4-2.4 s, and the climb angle needed to clear it
+    const ground = Math.max(hAt(M, p.x, p.y), 0); let ahead = ground, reqP = -1.5, hit = false;
+    for (const tt of [.4, .8, 1.3, 1.8, 2.4]) { const ax = p.x + V.x * tt, ay = p.y + V.y * tt, th = Math.max(hAt(M, ax, ay), 0); ahead = Math.max(ahead, th);
+      reqP = Math.max(reqP, Math.atan2(th + 1.6 - p.z, Math.max(1, Math.hypot(V.x, V.y) * tt))); if (tt <= 1.3 && p.z + V.z * tt < th + .6) hit = true; }
+    this.pullUp = hit; this.reqP = reqP;
     const assist = Settings.flightAssist && this.pullUp;
     // controls -> commanded angle of attack, roll rate, rudder
     let aCmd = 0, rollCmd = 0, yawCmd = 0;
@@ -9013,7 +9061,7 @@ const Direct = {
       // instructor (arcade-style): never lets you fly into the ground or stall; the camera stays where you look
       let aimP = this.camPitch; const agl = p.z - ground, slow = Math.max(V.length(), .1) / vc;
       if (Settings.flightAssist) {
-        if (agl < 12) aimP = Math.max(aimP, -.04 + (12 - agl) * .025);
+        aimP = Math.max(aimP, reqP); // hug the ground as low as you like: it only lifts you over what is actually ahead
         if (slow < .55) { aimP = Math.min(aimP, .08); this.throttle = 1; this.instrT = performance.now(); }
       }
       A.set(Math.cos(this.camYaw) * Math.cos(aimP), Math.sin(this.camYaw) * Math.cos(aimP), Math.sin(aimP));
@@ -9023,14 +9071,14 @@ const Direct = {
       aCmd = clamp((fwd ? Math.atan2(aU, aF) : Math.atan2(lat, aF) * Math.max(0, aU / (lat + 1e-6))) * 1.6 + clamp(G * U.z / Math.max(LM * qd, 1), -.9, .9) * aS, -aS * .95, aS * .95); // + feed-forward: enough lift to hold the path against gravity
       yawCmd = clamp(aL * 1.2, -.3, .3);
     }
-    rollCmd += rollIn * 3.6;
+    rollCmd += rollIn * 4.4;
     // battle damage: a hurt jet loses thrust (engine) and pulls to one side (wing)
     const hurt = e.hpm ? clamp(1 - e.hp / e.hpm, 0, 1) : 0;
     if (hurt > .45) { rollCmd += (e.id % 2 ? 1 : -1) * (hurt - .45) * 2.2; if (!this.hurtMsg || this.hurtMsg < this.flyT - 6) { this.hurtMsg = this.flyT; this.msg(hurt > .7 ? 'CRITICAL: engine failing, bail out (F) or land' : 'Damaged: losing thrust', 2); } }
-    if (assist) { aCmd = aS * .9; rollCmd = -this.rollR * 3; this.camPitch = Math.max(this.camPitch, .45); }
+    if (assist) { aCmd = Math.max(aCmd, aS * .8); rollCmd = rollCmd * .4 - this.rollR * 2; } // emergency pull: the camera stays where you are looking
     const al = Math.atan2(-V.dot(U), V.dot(F)), ca = Math.abs(al);
     let pr = clamp((aCmd - al) * 6, -2.4, 2.4) * auth - al * (1 - auth) * 1.5; // elevator holds the commanded AoA; the nose weathervanes onto the path when slow
-    this.rr += (clamp(rollCmd, -3.6, 3.6) * auth - this.rr) * Math.min(1, dt * 7);
+    this.rr += (clamp(rollCmd, -4.4, 4.4) * auth - this.rr) * Math.min(1, dt * 7);
     FL.d.setFromEuler(FL.e.set(this.rr * dt, -pr * dt, yawCmd * auth * dt, 'XYZ')); q.multiply(FL.d).normalize(); axes();
     // forces: thrust along the nose, lift along body-up (peaks at the stall AoA), side-slip damping, drag, gravity
     const CL = Math.sign(al) * (ca < aS ? ca / aS : Math.max(.25, 1 - (ca - aS) * 2.5)), lift = LM * qd * CL;
@@ -9060,6 +9108,11 @@ const Direct = {
     this.mv = true;
     this.aimYaw = p.h; this.aimPitch = p.p; // guns fire along the nose
     this.afterburner = this.throttle > .92;
+    // low and fast: rotor-wash of dust (or sea spray) kicked up under the jet, and a wider rush of speed
+    this.agl = p.z - ground;
+    if (this.agl < 5 && this.speed > vc * .6) { const R = this.ui.g.R, wet = M.water[Math.round(p.y) * N + Math.round(p.x)], n = this.agl < 2.5 ? 2 : 1;
+      for (let i = 0; i < n; i++) { const r = Math.random(), bx = p.x - V.x * .08 * (1 + r), by = p.y - V.y * .08 * (1 + r), c = wet ? .9 : .62;
+        R.addP(bx + (Math.random() - .5), ground + .15, by + (Math.random() - .5), (Math.random() - .5) * 3, 1 + Math.random() * 2, (Math.random() - .5) * 3, .5, .9 + Math.random() * .6, c, wet ? .95 : .55, wet ? 1 : .45, false, .5, 2.4); } }
   },
   crash() {
     if (this.dead) return; this.dead = true;
@@ -9149,10 +9202,17 @@ const Direct = {
       let tx = ax - fw.x * bk + sx, ty = ay - fw.y * bk + sy, tz = az - fw.z * bk + up;
       // never let the camera sink into a hill between the unit and the camera
       let f = 1;
+      if (this.mode === 'plane') { // low flying: lift the chase camera over the ground (smoothly) instead of yanking it in toward the jet
+        let lift = 0; for (let i = 2; i <= 10; i++) { const q = i / 10, x = ax + (tx - ax) * q, y = ay + (ty - ay) * q, z = az + (tz - az) * q, need = Math.max(hAt(M, x, y), -.2) + .7 - z; if (need > 0) lift = Math.max(lift, need / q); }
+        lift = Math.min(lift, 6); this.camLift = this.camLift === undefined ? lift : this.camLift + (lift - this.camLift) * Math.min(1, dt * (lift > this.camLift ? 6 : 1.5));
+        cx = tx; cy = ty; cz = tz + this.camLift;
+        if (this.camP) { const a = Math.min(1, dt * 7); cx = this.camP.x + (cx - this.camP.x) * a; cy = this.camP.y + (cy - this.camP.y) * a; cz = this.camP.z + (cz - this.camP.z) * a; }
+        cz = Math.max(cz, Math.max(hAt(M, cx, cy), -.2) + .35);
+      } else {
       for (let i = 1; i <= 10; i++) { const q = i / 10, x = ax + (tx - ax) * q, y = ay + (ty - ay) * q, z = az + (tz - az) * q; if (z < Math.max(hAt(M, x, y), -.2) + .25) { f = Math.max(.15, (i - 1) / 10); break; } }
       cx = ax + (tx - ax) * f; cy = ay + (ty - ay) * f; cz = az + (tz - az) * f;
       cz = Math.max(cz, Math.max(hAt(M, cx, cy), -.2) + .3);
-      if (this.mode === 'plane' && this.camP) { const a = Math.min(1, dt * 9); cx = this.camP.x + (cx - this.camP.x) * a; cy = this.camP.y + (cy - this.camP.y) * a; cz = this.camP.z + (cz - this.camP.z) * a; }
+      }
     }
     this.camP = {x: cx, y: cy, z: cz};
     cam.position.set(cx, cz, cy);
@@ -9167,7 +9227,7 @@ const Direct = {
     if (!this.ads) this.zoom2 = this.zoom2 || 1;
     const z = (W && W.zoom ? 1 + (W.zoom - 1) * this.adsK : 1) * (1 - (1 - (this.zoom2 || 1)) * this.adsK); // scoped: the wheel (or Z) zooms further
     this.curZoom = z;
-    cam.fov = base * z * (this.sprinting ? 1.06 : 1) + (this.fovPunch || 0) * (this.mode === 'soldier' ? 1 : .3) + (this.mode === 'plane' ? clamp((this.speed / this.e.d.spd - 1) * 14, -3, 9) : 0); // speed rush cam.near = fp ? .03 : .1; cam.updateProjectionMatrix();
+    cam.fov = base * z * (this.sprinting ? 1.06 : 1) + (this.fovPunch || 0) * (this.mode === 'soldier' ? 1 : .3) + (this.mode === 'plane' ? clamp((this.speed / this.e.d.spd - 1) * 14, -3, 9) + clamp((6 - (this.agl === undefined ? 99 : this.agl)) * 1.1, 0, 6) * clamp(this.speed / this.e.d.spd, 0, 1.4) : 0); // speed rush cam.near = fp ? .03 : .1; cam.updateProjectionMatrix();
     if (this.mode === 'plane' && (this.stalled || (this.gLoad || 1) > 2.6 || this.afterburner)) { const sh = this.stalled ? .5 : this.afterburner ? .06 : clamp(((this.gLoad || 1) - 2.6) * .15, 0, .4); cam.position.x += (Math.random() - .5) * sh; cam.position.y += (Math.random() - .5) * sh; cam.rotateZ((Math.random() - .5) * sh * .04); } // buffet in stalls, hard pulls and afterburner
     if (R.shake > .01) { cam.position.x += (Math.random() - .5) * R.shake * .25; cam.position.y += (Math.random() - .5) * R.shake * .25; }
     R.camTarget = R.camTarget || new THREE.Vector3(); R.camTarget.set(p.x, p.z, p.y);
@@ -10973,6 +11033,7 @@ const UI = {
       case 'capd': if (ev.p === me) { const A = this.arcMe = this.arcMe || {k: 0, d: 0, cap: 0}; A.cap++; A.xp = (A.xp || 0) + 100; XP.add(100); } break;
       case 'feed': if (this.scen) {
         const A = this.arcMe = this.arcMe || {k: 0, d: 0, cap: 0}, side = o => o === me || v.friendly(o, me) ? 'a' : 'e', nm = (k, o, pl) => (pl === me ? 'You' : (side(o) === 'a' ? 'Ally ' : 'Enemy ') + UNITS[k].n);
+        if (ev.ap === me && Direct.on && Direct.mode === 'plane' && UNITS[ev.tk] && UNITS[ev.tk].cat === 'air') { let got = 0; for (const W of Direct.W) if (W && W.msl !== undefined && W.msl < MSL_LOAD) { W.msl++; got = 1; } Direct.msg('SPLASH ONE!' + (got ? '  +1 missile' : ''), 1.8); Sfx.good(); }
         if (ev.ap === me) { A.k++; const g = UNITS[ev.tk] && (UNITS[ev.tk].cat === 'veh' || UNITS[ev.tk].cat === 'air') ? 60 : 25; A.xp = (A.xp || 0) + g; XP.add(g); }
         if (ev.tp === me) { A.d++; this.killedBy = 'Killed by ' + nm(ev.ak, ev.ao, ev.ap); }
         let F = $('feed'); if (!F) { F = document.createElement('div'); F.id = 'feed'; document.body.appendChild(F); }
@@ -12066,7 +12127,7 @@ window.Tension = (() => {
     dead(D, dt, g) {
       if (!dying) {
         dying = {t: 0}; const by = this.killedBy, P = g.view.players[by];
-        $('dBy').textContent = P && by !== D.ui.g.me ? 'Eliminated by ' + P.nat.name.replace(/^The /, 'the ') : 'You were killed';
+        $('dBy').textContent = P && by >= 0 && by !== D.ui.g.me ? 'Eliminated by ' + P.nat.name.replace(/^The /, 'the ') : 'You were killed';
         $('dSt').textContent = (D.killStreak || 0) + ' kill' + ((D.killStreak || 0) === 1 ? '' : 's') + ' this life';
         const el = $('deathScr'); el.classList.add('on'); setTimeout(() => el.classList.add('show'), 20); document.body.classList.add('dying'); reset();
       }
@@ -12077,6 +12138,9 @@ window.Tension = (() => {
     clear() { dying = null; $('deathScr').classList.remove('show', 'on'); document.body.classList.remove('dying'); reset(); }
   };
 })();
+addEventListener('pointerdown', e => { if (typeof Direct !== 'undefined' && e.pointerType) Direct.inputKind(e.pointerType === 'touch' ? 'touch' : 'mouse'); }, true);
+addEventListener('mousemove', e => { if (typeof Direct !== 'undefined' && (e.movementX || e.movementY) && !(e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents)) Direct.inputKind('mouse'); }, true);
+addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.__ptr === 'touch') Direct.inputKind('mouse'); }, true);
 </script>
 <script>
 // One menu at a time: opening a full-screen menu closes the others, and in-game panels (diplomacy, research, stats) replace each other.
@@ -12103,7 +12167,14 @@ window.Tension = (() => {
   };
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
-    {d: '6 Nov 2026 (latest)', items: [
+    {d: '6 Nov 2026 (newest)', items: [
+      'Tank battles: bots now spread out across all three lanes. Some push the point, some flank round the side and some snipe from high ground, so fights happen all over the map.',
+      'On foot you can now climb mountains and cliffs (slower up steep ground) and stand on top.',
+      'Low flying fixed: you can hug the ground without the plane bouncing up, and the camera no longer snaps around near the ground.',
+      'Planes: faster roll, dust and sea spray when you fly low, a speed rush near the ground, fighters that come looking for a dogfight, and every plane kill gives back a missile.',
+      'Laptops with touchscreens: the mouse locks properly and the touch buttons only show when you actually touch the screen.',
+      'Fixed the death screen saying "Eliminated by the Xaviers".']},
+    {d: '6 Nov 2026 (earlier)', items: [
       'Air Battles: anyone can now fly the SR-71 (with AIM-47 Falcon and Sidewinder missiles) and the B-2.',
       'Charlies only: the SR-71 Blackbird (X at the Airfield), the fastest plane in the game. It is an unarmed spy plane that flies high, reveals a huge area, and most missiles and gunfire aimed at it miss.',
       'Charlies only: the B-2 Spirit (B at the Airfield), a stealth flying-wing bomber with the biggest bombs in the game. Anti-air cannot see it until it is almost overhead.',
@@ -12171,7 +12242,7 @@ window.Tension = (() => {
   $('logBack').onclick = () => { $('logScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
   { // bug reports and ideas: a pre-filled GitHub issue on the game's repository
     let fbT = 'bug';
-    const REPO = 'https://github.com/KicWars/kicwars.github.io/issues/new';
+    const REPO = 'https://github.com/jjfanwars/jjfanwars.github.io/issues/new';
     const text = () => {
       const t = ($('fbTitle').value || '').trim(), b = ($('fbBody').value || '').trim(), n = ($('fbName').value || '').trim();
       const info = `Browser: ${navigator.userAgent}\nScreen: ${innerWidth}x${innerHeight} @${devicePixelRatio}x\nPage: ${location.href}\nTime: ${new Date().toISOString()}`;
