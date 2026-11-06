@@ -11810,7 +11810,7 @@ const UI = {
         box.appendChild(b);
       }
     } catch (e) { $('roomListBox').classList.remove('hidden'); $('roomList').innerHTML = '<p class="small" style="color:#ff8a80">Cannot reach the room server (' + (e && e.message || 'network error') + '). Check your internet. School and work networks can block it: tell me if so.</p>'; }
-    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-f';
+    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-g';
     clearTimeout(this.rlT); this.rlT = setTimeout(() => this.refreshRooms(), 3000);
   },
   openJoin() {
@@ -11915,7 +11915,7 @@ const UI = {
     Sfx.init();
     if (Direct.isTouch()) { try { const d = document.documentElement, r = d.requestFullscreen && d.requestFullscreen(); if (r && r.then) r.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); } catch (e) {} }
     const mv = $('optMap').value, mt = mv === 'r' ? MAP_KEYS[(Math.random() * MAP_KEYS.length) | 0] : +mv;
-    const L = this.lobby, sb = !!this.testRoom, seed = sb ? ((Math.random() * 1e6) | 0) : ((Math.random() * 1e6) | 0) + mt * 1e7, size = sb ? 96 : Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : mt >= 11 ? 144 : 0);
+    const L = this.lobby, sb = !!this.testRoom, seed = sb ? 4242 : ((Math.random() * 1e6) | 0) + mt * 1e7, size = sb ? 96 : Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : mt >= 11 ? 144 : 0);
     const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked, eco: s.kind === 'bot' ? null : $('optEco').value}));
     this.playersIds = L.slots.map(s => s.id || null);
     if (sb) for (const p of players) { p.team = 0; p.open = true; }
