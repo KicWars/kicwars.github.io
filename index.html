@@ -2133,10 +2133,10 @@ const DIG_R = 2.5, DIG_COST = 25, DIG_T = 3;
 const DIG_MAX = 3, TUNNEL_D = 1.0, // tunnels can now ramp down to 3 deep: dig each cell a little deeper than the last to slope down, shallower to climb out
    TRENCH_D = .45, TUNNEL_SEE = 3.5;
 function inTunnel(M, N, e) { if (!M.dug) return false; const i = Math.round(e.y) * N + Math.round(e.x); return M.dug[i] >= TUNNEL_D; }
-function digCells(M, N, x, y, amt, o) { // returns [[i, h], ...] of changed cells
+function digCells(M, N, x, y, amt, o, RR) { // returns [[i, h], ...] of changed cells
   if (!M.h0) { M.h0 = Float32Array.from(M.h); M.dug = new Float32Array(N * N); M.digO = new Uint8Array(N * N); }
-  const out = [], R = 1.15;
-  for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
+  const out = [], R = RR || 1.15, W = Math.ceil(R);
+  for (let j = -W; j <= W; j++) for (let i = -W; i <= W; i++) {
     const cx = Math.round(x) + i, cy = Math.round(y) + j; if (cx < 2 || cy < 2 || cx >= N - 2 || cy >= N - 2) continue;
     const d = Math.hypot(cx - x, cy - y); if (d > R) continue;
     const q = cy * N + cx; if (M.occ[q] || M.water[q] || M.h0[q] < .35) continue;
@@ -2440,7 +2440,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'gather': { const n = this.M.nodes[c.n]; if (n) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'gather', node: n.id}; } break; }
     case 'build': this.cmdBuild(mine, p, c.b, c.x, c.y, !!c.q, +c.rot || 0); break;
     case 'harden': this.cmdHarden(p, c.id); break;
-    case 'pdig': { const a = this.ents.get(c.id); if (!a || a.o !== pi || a.pilot !== pi + 1 || a.d.cat !== 'inf' || (a.digT || 0) > this.t) break; if (Math.hypot(c.x - a.x, c.y - a.y) > 4.2) break; a.digT = this.t + .22; this.digAt(+c.x, +c.y, pi, .2, {x: +c.dx || 0, y: +c.dy || 0}); break; }
+    case 'pdig': { const a = this.ents.get(c.id); if (!a || a.o !== pi || a.pilot !== pi + 1 || a.d.cat !== 'inf' || (a.digT || 0) > this.t) break; if (Math.hypot(c.x - a.x, c.y - a.y) > 4.2) break; a.digT = this.t + .1; this.digAt(+c.x, +c.y, pi, .45, {x: +c.dx || 0, y: +c.dy || 0}, 2.4); break; } // by hand: wide hole, deep bites, quick strikes
     case 'digline': { // workers dig a trench or tunnel along a line, a few strikes per cell, in order
       const n = Math.ceil(Math.hypot(c.x2 - c.x1, c.y2 - c.y1)), cells = [];
       for (let i = 0; i <= n; i++) cells.push([c.x1 + (c.x2 - c.x1) * i / Math.max(1, n), c.y1 + (c.y2 - c.y1) * i / Math.max(1, n)]);
@@ -3314,14 +3314,14 @@ Sim.prototype.step = function () {
   this.stepNukes();
 };
 
-Sim.prototype.digAt = function (x, y, o, amt, dir) {
-  const c = digCells(this.M, this.N, x, y, amt || .22, o);
+Sim.prototype.digAt = function (x, y, o, amt, dir, RR) {
+  const c = digCells(this.M, this.N, x, y, amt || .22, o, RR);
   if (!c.length) return false;
   // spoil: half the earth you dig out is thrown up ahead of the trench as a parapet (cover on the enemy side)
   const dl = dir ? Math.hypot(dir.x, dir.y) : 0;
   if (dl > .1) {
     const M = this.M, N = this.N; let V = 0; for (const e of c) V += e[2] || 0;
-    const ux = dir.x / dl, uy = dir.y / dl, px = x + ux * 2.1, py = y + uy * 2.1, S = V * .55;
+    const ux = dir.x / dl, uy = dir.y / dl, px = x + ux * ((RR || 1.15) + 1), py = y + uy * ((RR || 1.15) + 1), S = V * .55;
     for (let k = -1; k <= 1; k++) {
       const cx = Math.round(px - uy * k), cy = Math.round(py + ux * k); if (cx < 2 || cy < 2 || cx >= N - 2 || cy >= N - 2) continue;
       const q = cy * N + cx; if (M.occ[q] || M.water[q] || M.block[q] || M.h0[q] < .35 || M.dug[q] > .05) continue;
@@ -8313,12 +8313,12 @@ Renderer.prototype.drawUnit = function (e, dt, tint) {
       this.put('chute|' + nat, () => { const b = new Batch(), P = palette(nat); b.add(GEO.sph, P.main, 0, 0, 0, 1.1, .45, 1.1); b.add(GEO.sph, 0xf1f1ec, 0, -.06, 0, 1.05, .38, 1.05); for (const [a, c] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) b.add(GEO.cyl6, 0xdddddd, a * .45, -.75, c * .45, .012, 1.5, .012, c * .55, 0, -a * .55); return b.geo(); }, 32, null, x, y + 2.1, z, h, 0, 0, 1, tint);
     }
     const c = Math.cos(h), s = Math.sin(h);
+    const vt = this.view.t, ag = a0 => a0 === undefined ? 99 : vt - a0, aim = ag(e.adsT) < .45, fire = ag(e.fireT) < .35, tg = ag(e.thrT);
+    let pit = Math.max(-.8, Math.min(.8, e.rp || 0)) * .55 + (aim ? -.07 : 0) - (fire ? .05 * (1 - ag(e.fireT) / .35) : 0); // look up/down bends the body at the hip
+    if (tg < .65) pit += tg < .22 ? .55 * (tg / .22) : tg < .42 ? .55 - 1 * ((tg - .22) / .2) : -.45 * (1 - (tg - .42) / .23); // grenade throw: wind back, swing through, recover
+    if (fire && tg > 1 && !lo && this.time - (e._fx || 0) > .08) { e._fx = this.time; this.muzzleFlash(e.rx + Math.cos(e.ry) * .5, e.ryy + Math.sin(e.ry) * .5, e.rz + .42 * sc, .55); }
     if (!Settings.blobs) { // realistic soldier: steady torso with a small walking bob, legs that stride, a flinch when hit
       const bob = mv && !bike ? Math.abs(Math.cos(ph)) * .018 : 0, lean2 = mv ? (bike ? .08 : .07) : 0, fl = hurt ? .12 : 0;
-      const vt = this.view.t, ag = a0 => a0 === undefined ? 99 : vt - a0, aim = ag(e.adsT) < .3, fire = ag(e.fireT) < .28, tg = ag(e.thrT);
-      let pit = Math.max(-.8, Math.min(.8, e.rp || 0)) * .55 + (aim ? -.07 : 0) - (fire ? .05 * (1 - ag(e.fireT) / .28) : 0); // look up/down bends the body at the hip
-      if (tg < .65) pit += tg < .22 ? .55 * (tg / .22) : tg < .42 ? .55 - 1 * ((tg - .22) / .2) : -.45 * (1 - (tg - .42) / .23); // grenade throw: wind back, swing through, recover
-      if (fire && tg > 1 && !lo && this.time - (e._fx || 0) > .08) { e._fx = this.time; this.muzzleFlash(e.rx + Math.cos(e.ry) * .5, e.ryy + Math.sin(e.ry) * .5, e.rz + .42 * sc, .55); }
       const hh = HUM.hip * sc, pdx = hh * Math.sin(pit), pdy = hh * (1 - Math.cos(pit));
       this.put(key + '|h' + (lo ? '|lo' : ''), () => soldierHuman(k, nat, lo).geo(), 64, null, x + c * pdx, y + bob + pdy, z - s * pdx, h, -lean2 - fl + (e.st === 2 ? .03 : 0) + pit, 0, sc, tint);
       if (bike) for (const f of [.3, -.3]) this.put('bwheel', () => bikeWheel().geo(), 128, null, x + c * f * sc, y + .16 * sc, z - s * f * sc, h, -this.time * (mv ? 14 : 0), 0, sc, tint);
@@ -8328,7 +8328,7 @@ Renderer.prototype.drawUnit = function (e, dt, tint) {
       }
       return;
     }
-    this.put(key + (lo ? '|lo' : ''), () => soldierBody(k, nat, lo).geo(), 64, null, x, y + hop, z, h, -lean + (e.st === 2 ? .05 : 0), wob, sc, tint, sy);
+    { const bh = .3 * sc, bdx = bh * Math.sin(pit), bdy = bh * (1 - Math.cos(pit)); this.put(key + (lo ? '|lo' : ''), () => soldierBody(k, nat, lo).geo(), 64, null, x + c * bdx, y + hop + bdy, z - s * bdx, h, -lean + (e.st === 2 ? .05 : 0) + pit, wob, sc, tint, sy); }
     if (bike) {
       for (const f of [.3, -.3]) this.put('bwheel', () => bikeWheel().geo(), 128, null, x + c * f * sc, y + .16 * sc, z - s * f * sc, h, -this.time * (mv ? 14 : 0), 0, sc, tint);
     } else if (!lo) {
@@ -10266,7 +10266,7 @@ const Direct = {
       this.digCd = (this.digCd || 0) - dt;
       if (pri && this.digCd <= 0) {
         // dig where you point: into the ground, a wall or slope in reach, straight down when looking at your boots, otherwise a cut ahead of you
-        this.digCd = .26; const M = g.view.M, p = this.pose, fw = this.fw || {x: Math.cos(this.yaw), y: Math.sin(this.yaw)}, fl = Math.hypot(fw.x, fw.y) || 1, dx = fw.x / fl, dy = fw.y / fl;
+        this.digCd = .12; const M = g.view.M, p = this.pose, fw = this.fw || {x: Math.cos(this.yaw), y: Math.sin(this.yaw)}, fl = Math.hypot(fw.x, fw.y) || 1, dx = fw.x / fl, dy = fw.y / fl;
         let tx, ty;
         if (this.pitch < -.85) { tx = p.x; ty = p.y; }
         else if (this.aimPt && Math.hypot(this.aimPt.x - p.x, this.aimPt.y - p.y) < 4.2) { tx = this.aimPt.x; ty = this.aimPt.y; }
@@ -10534,7 +10534,7 @@ const Direct = {
     // health bars over nearby enemies you have hurt or are aiming at; friends get a small blue tag
     for (const t of g.R.visEnts || []) {
       if (t.id === this.id || t.b) continue;
-      if (t.d.cat === 'inf' && t.pilT !== undefined && g.view.t - t.pilT < .8) { const pl = g.view.players[t.o], nd = Math.hypot(t.rx - this.pose.x, t.ryy - this.pose.y); if (pl && !pl.bot && pl.name && nd < 70 && nd > .5) { const nm = this.toScreen(t.rx, t.ryy, t.rz + 1.05), fr = g.view.friendly(t.o, g.me); if (nm) { c.save(); c.font = '700 13px system-ui'; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.75)'; c.fillStyle = fr ? '#8fe3ff' : '#ff8a80'; c.globalAlpha = clamp(1.4 - nd / 70, .4, 1); c.strokeText(pl.name, nm.x, nm.y); c.fillText(pl.name, nm.x, nm.y); c.restore(); } } }
+      if (t.d.cat === 'inf' && t.pilT !== undefined && g.view.t - t.pilT < 1.5) { const pl = g.view.players[t.o], nd = Math.hypot(t.rx - this.pose.x, t.ryy - this.pose.y); if (pl && !pl.bot && pl.name && nd < 70 && nd > .5) { const nm = this.toScreen(t.rx, t.ryy, t.rz + 1.05), fr = g.view.friendly(t.o, g.me); if (nm) { c.save(); c.font = '700 13px system-ui'; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.75)'; c.fillStyle = fr ? '#8fe3ff' : '#ff8a80'; c.globalAlpha = clamp(1.4 - nd / 70, .4, 1); c.strokeText(pl.name, nm.x, nm.y); c.fillText(pl.name, nm.x, nm.y); c.restore(); } } }
       const enemy = !g.view.friendly(t.o, g.me), dd = Math.hypot(t.rx - this.pose.x, t.ryy - this.pose.y);
       if (!enemy && dd > 12 && dd <= 110) { const mk = this.toScreen(t.rx, t.ryy, t.rz + (t.air ? 1.2 : t.d.cat === 'inf' ? 2.2 : 3)); if (mk) { c.save(); c.fillStyle = '#5fd3ff'; c.globalAlpha = clamp(1.2 - dd / 110, .35, 1); c.beginPath(); c.moveTo(mk.x, mk.y); c.lineTo(mk.x - 5, mk.y - 8); c.lineTo(mk.x + 5, mk.y - 8); c.closePath(); c.fill(); if (dd < 45 && t.d.cat === 'inf') { c.font = '700 10px system-ui'; c.textAlign = 'center'; c.fillText(Math.round(dd * 4 / 10) * 10 + 'm', mk.x, mk.y - 12); } c.restore(); } continue; }
       if (dd > 32 || (!enemy && dd > 12)) continue;
@@ -11904,9 +11904,10 @@ const UI = {
   },
   join(code, opts) {
     code = (code || '').trim();
-    if (!Profile.name()) { // everyone who joins must pick a username first
+    if (!opts || !opts.named) { // everyone who joins is asked for a username (your saved one is pre-filled)
       if ($('joinScr').classList.contains('hidden')) this.openJoin();
-      Profile.ask();
+      let a = ''; try { a = window.prompt('Username for this game (friends see it over your head):', Profile.name()); } catch (e) {}
+      if (a && a.trim()) Profile.set(a);
       if (!Profile.name()) { this.joinMsg('Pick a username first: type one in the box at the top.', 'bad'); $('myName').focus(); return; }
       $('myName').value = Profile.name();
     }
@@ -13457,6 +13458,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
       'Multiplayer test room: a plain walled room, no bots, where friends walk around and see each other.',
       'Usernames with name tags over other players. Others now see you look up and down, fire, aim in and throw grenades, and players are solid.',
       'Harbor Havoc: new all-ocean air and sea mode with carriers, island capture, torpedo seaplane and armed boats.',
+      'Shovel digging is much faster and digs wide holes. Everyone is asked for a username when joining a room.',
       'Real roads and bridges, better lighting, smoother frame rate, newer 3D engine.',
       'Planes: War Thunder style camera, target lock and enemy markers. Locked missiles always connect.',
       'Workers: pick builders vs miners. Man defences and Repair all buttons.',
