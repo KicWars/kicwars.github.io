@@ -355,6 +355,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
     <button class="big mtile" id="bArc" style="grid-column:1/-1" title="Arcade air and tank battles: endless respawns, tickets and capture points"><b>✈ Air &amp; Tank Battles</b><small>Dogfights and tank fights · 12 vs 12, tickets, capture points</small></button>
     <div class="mgroup">With friends</div>
     <button class="big mtile" id="bHost"><b>🛰 Host a game</b><small>Open a room with bots, friends click Join</small></button>
+    <button class="big mtile" id="bRed"><b>🛩 Operation Red Star (preview)</b><small>Soviet atomic bomber crew: walk the aircraft together</small></button>
     <button class="big mtile" id="bTest"><b>🧪 Multiplayer test room</b><small>No bots, just you and friends</small></button>
     <button class="big mtile" id="bJoin"><b>🔗 Join a game</b><small>Pick an open room from the list</small></button>
     <div class="mfoot">
@@ -2189,7 +2190,7 @@ function Sim(opts) {
       ecoK: p.bot ? 1 : ({easy: 1.6, normal: 1, hard: .8}[p.eco] || 1), autoEco: !p.bot && (p.eco === 'easy' || !!p.autoEco)};
   });
   for (const p of this.players) if (p.ecoK > 1) { p.steel += 700; p.fuel += 250; } else if (p.ecoK < 1) { p.steel -= 150; }
-  if (opts.sandbox) this.setupSandbox(); else if (opts.battle) this.setupBattle(opts.battle); else if (opts.scen) this.setupScen(opts.scen); else for (const p of this.players) this.setupPlayer(p);
+  if (opts.redstar) this.setupRedstar(); else if (opts.sandbox) this.setupSandbox(); else if (opts.battle) this.setupBattle(opts.battle); else if (opts.scen) this.setupScen(opts.scen); else for (const p of this.players) this.setupPlayer(p);
   if (opts.xav && !opts.battle && !opts.scen) this.addXaviers(); // optional, Play vs bots only
   if (opts.peace && !opts.battle && !opts.scen) { this.peace = true; this.peaceOpt = true; } // no random attacks: bots build up until a human declares war
 }
@@ -2284,6 +2285,15 @@ Sim.prototype.setupSandbox = function () {
       if (this.landOk(x, y)) { const e = this.addUnit('rifle', i, x, y); e.h = a; return; }
     }
   });
+};
+// Operation Red Star (work in progress): one Soviet bomber that flies a slow circle while the crew walk around inside it.
+Sim.prototype.setupRedstar = function () {
+  this.redstar = 1; this.rsA = 0; const c = this.N / 2, b = this.addUnit('bomber', 0, c, c); b.z = 16; b.rs = 1;
+};
+Sim.prototype.redstarStep = function () {
+  const b = [...this.ents.values()].find(e => e.rs); if (!b) return;
+  this.rsA += .012; const c = this.N / 2;
+  b.x = c + Math.cos(this.rsA) * 34; b.y = c + Math.sin(this.rsA) * 34; b.h = this.rsA + Math.PI / 2; b.z = 16; b.moving = true; b.hp = b.hpm;
 };
 Sim.prototype.setupPlayer = function (p) {
   const s = p.spawn;
@@ -2440,6 +2450,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'gather': { const n = this.M.nodes[c.n]; if (n) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'gather', node: n.id}; } break; }
     case 'build': this.cmdBuild(mine, p, c.b, c.x, c.y, !!c.q, +c.rot || 0); break;
     case 'harden': this.cmdHarden(p, c.id); break;
+    case 'icrew': (this.crew = this.crew || {})[pi] = {x: +c.x || 0, z: +c.z || 0, yaw: +c.yaw || 0, t: this.t}; break; // where this player is walking inside the shared aircraft
     case 'pdig': { const a = this.ents.get(c.id); if (!a || a.o !== pi || a.pilot !== pi + 1 || a.d.cat !== 'inf' || (a.digT || 0) > this.t) break; if (Math.hypot(c.x - a.x, c.y - a.y) > 4.2) break; a.digT = this.t + .1; this.digAt(+c.x, +c.y, pi, .45, {x: +c.dx || 0, y: +c.dy || 0}, 2.4); break; } // by hand: wide hole, deep bites, quick strikes
     case 'digline': { // workers dig a trench or tunnel along a line, a few strikes per cell, in order
       const n = Math.ceil(Math.hypot(c.x2 - c.x1, c.y2 - c.y1)), cells = [];
@@ -2993,7 +3004,7 @@ Sim.prototype.playerOut = function (i, by) {
 
 // The war ends when every survivor is on the same team or allied with all the others.
 Sim.prototype.checkOver = function () {
-  if (this.over || this.sandbox) return;
+  if (this.over || this.sandbox || this.redstar) return;
   const al = this.players.filter(q => q.alive);
   for (const a of al) for (const b of al) if (a.i < b.i && a.team !== b.team && a.rel[b.i] !== 'ally') return;
   const w = al[0];
@@ -3335,6 +3346,7 @@ Sim.prototype.digAt = function (x, y, o, amt, dir, RR) {
 };
 
 // Morale: every finished Trattoria (max 3) is +5% health and +5% fire rate across the whole army.
+{ const stepBase = Sim.prototype.step; Sim.prototype.step = function () { stepBase.call(this); if (this.redstar) this.redstarStep(); }; }
 Sim.prototype.stepMorale = function () {
   for (const p of this.players) {
     let n = 0;
@@ -5329,6 +5341,7 @@ function encodeSnap(sim, sendSlow) {
     } else if (e.hpmS !== e.hpm) { e.hpmS = e.hpm; meta.push({id: e.id, hpm: Math.ceil(e.hpm)}); }
   }
   const msg = {snap: 1, t: sim.t, buf: out.buffer, meta};
+  if (sim.crew) msg.crew = sim.crew;
   if (sendSlow) {
     msg.pl = sim.players.map(p => ({bld: p.builders, specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, techAll: p.techAll || 0, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, spyMap: p.spyMap, autoRecon: p.autoRecon, autoEco: p.autoEco, autoHouse: p.autoHouse, ecoK: p.ecoK}));
     msg.bs = [];
@@ -5343,7 +5356,7 @@ function encodeSnap(sim, sendSlow) {
 // ---------- mirror (client) ----------
 function Mirror(o) {
   this.N = o.size; this.seed = o.seed;
-  this.M = genMap(this.N, this.seed, o.players.length); if (o.sandbox) sandboxRoom(this.M);
+  this.M = genMap(this.N, this.seed, o.players.length); if (o.sandbox) sandboxRoom(this.M); this.redstar = !!o.redstar; this.crew = {};
   this.t = 0; this.ents = new Map(); this.smokes = []; this.over = null; this.nukes = [];
   this.players = o.players.map((p, i) => {
     const nat = NATIONS[p.nation];
@@ -5384,6 +5397,7 @@ Mirror.prototype.apply = function (m) {
     e.tid = a[i + 9]; e.tu = a[i + 10] / 1000;
   }
   for (const id of this.ents.keys()) if (!seen.has(id)) this.ents.delete(id);
+  if (m.crew) this.crew = m.crew;
   if (m.pl) m.pl.forEach((q, i) => { Object.assign(this.players[i], q); this.players[i].builders = q.bld; });
   if (m.bs) for (const b of m.bs) { const e = this.ents.get(b.id); if (e) { e.bp = b.bp; e.q = b.q; e.prog = b.prog; e.rally = b.rally; e.auto = !!b.au; e.autoK = b.ak; e.nukeCD = b.cdn; e.g = b.g; e.garrison = new Array(b.g); e.hard = b.hd; e.rot = b.rot || 0; } }
   if (m.nodes) m.nodes.forEach((n, i) => { this.M.nodes[i].amt = n[0]; this.M.nodes[i].taken = n[1]; });
@@ -9213,10 +9227,10 @@ function Game(cfg) {
     this.view = new Mirror(cfg);
     this.bots = [];
   } else {
-    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle, scen: cfg.scen, xav: cfg.xav, peace: cfg.peace, sandbox: cfg.sandbox});
+    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle, scen: cfg.scen, xav: cfg.xav, peace: cfg.peace, sandbox: cfg.sandbox, redstar: cfg.redstar});
     this.bots = cfg.players.map((p, i) => p.bot ? new Bot(this.sim, i, p.bot) : null).filter(Boolean);
   }
-  this.view.me = this.me;
+  this.view.me = this.me; this.redstar = !!cfg.redstar;
   this.R.reset();
   this.R.loadWorld(this.view);
   this.R.me = this.me;
@@ -9323,7 +9337,7 @@ const Direct = {
   enter(ui, e) {
     this.ui = ui; this.e = e; this.id = e.id; this.on = true; this.aboard = null;
     const d = e.d;
-    this.mode = this.modeOf(d);
+    this.mode = ui.g.redstar ? 'crew' : this.modeOf(d);
     this.yaw = e.h; this.pitch = this.mode === 'plane' ? 0 : -.05; this.roll = 0; this.fq = undefined; this.manualFly = false; this.fpP = 0; this.pRate = 0; this.rollRate = 0; this.pullUp = false; this.warnT = 0; this.killStreak = 0; this.strikeBank = 0; this.confirm = null; this.vz = 0; this.mx = this.my = 0; this.keys = {}; this.mouseDown = false;
     this.speed = this.mode === 'plane' ? d.spd : this.mode === 'fpv' ? d.spd : 0; this.batt = 1; this.vel = {x: 0, y: 0}; this.hullSpd = 0;
     this.aimYaw = this.yaw; this.aimPitch = 0; this.camYaw = this.yaw; this.camPitch = this.mode === 'plane' ? -.05 : 0;
@@ -9341,12 +9355,13 @@ const Direct = {
     R.fpId = e.id; R.fpPose = p;
     this.applyView();
     { const T = e.inside && ui.g.view.ents.get(e.inside); this.jump = T && T.air && this.mode === 'soldier' ? 'plane' : null; if (this.jump) this.msg('Riding to the drop zone. ' + Settings.keyName(Settings.binds.jump) + ' or ' + Settings.keyName(Settings.binds.fire) + ' to JUMP', 4); }
-    ui.g.issue({c: 'pilot', ids: [e.id], on: 1});
+    if (!ui.g.redstar) ui.g.issue({c: 'pilot', ids: [e.id], on: 1});
     this.ux = this.uy = null; this.requestLock('enter');
     ui.enterDirect(this);
     this.showTouch();
     VM.build(e, ui.g.view.players[e.o].nation);
     R.post = () => this.post();
+    if (ui.g.redstar) { const i = Math.max(0, ui.g.me); this.aboard = {x: 4.6 + i * .45, z: i % 2 ? .45 : -.45, yaw: 0, pitch: 0}; this.nearChair = false; this.chairD = 99; R.fpId = 0; R.fpPose = null; R.hideId = e.id; this.crewTags = []; } // Operation Red Star: start inside the aircraft
   },
 
   exit(msg) {
@@ -9726,16 +9741,27 @@ const Direct = {
     if (this.sendT <= 0) {
       this.sendT = .066; const p = this.pose;
       const sold = this.mode === 'soldier', ago = performance.now() - (this.shotAt || -1e5), cw = sold && this.W && this.W[this.slot] && this.W[this.slot].w;
-      g.issue({c: 'pose', id: this.id, x: p.x, y: p.y, z: p.z, h: p.h, p: p.p, r: p.r, tu: p.tu, m: !!this.mv, ch: this.jump === 'fall' ? 0 : this.jump === 'canopy' ? 1 : undefined, ap: sold ? this.pitch : undefined, f: sold && ago < 280 ? 1 : 0, a: sold && this.ads ? 1 : 0, th: sold && cw && cw.snd === 'throw' && ago < 650 ? 1 : 0});
+      g.issue(this.mode === 'crew' ? {c: 'icrew', x: +this.aboard.x.toFixed(2), z: +this.aboard.z.toFixed(2), yaw: +this.aboard.yaw.toFixed(2)} : {c: 'pose', id: this.id, x: p.x, y: p.y, z: p.z, h: p.h, p: p.p, r: p.r, tu: p.tu, m: !!this.mv, ch: this.jump === 'fall' ? 0 : this.jump === 'canopy' ? 1 : undefined, ap: sold ? this.pitch : undefined, f: sold && ago < 280 ? 1 : 0, a: sold && this.ads ? 1 : 0, th: sold && cw && cw.snd === 'throw' && ago < 650 ? 1 : 0});
     }
-    this.weapons(dt, g, e);
+    if (this.mode !== 'crew') this.weapons(dt, g, e);
     this.msgT = (this.msgT || 0) - dt;
     if (e.d.nukeT && e.nukeReady && k[B.alt] && !this.aboard) { this.ui.startNuke(e); k[B.alt] = false; }
     this.ui.updateDirect(this, e, dt);
   },
 
   // ---------- ships: leave the captain's chair, walk the rooms, sit back down to take control ----------
-  interior() { const e = this.e; return Interior.get(e.k, this.ui.g.view.players[e.o].nation); },
+  interior() { const e = this.e; return Interior.get(this.mode === 'crew' ? 'redstar' : e.k, this.ui.g.view.players[e.o].nation); },
+  syncCrewPose(e) { const p = this.pose; p.x = e.rx === undefined ? e.x : e.rx; p.y = e.ryy === undefined ? e.y : e.ryy; p.z = e.rz === undefined ? e.z : e.rz; p.h = e.ry === undefined ? e.h : e.ry; p.p = 0; p.r = 0; p.tu = p.h; },
+  syncCrewMeshes(I, C) { // the rest of the crew, drawn inside the aircraft at the spots they report
+    const V = this.ui.g.view, cr = V.crew || {}, me = this.ui.g.me; I.others = I.others || {}; this.crewTags = []; this._cv = this._cv || new THREE.Vector3(); C.updateMatrixWorld();
+    for (const k of Object.keys(I.others)) { const c = cr[k]; if (!c || V.t - c.t > 3) { I.scene.remove(I.others[k]); delete I.others[k]; } }
+    for (const k of Object.keys(cr)) {
+      const c = cr[k]; if (+k === me || V.t - c.t > 3) continue;
+      let m = I.others[k]; if (!m) { m = I.others[k] = new THREE.Mesh(I.body, I.mat); m.position.set(c.x, 0, c.z); I.scene.add(m); }
+      m.position.x += (c.x - m.position.x) * .35; m.position.z += (c.z - m.position.z) * .35; m.rotation.y = -c.yaw;
+      const v = this._cv.set(m.position.x, .8, m.position.z).project(C); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) this.crewTags.push({x: v.x, y: v.y, n: (V.players[k] && V.players[k].name) || 'Crew'});
+    }
+  },
   toggleAboard() {
     const I = this.interior();
     if (!this.aboard) {
@@ -9755,6 +9781,7 @@ const Direct = {
     if (I.free(nx, nz)) { A.x = nx; A.z = nz; } else if (I.free(nx, A.z)) A.x = nx; else if (I.free(A.x, nz)) A.z = nz;
     if (f || r) this.bobT += dt * 7;
     this.chairD = Math.hypot(A.x - I.chair[0], A.z - I.chair[1]); this.nearChair = this.chairD < 1;
+    if (this.mode === 'crew') { this.syncCrewPose(e); return; }
     // nobody at the helm: no input reaches the ship, so it coasts to a stop
     const held = this.keys; this.keys = {}; this.lookX = this.lookY = 0;
     this.moveVehicle(dt, e, M, N);
@@ -10466,7 +10493,7 @@ const Direct = {
       const R = this.ui.g.R, r = R.r, A = this.aboard, I = this.interior(), C = I.cam, cp = Math.cos(A.pitch), y = Interior.EYE + Math.abs(Math.sin(this.bobT)) * .012;
       C.fov = R.cam.fov; C.aspect = R.cam.aspect; C.updateProjectionMatrix();
       C.position.set(A.x, y, A.z); C.lookAt(A.x + Math.cos(A.yaw) * cp, y + Math.sin(A.pitch), A.z + Math.sin(A.yaw) * cp);
-      const ac = r.autoClear; r.autoClear = false; r.clearDepth(); r.render(I.scene, C); r.autoClear = ac;
+      const ac = r.autoClear; r.autoClear = false; if (this.mode === 'crew') this.syncCrewMeshes(I, C); r.clearDepth(); r.render(I.scene, C); r.autoClear = ac;
       return;
     }
     if (!this.on || this.cut || !this.firstPerson() || this.mode !== 'soldier') return;
@@ -10494,7 +10521,7 @@ const Direct = {
       c.textAlign = 'center'; c.fillStyle = '#fff'; c.shadowColor = '#000'; c.shadowBlur = 4;
       if (A) {
         const I = this.interior(); c.font = '800 16px system-ui'; c.fillText(I.roomAt(A.x, A.z), cx, 62);
-        c.font = '700 15px system-ui'; c.fillText(this.nearChair ? K + ': sit in the captain\'s chair and take control' : "Captain's chair: " + Math.ceil(this.chairD) + ' m away', cx, h * .72);
+        c.font = '700 15px system-ui'; if (this.mode === 'crew') { for (const tg of this.crewTags || []) { c.font = '700 14px system-ui'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.75)'; c.strokeText(tg.n, (tg.x * .5 + .5) * w, (.5 - tg.y * .5) * h); c.fillText(tg.n, (tg.x * .5 + .5) * w, (.5 - tg.y * .5) * h); } } else c.fillText(this.nearChair ? K + ': sit in the captain\'s chair and take control' : "Captain's chair: " + Math.ceil(this.chairD) + ' m away', cx, h * .72);
         c.fillStyle = 'rgba(255,255,255,.8)'; c.fillRect(cx - 1.5, cy - 1.5, 3, 3);
       } else { c.font = '600 12px system-ui'; c.fillStyle = 'rgba(255,255,255,.75)'; c.fillText(K + ': leave the chair and walk around', cx, 34); }
       c.shadowBlur = 0;
@@ -11230,6 +11257,18 @@ const WarRoom = {
 const Interior = {
   cache: {}, EYE: .62, H: 1.25,
   layout(k) {
+    if (k === 'redstar') return {sub: false, chair: [10.5, -.7], worldUp: 1.1, // the Soviet atomic bomber: nose and cockpit, radio/nav, engineer's bay, bomb bay, tail gunner
+      rooms: [
+        {n: 'Cockpit and glass nose', x0: 8, x1: 15.5, z0: -1.7, z1: 1.7, win: [['x', 15.5, -1.5, 1.5], ['z', -1.7, 9, 14.8], ['z', 1.7, 9, 14.8]]},
+        {n: 'Radio and navigation', x0: 4, x1: 8, z0: -1.6, z1: 1.6, win: [['z', -1.6, 6.2, 7.8], ['z', 1.6, 6.2, 7.8]]},
+        {n: "Engineer's bay", x0: -2, x1: 4, z0: -1.6, z1: 1.6, win: [['z', -1.6, 3, 3.7], ['z', 1.6, 3, 3.7]]},
+        {n: 'Bomb bay', x0: -9, x1: -2, z0: -1.3, z1: 1.3},
+        {n: 'Tail passage', x0: -13, x1: -9, z0: -.6, z1: .6},
+        {n: 'Tail gunner', x0: -16, x1: -13, z0: -.9, z1: .9, win: [['x', -16, -.7, .7], ['z', -.9, -15.5, -13.5], ['z', .9, -15.5, -13.5]]},
+      ],
+      doors: [['x', 8, -.5, .5], ['x', 4, -.5, .5], ['x', -2, -.5, .5], ['x', -9, -.5, .5], ['x', -13, -.4, .4]],
+      blocks: [[12.2, 12.7, -1.6, -.5], [12.2, 12.7, .5, 1.6], [10.1, 10.9, -1.05, -.35], [10.1, 10.9, .35, 1.05], [10.1, 10.9, -.2, .2], [8.4, 9.6, 1.1, 1.7], [14.6, 15.4, -.55, .55], [4.2, 5.8, -1.6, -1.1], [4.2, 5.8, 1.2, 1.6], [-.8, 2.8, -1.6, -1.2], [-.9, 3.1, .9, 1.5], [-8.6, -2.5, -.5, .5], [-14.9, -14.1, -.45, .45]],
+      crew: []};
     const sub = !!UNITS[k].sub, long = k === 'nukesub';
     if (k === 'destroyer') return {sub, chair: [6.2, 0], worldUp: 1.2,
       rooms: [
@@ -11286,6 +11325,62 @@ const Interior = {
       crew: [[-.6, -.8, 0], [2.4, .7, 3.14], [-4.4, -1, 1.57]]};
   },
   get(k, nat) { const key = k + '|' + nat; return this.cache[key] || (this.cache[key] = this.build(k, nat)); },
+  furnishRedStar(b, P, H, screen) {
+    const ST = 0x3a3f44, DK = 0x1c1f22, MT = 0x9aa3a8, OL = 0x56604a, BR = 0xb08a3a, RD = 0xc23030, AM = 0xffb040, GL = 0x7fd8ff, PAD = 0x4a3a2c, SK = 0x8b9482, GRN = 0x46ff9a, CY = 0x5ad0ff, SEAT = 0x7a2020;
+    const sec = [[8, 15.5, 1.7], [4, 8, 1.6], [-2, 4, 1.6], [-9, -2, 1.3], [-13, -9, .6], [-16, -13, .9]];
+    // riveted frames and floor plates along every compartment
+    for (const [x0, x1, w] of sec) {
+      for (let x = x0 + .75; x < x1; x += 1.5) { b.box(.05, .07, w * 2, x, H - .03, 0, DK); b.box(.05, H, .05, x, H / 2, w - .03, DK); b.box(.05, H, .05, x, H / 2, -w + .03, DK); }
+      for (const z of [-w * .5, w * .5]) b.box(x1 - x0 - .2, .012, .03, (x0 + x1) / 2, .006, z, DK);
+    }
+    // flag and star on the flight-deck bulkhead
+    b.box(.02, .4, .6, 8.06, .75, -1.2, RD); b.add(GEO.sph, 0xe8c040, 8.08, .78, -1.2, .04, .04, .02);
+    // ---- flight deck: pilot (the chair), co-pilot, throttles, instrument panel, overhead switches, navigator table, bomb sight
+    [-1, 1].forEach(s => { b.box(.35, .5, 1.1, 12.45, .5, s * 1.05, ST); screen(12.26, .74, s * 1.05, .9, .2, s < 0 ? CY : GRN, Math.PI / 2);
+      for (let i = 0; i < 6; i++) { b.cyl(.05, .02, 12.26, .55 + (i % 2) * .13, s * 1.05 - .5 + i * .2, DK, 0, 0, Math.PI / 2); b.cyl(.04, .022, 12.26, .55 + (i % 2) * .13, s * 1.05 - .5 + i * .2, 0xe8e8d8, 0, 0, Math.PI / 2); } });
+    b.box(.4, .08, 1.5, 11.2, H - .12, 0, ST); for (let i = 0; i < 8; i++) b.box(.03, .03, .03, 11.4, H - .17, -.65 + i * .18, i % 3 ? GRN : i % 2 ? RD : AM);
+    b.box(.42, .07, .42, 10.5, .34, .7, SEAT); b.box(.07, .5, .42, 10.3, .6, .7, SEAT); b.cyl(.05, .3, 10.5, .15, .7, DK);
+    [-.7, .7].forEach(z => { b.cyl(.025, .35, 11.45, .4, z, DK); b.cyl(.16, .02, 11.6, .64, z, DK, 0, 0, Math.PI / 2); b.cyl(.04, .03, 11.6, .64, z, MT, 0, 0, Math.PI / 2); });
+    b.box(.4, .22, .3, 10.5, .3, 0, ST); [0, 1, 2, 3].forEach(i => b.box(.03, .2, .03, 10.5, .5, -.12 + i * .08, [RD, AM, MT, MT][i]));
+    b.box(1.1, .42, .6, 9, .21, 1.4, OL); b.box(1.1, .03, .6, 9, .43, 1.4, 0xe8dfc0); b.box(.5, .005, .02, 9, .447, 1.4, RD); b.cyl(.03, .14, 8.7, .5, 1.2, DK); b.add(GEO.sph, AM, 8.7, .6, 1.2, .045, .045, .045);
+    b.box(.5, .45, .9, 14.9, .22, 0, ST); b.cylX(.07, .4, 14.6, .55, 0, DK); b.add(GEO.sph, GL, 14.4, .55, 0, .04, .04, .04); b.box(.7, .1, .6, 14.1, .08, 0, PAD); b.box(.3, .14, .2, 14.9, .5, .3, DK); b.add(GEO.sph, RD, 14.75, .58, -.3, .03, .03, .03);
+    b.box(.08, .06, 3.1, 15.5, .55, 0, DK); b.box(.08, .06, 3.1, 15.5, 1.02, 0, DK); [-1.5, -.5, .5, 1.5].forEach(z => b.box(.07, .55, .07, 15.5, .8, z, DK));   // glass nose frame
+    [-1.7, 1.7].forEach(z => [9, 11, 13, 14.8].forEach(x => b.box(.07, .55, .07, x, .8, z, DK)));
+    // ---- radio and navigation: the radio desk, set, key and headset, a map cabinet, oxygen bottles
+    b.box(1.8, .45, .5, 5, .22, -1.35, ST); b.box(.5, .28, .3, 5, .6, -1.42, DK);
+    [0, 1, 2].forEach(i => { b.cyl(.04, .02, 4.8 + i * .2, .64, -1.26, 0xd8d0a0, Math.PI / 2); b.box(.02, .06, .01, 4.8 + i * .2, .66, -1.25, RD); });
+    b.box(.15, .04, .08, 5.7, .47, -1.25, BR); b.add(GEO.sph, DK, 5.3, .5, -1.2, .06, .03, .06); b.cyl(.15, .3, 5, .15, -.8, DK); b.add(GEO.sph, AM, 4.4, .62, -1.4, .04, .04, .04);
+    b.box(1.6, .9, .4, 5, .45, 1.4, OL); [0, 1, 2].forEach(i => { b.cyl(.07, .5, 7.4 + i * .2, .3, 1.45, MT); b.cyl(.075, .05, 7.4 + i * .2, .58, 1.45, RD); });
+    [6.2, 7.8].forEach(x => { b.box(.07, .55, .07, x, .8, 1.6, DK); b.box(.07, .55, .07, x, .8, -1.6, DK); });
+    b.box(1.6, .06, .08, 7, .55, 1.6, DK); b.box(1.6, .06, .08, 7, .55, -1.6, DK);
+    [0, 1].forEach(i => b.cylX(.03, 3.8, 6, H - .1, -1 + i * 2, 0x8a7a50));
+    b.box(.4, .3, .06, 7.9, .9, .9, ST); screen(7.85, .95, .9, .3, .18, AM, Math.PI / 2);
+    // ---- engineer's bay: four engine dial clusters with fire handles and fuel valves, pipework, fuel tanks, ladder to the dorsal turret
+    b.box(3.6, .9, .3, 1, .45, -1.45, ST);
+    for (let i = 0; i < 4; i++) { const x = -.4 + i * .8;
+      b.cyl(.09, .02, x, .8, -1.29, 0xe8e8d8, Math.PI / 2); b.box(.012, .07, .005, x, .82, -1.275, RD); b.cyl(.06, .02, x, .65, -1.29, 0xe8e8d8, Math.PI / 2); b.box(.1, .02, .01, x, .56, -1.29, i % 2 ? GRN : AM);
+      b.box(.12, .03, .04, x, .42, -1.3, RD); b.box(.04, .1, .04, x, .36, -1.3, RD); b.cyl(.07, .02, x + .33, .2, -1.3, RD, Math.PI / 2); }
+    b.cylX(.04, 3.4, 1, .1, -1.2, BR); b.cylX(.04, 3.4, 1, .17, -1.2, 0x8a7a50);
+    [0, 1].forEach(i => { b.cylX(.3, 1.4, -.2 + i * 1.8, .35, 1.2, OL); b.cyl(.32, .04, -.2 + i * 1.8 - .5, .35, 1.2, DK, 0, 0, Math.PI / 2); });
+    b.box(.05, 1.1, .05, 3.6, .6, -.1, MT); b.box(.05, 1.1, .05, 3.6, .6, .3, MT); for (let i = 0; i < 4; i++) b.box(.04, .03, .4, 3.6, .25 + i * .25, .1, MT);
+    b.add(GEO.sph, RD, 1, H - .1, 0, .06, .04, .06);
+    [3, 3.7].forEach(x => { b.box(.07, .55, .07, x, .8, 1.6, DK); b.box(.07, .55, .07, x, .8, -1.6, DK); });
+    // ---- bomb bay: the bomb on its cradle, bands, fins, the arming panel, catwalk grating
+    b.add(GEO.sph, 0x3a3f36, -5.5, .66, 0, 3.0, .45, .45); b.cyl(.46, .14, -4.1, .66, 0, RD, 0, 0, Math.PI / 2);
+    [-7.4, -6.2, -4.9, -3.4].forEach(x => { b.cyl(.47, .05, x, .66, 0, DK, 0, 0, Math.PI / 2); b.box(.05, H - 1.1, .05, x, 1.14 + (H - 1.1) / 2 - .02, 0, DK); });
+    b.box(.6, .9, .03, -8.3, .66, 0, 0x2e332c); b.box(.6, .03, .9, -8.3, .66, 0, 0x2e332c);
+    [-.85, .85].forEach(z => b.box(6.8, .02, .25, -5.5, .01, z, DK));
+    b.box(.5, .45, .1, -2.6, .7, 1.22, ST); b.add(GEO.sph, RD, -2.75, .8, 1.16, .025, .025, .025); b.add(GEO.sph, GRN, -2.6, .8, 1.16, .025, .025, .025); b.add(GEO.sph, AM, -2.45, .8, 1.16, .025, .025, .025);
+    for (let i = 0; i < 4; i++) b.cylX(.025, 6.6, -5.5, H - .12 - i * .02, -1.1 + i * .7, 0x8a7a50);
+    // ---- tail: ammo, belts, the tail gunner's seat, twin guns and sight
+    [0, 1, 2].forEach(i => b.box(.2, .16, .12, -10.5 - i * .4, .08, -.5, OL)); b.cylX(.03, 4, -11, H - .12, .4, 0x8a7a50);
+    b.box(.4, .07, .4, -14.4, .3, 0, SEAT); b.box(.07, .5, .4, -14.2, .6, 0, SEAT); b.cyl(.04, .3, -14.4, .15, 0, DK);
+    [-.14, .14].forEach(z => { b.cylX(.025, 1.0, -15.6, .6, z, DK); b.cyl(.12, .1, -15.1, .4, z * 2.4, MT, Math.PI / 2); });
+    b.box(.1, .1, .3, -15.2, .75, 0, ST); b.box(.01, .12, .14, -15, .83, 0, GL);
+    // ---- outside, seen through the windows: wings, four engines with props
+    b.box(8.5, .14, 24, 2.8, -.14, 0, SK);
+    [-8, -4.2, 4.2, 8].forEach(z => { b.cylX(.5, 4.8, 3.4, .12, z, 0x7d8576); b.add(GEO.sph, 0x555a50, 6.0, .12, z, .2, .2, .2); b.box(.04, 1.3, .1, 6.15, .12, z, DK); b.box(.04, .1, 1.3, 6.15, .12, z, DK); b.box(.5, .08, .08, 1, .62, z, 0xe8c040); });
+  },
   furnishDestroyer(b, P, H, screen) {
     const ST = 0x3a3f44, DK = 0x1c1f22, WD = 0x7a5a3a, MT = 0x9aa3a8;
     // bridge: helm and radar consoles across the front, ship's wheel, engine telegraphs, chart table
@@ -11352,7 +11447,7 @@ const Interior = {
   },
   build(k, nat) {
     const L = this.layout(k), P = palette(nat), H = this.H, b = new Batch(), T = .08, sub = L.sub;
-    const wallC = sub ? 0x5d6a66 : 0x8a949c, floorC = sub ? 0x2c3331 : 0x4a525a, roofC = sub ? 0x3b4442 : 0xa8b0b6, DK = 0x1c1f22, ST = 0x3a3f44;
+    const rs = k === 'redstar', wallC = rs ? 0x66705f : sub ? 0x5d6a66 : 0x8a949c, floorC = rs ? 0x33382f : sub ? 0x2c3331 : 0x4a525a, roofC = rs ? 0x7a826f : sub ? 0x3b4442 : 0xa8b0b6, DK = 0x1c1f22, ST = 0x3a3f44;
     const edge = (room, axis, at, a, c) => {
       const top = room.open ? .45 : H, cuts = [];
       for (const d of L.doors) if (d[0] === axis && Math.abs(d[1] - at) < .01 && d[3] > a && d[2] < c) cuts.push([Math.max(a, d[2]), Math.min(c, d[3]), 'door']);
@@ -11378,6 +11473,7 @@ const Interior = {
     b.box(.4, .03, .4, cx, .004, cz, P.main);
     const screen = (x, y, z, w, h, col, ry) => b.box(w, h, .02, x, y, z, col, ry);
     if (k === 'destroyer') this.furnishDestroyer(b, P, H, screen); else if (k === 'carrier') this.furnishCarrier(b, P, H, screen);
+    else if (rs) this.furnishRedStar(b, P, H, screen);
     else if (!sub) {
       b.box(.5, .55, 1.4, 4.35, .28, 0, ST); screen(4.12, .68, 0, 1.1, .22, 0x5ad0ff, Math.PI / 2); b.cyl(.14, .03, 4.05, .62, 0, DK, 0, 0, Math.PI / 2);
       b.add(GEO.wedge, 0x6f7a84, 7.2, -.35, 0, 4.4, .3, 3.2); b.cyl(.28, .22, 6.5, .08, 0, ST); b.cylX(.05, 1, 7.1, .12, 0, DK);  // bow and deck gun, seen from the bridge
@@ -11396,7 +11492,8 @@ const Interior = {
     }
     const geo = b.geo(), scene = new THREE.Scene();
     scene.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({vertexColors: true})));
-    scene.add(new THREE.HemisphereLight(sub ? 0xffd9c8 : 0xffffff, 0x50504a, (sub ? .85 : 1) * Math.PI));
+    scene.add(new THREE.HemisphereLight(rs ? 0xffe2c0 : sub ? 0xffd9c8 : 0xffffff, 0x50504a, (rs ? .6 : sub ? .85 : 1) * Math.PI));
+    if (rs) [[11, 1, 0, 0xcfe6ff, 5], [6, 1, 0, 0xffc890, 5], [1, 1, 0, 0xffb070, 6], [-6, 1, 0, 0xff6040, 6], [-14, 1, 0, 0xffc890, 4]].forEach(([x, y, z, c, i]) => { const pl = new THREE.PointLight(c, i, 9, 1.6); pl.position.set(x, y, z); scene.add(pl); }); // dim, warm, tense
     const li = new THREE.DirectionalLight(sub ? 0xffb090 : 0xffffff, .55 * Math.PI); li.position.set(.4, 1, .3); scene.add(li);
     const body = soldierFull('rifle', nat).geo(), mat = new THREE.MeshLambertMaterial({vertexColors: true});
     const blocks = L.blocks.slice();
@@ -11405,7 +11502,7 @@ const Interior = {
     for (const d of L.doors) { if (d[0] === 'x') walk.push([d[1] - .4, d[1] + .4, d[2] + M, d[3] - M]); else walk.push([d[2] + M, d[3] - M, d[1] - .4, d[1] + .4]); }
     const free = (x, z) => walk.some(w => x >= w[0] && x <= w[1] && z >= w[2] && z <= w[3]) && !blocks.some(q => x > q[0] - .15 && x < q[1] + .15 && z > q[2] - .15 && z < q[3] + .15);
     const roomAt = (x, z) => { const r = L.rooms.find(q => x >= q.x0 && x <= q.x1 && z >= q.z0 && z <= q.z1); return r ? r.n : ''; };
-    return {scene, free, roomAt, chair: L.chair, worldUp: L.worldUp, cam: new THREE.PerspectiveCamera(72, 1, .03, 200)};
+    return {scene, free, roomAt, body, mat, chair: L.chair, worldUp: L.worldUp, cam: new THREE.PerspectiveCamera(72, 1, .03, 200)};
   },
 };
 
@@ -11596,6 +11693,7 @@ const UI = {
     $('sReset').onclick = () => { Settings.resetBinds(); this.openSettings(); };
     $('bHost').onclick = () => { Sfx.init(); Sfx.ui(); this.openLobby('host'); };
     $('bTest').onclick = () => { Sfx.init(); Sfx.ui(); this.openLobby('test'); };
+    $('bRed').onclick = () => { Sfx.init(); Sfx.ui(); this.openLobby('redstar'); };
     $('bJoin').onclick = () => { Sfx.init(); Sfx.ui(); this.openJoin(); };
     $('bJoinGo').onclick = () => { Sfx.init(); this.join($('joinIn').value); };
     $('bJoinBack').onclick = () => { if (this.link) { this.link.close(); this.link = null; } this.net = 'off'; $('joinScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
@@ -11711,7 +11809,7 @@ const UI = {
   openLobby(type) {
     this.renderNations();
     $('menu').classList.add('hidden'); $('lobby').classList.remove('hidden');
-    this.testRoom = type === 'test'; if (this.testRoom) type = 'host';
+    this.redstar = type === 'redstar'; this.testRoom = type === 'test' || this.redstar; if (this.testRoom) type = 'host';
     this.lobby = {slots: [{kind: 'human', name: Profile.name() || 'Host', nation: 3, team: 0, id: 'host'}, {kind: 'bot', level: 'normal', nation: 4, team: 1}]};
     if (this.testRoom) { this.lobby.test = 1; this.lobby.slots.pop(); $('optAll').checked = true; $('optTut').checked = false; } // test room: no bots, every unit free
     this.mySlot = 0;
@@ -11721,7 +11819,7 @@ const UI = {
       const code = this.code = makeCode();
       $('lCode').textContent = 'Room ' + code; $('lCode').classList.remove('hidden'); $('lTitle').textContent = 'Play with friends';
       $('roomCode').textContent = code;
-      { const on = !!Net.relay(); $('roomBox').classList.toggle('hidden', !on); $('oldInv').open = !on; $('roomBig').textContent = code; const nm = this.testRoom ? 'Test room' : 'Friendly war'; $('roomName').value = nm; if (this.link && this.link.setMeta) this.link.setMeta({name: nm, open: true}); $('roomStat').textContent = on ? 'Connecting to the game server...' : ''; }
+      { const on = !!Net.relay(); $('roomBox').classList.toggle('hidden', !on); $('oldInv').open = !on; $('roomBig').textContent = code; const nm = this.redstar ? 'Operation Red Star' : this.testRoom ? 'Test room' : 'Friendly war'; $('roomName').value = nm; if (this.link && this.link.setMeta) this.link.setMeta({name: nm, open: true}); $('roomStat').textContent = on ? 'Connecting to the game server...' : ''; }
       if (this.lobby.slots[1]) this.lobby.slots[1].team = 1;
       this.inv = null; $('invStep2').classList.add('hidden'); $('invStep3').classList.add('hidden'); $('invStatus').textContent = ''; $('relayStatus').textContent = '';
       $('invPanel').classList.remove('hidden');
@@ -11742,7 +11840,7 @@ const UI = {
       });
       if (this.lobby.slots[1]) this.lobby.slots[1].auto = 1;
       Profile.ask(); if (this.lobby.slots[0]) this.lobby.slots[0].name = Profile.name() || 'Host';
-      { let nm = this.testRoom ? 'Test room' : 'Friendly war'; try { const a = window.prompt('Name your room (everyone online will see this name):', nm); if (a && a.trim()) nm = a.trim().slice(0, 28); } catch (e) {} $('roomName').value = nm; this.link.setMeta({name: nm, open: true}); }
+      { let nm = this.redstar ? 'Operation Red Star' : this.testRoom ? 'Test room' : 'Friendly war'; try { const a = window.prompt('Name your room (everyone online will see this name):', nm); if (a && a.trim()) nm = a.trim().slice(0, 28); } catch (e) {} $('roomName').value = nm; this.link.setMeta({name: nm, open: true}); }
     } else { $('invPanel').classList.add('hidden'); this.net = 'off'; $('lCode').classList.add('hidden'); $('lTitle').textContent = 'Skirmish against bots'; }
     this.lobbyView(!!this.testRoom);
     this.drawLobby();
@@ -11890,7 +11988,7 @@ const UI = {
     $('bStart').classList.toggle('hidden', !host);
     const teams = new Set(L.slots.map(s => s.team));
     const humans = L.slots.filter(s => s.kind !== 'bot').length, canStart = !!this.testRoom || teams.size >= 2 || humans >= 2;
-    $('bStart').disabled = !canStart; $('bStart').textContent = this.testRoom ? 'Start test room (' + humans + (humans === 1 ? ' player)' : ' players)') : 'Start War';
+    $('bStart').disabled = !canStart; $('bStart').textContent = this.redstar ? 'Start Operation Red Star (' + humans + (humans === 1 ? ' player)' : ' players)') : this.testRoom ? 'Start test room (' + humans + (humans === 1 ? ' player)' : ' players)') : 'Start War';
     let st = '';
     if (this.net === 'client') st = 'Waiting for the host to start...';
     else if (!canStart) st = this.testRoom ? 'Waiting for friends: tell them to press Join a game and click your room. Put at least one player on another team to start.' : 'You need at least one opponent on another team.';
@@ -11944,7 +12042,7 @@ const UI = {
       this.lobby = m.lobby; this.mySlot = m.you; this.lobbyView(!!m.lobby.test); this.drawLobby();
       if (!this._nameSent && this.link && this.link.send) { this._nameSent = 1; const un = Profile.ask(); if (un) this.link.send({lobbySet: {name: un}}); }
     } else if (m.start) {
-      this.launch({mode: 'client', size: m.start.size, seed: m.start.seed, players: m.start.players, me: m.start.you, link: this.link, tut: false, sandbox: !!m.start.sandbox});
+      this.launch({mode: 'client', size: m.start.size, seed: m.start.seed, players: m.start.players, me: m.start.you, link: this.link, tut: false, sandbox: !!m.start.sandbox, redstar: !!m.start.redstar});
     } else if (m.g && this.g && this.g.mode === 'client') this.g.onSnap(m.g);
   },
   startGame() {
@@ -11957,9 +12055,10 @@ const UI = {
     const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked, eco: s.kind === 'bot' ? null : $('optEco').value}));
     this.playersIds = L.slots.map(s => s.id || null);
     if (sb) for (const p of players) { p.team = 0; p.open = true; }
+    if (this.redstar) for (const p of players) p.nation = players[0].nation; // one crew, one nation
     if (this.link && this.link.setMeta) this.link.setMeta({open: false});
-    if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id), sandbox: sb ? 1 : 0}});
-    this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, sandbox: sb, tut: !sb && $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick, xav: $('optXav').checked && this.net !== 'host', peace: !$('optRaid').checked && this.net !== 'host' && !this.quick});
+    if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id), sandbox: sb && !this.redstar ? 1 : 0, redstar: this.redstar ? 1 : 0}});
+    this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, sandbox: sb && !this.redstar, redstar: !!this.redstar, tut: !sb && $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick, xav: $('optXav').checked && this.net !== 'host', peace: !$('optRaid').checked && this.net !== 'host' && !this.quick});
   },
   setSpeed(v) { // time control: host-side only, so a friend's game stays in sync with the host's clock
     if (!this.g || this.g.mode === 'client') { this.addAlert('Only the host can change game speed', 'bad'); return; }
@@ -12119,7 +12218,10 @@ const UI = {
     this.refreshHud(true);
     if (this.quick) { this.quick = false; setTimeout(() => { this.deployed = true; this.openDeploy(); }, 300); }
     window.__ws = this;
-    if (o.sandbox) { // test room: drop straight into first person as your soldier
+    if (o.redstar) { // Operation Red Star: everyone starts inside the bomber
+      this.addAlert('Operation Red Star: walk the aircraft with WASD and mouse. The rest of the crew is in here with you.', 'gold');
+      let tries = 0; const go = () => { const g = this.g; if (!g || g !== this.g) return; const b = [...g.view.ents.values()].find(e => e.k === 'bomber'); if (b && !Direct.on) { Direct.enter(this, b); return; } if (!b && ++tries < 40) setTimeout(go, 250); }; setTimeout(go, 400);
+    } else if (o.sandbox) { // test room: drop straight into first person as your soldier
       this.addAlert('Test room: walk around with WASD and mouse. Your friends are in here too.', 'gold');
       let tries = 0; const go = () => { const g = this.g; if (!g || g !== this.g) return; const u = [...g.view.ents.values()].find(e => e.o === o.me && !e.b && e.d.cat === 'inf'); if (u && !Direct.on) { Direct.enter(this, u); return; } if (!u && ++tries < 40) setTimeout(go, 250); }; setTimeout(go, 400);
     }
@@ -13312,6 +13414,7 @@ const UI = {
       ship: `${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} steer · mouse aims · ${K('fire')} fire${w2 ? ' · ' + K('alt') + ' ' + w2 : ''} · ${K('walk')} leave the chair and walk`,
       plane: `mouse or arrows steer · ${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} roll · ${K('fire')} guns · ${K('alt')} ${w2} · ${D.W[2] ? K('reload') + ' ' + D.W[2].w.n + ' · ' : ''}${D.W[3] ? K('w4') + ' ' + D.W[3].w.n + ' · ' : ''}${K('chaff')} chaff · ${K('cycle')} next target · ${K('vlock')} lock view · ${K('spot')} spot${D.W.some(s => s.w.t === 'bomb') ? ' · ' + K('ads') + ' bombsight' : ''} · on the ground: W throttle, look up to take off`,
       heli: `${K('fwd')}${K('left')}${K('back')}${K('right')} fly · ${K('up')} up · ${K('down')} down · mouse aims · ${K('fire')} guns · ${K('alt')} ${w2}`,
+      crew: `${K('fwd')}${K('left')}${K('back')}${K('right')} walk the aircraft · mouse looks · crew stations are coming next`,
       fpv: `mouse steers · ${K('fwd')} boost · ${K('back')} brake · ${K('up')}${K('down')} climb/sink · dive into the target · ${K('fire')} detonate`,
     };
     $('dhelp').innerHTML = help[D.mode] + ` · ${K('view')} view · <b>Alt</b> free cursor · ${K('chooser')} chooser · ${K('exit')} command`;
@@ -13455,6 +13558,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
       'Multiplayer: host a room, name it, and it appears on every Join screen with a Join button. Works over a normal secure connection, so it should get through school networks.',
+      'Operation Red Star (preview): a Soviet atomic bomber you and friends walk around together, with windows to the outside. Crew stations and the mission are coming.',
       'Multiplayer test room: a plain walled room, no bots, where friends walk around and see each other.',
       'Usernames with name tags over other players. Others now see you look up and down, fire, aim in and throw grenades, and players are solid.',
       'Harbor Havoc: new all-ocean air and sea mode with carriers, island capture, torpedo seaplane and armed boats.',

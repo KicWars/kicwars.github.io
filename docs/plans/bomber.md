@@ -7,6 +7,22 @@ Status: detailed plan, not built. Written 2026-11-06 with Finn.
 
 The aircraft is one big shared vehicle. The host runs it. Nobody flies alone: the pilot cannot fix engines, the engineer cannot see the map, and the bombardier cannot do anything until the others have got him there.
 
+## Decisions (2026-11-06, Finn)
+- **Tone: pretty tense.** Real pressure, but with the blob look and some dry humour in the radio lines.
+- **Playable with 2 and 3 players, scaled to fit.** Fewer crew means fewer simultaneous problems and a gentler event rate, not just AI taking the seats. See Scaling below.
+- **Not just tasks.** Each phase needs a moment of drama: tension spikes, near misses, a set-piece. Task stations feed the drama; they are never a checklist.
+- **Bomb cutscene at the end:** a proper cinematic of the bomb falling and detonating over the city, shown to the whole crew.
+- **Detailed, atmospheric interior with windows to the outside.** The outside world is visible through the nose glass, cockpit, side windows and gunner blisters.
+- **Pilot gets the map himself** whenever nobody is on the navigator seat (the pilot has the nav table view on a fold-down chart).
+- **Guns have lead indicators** (a predicted aim point so shots at moving fighters are fair).
+- **Everything first person.** No third-person or free camera anywhere in the mode, including turrets.
+- Build order: interior and shared presence first, clarify gameplay with Finn after.
+
+## Scaling for 2 and 3 players
+- **2 players:** Pilot (also navigator, reads the chart from his seat) + Engineer (also radio: the radio panel is on the engine bulkhead for this size). AI gunners at 50%, AI bombardier does the sight only on the final 20 seconds with the pilot assisting.
+- **3 players:** Pilot (+navigator), Engineer (+radio), Gunner/Bombardier (a single role: the dorsal turret early, the nose for the bomb run). AI tail gunner.
+- Fighter count, flak density and event rate scale with crew size so a 2-crew run is hard but fair. Training / Standard / Brutal multiplies on top.
+
 ## Crew and roles
 Roles are picked in the lobby (one player per role). Smaller crews merge roles. Empty roles are filled by AI crew who work at about half efficiency, so a solo test works.
 
@@ -130,3 +146,7 @@ Estimate: about 8 to 12 focused sessions. Steps 1 and 2 carry most of the risk.
 - Other targets and routes after New York (a second city, a harder run)?
 - Does the commissar count as a player seat or an extra?
 - A voice chat is out of scope; is the quick-message wheel enough?
+
+## Build status
+- **Done (2026-11-06):** step 1 started. A detailed bomber interior (glass nose and cockpit, radio and navigation, engineer's bay, bomb bay with the bomb, tail gunner) with windows to the outside, shown in first person over the real world with wings and engines outside. Shared crew presence over the relay: everyone sees the others walk around, with name tags. Menu tile "Operation Red Star (preview)" starts it. The bomber flies a scripted circle for now.
+- **Next:** station seats and claiming, then the flight model and route, systems, threats, bomb run and cutscene. Gameplay questions for Finn are listed in the chat after this step.
