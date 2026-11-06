@@ -2177,7 +2177,7 @@ function Sim(opts) {
       ecoK: p.bot ? 1 : ({easy: 1.6, normal: 1, hard: .8}[p.eco] || 1), autoEco: !p.bot && (p.eco === 'easy' || !!p.autoEco)};
   });
   for (const p of this.players) if (p.ecoK > 1) { p.steel += 700; p.fuel += 250; } else if (p.ecoK < 1) { p.steel -= 150; }
-  if (opts.battle) this.setupBattle(opts.battle); else if (opts.scen) this.setupScen(opts.scen); else for (const p of this.players) this.setupPlayer(p);
+  if (opts.sandbox) this.setupSandbox(); else if (opts.battle) this.setupBattle(opts.battle); else if (opts.scen) this.setupScen(opts.scen); else for (const p of this.players) this.setupPlayer(p);
   if (opts.xav && !opts.battle && !opts.scen) this.addXaviers(); // optional, Play vs bots only
   if (opts.peace && !opts.battle && !opts.scen) { this.peace = true; this.peaceOpt = true; } // no random attacks: bots build up until a human declares war
 }
@@ -2263,6 +2263,16 @@ Sim.prototype.popChaff = function (e) {
 };
 Sim.prototype.notify = function (p, text, kind, x, y) { this.ev({k: 'msg', p, text, kind: kind || 'info', x, y}); };
 
+// Multiplayer test room: a small open map, every player is one soldier near the middle. No bases, no bots, no winner.
+Sim.prototype.setupSandbox = function () {
+  this.sandbox = 1; const c = this.N / 2;
+  this.players.forEach((p, i) => {
+    for (let tr = 0; tr < 400; tr++) {
+      const a = i * 2.1 + tr * .7, r = 4 + i * 2 + tr * .3, x = c + Math.cos(a) * r, y = c + Math.sin(a) * r;
+      if (this.landOk(x, y)) { const e = this.addUnit('rifle', i, x, y); e.h = a; return; }
+    }
+  });
+};
 Sim.prototype.setupPlayer = function (p) {
   const s = p.spawn;
   this.addBuilding('hq', p.i, s.x, s.y, true);
@@ -2971,7 +2981,7 @@ Sim.prototype.playerOut = function (i, by) {
 
 // The war ends when every survivor is on the same team or allied with all the others.
 Sim.prototype.checkOver = function () {
-  if (this.over) return;
+  if (this.over || this.sandbox) return;
   const al = this.players.filter(q => q.alive);
   for (const a of al) for (const b of al) if (a.i < b.i && a.team !== b.team && a.rel[b.i] !== 'ally') return;
   const w = al[0];
@@ -9185,7 +9195,7 @@ function Game(cfg) {
     this.view = new Mirror(cfg);
     this.bots = [];
   } else {
-    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle, scen: cfg.scen, xav: cfg.xav, peace: cfg.peace});
+    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle, scen: cfg.scen, xav: cfg.xav, peace: cfg.peace, sandbox: cfg.sandbox});
     this.bots = cfg.players.map((p, i) => p.bot ? new Bot(this.sim, i, p.bot) : null).filter(Boolean);
   }
   this.view.me = this.me;
@@ -11679,7 +11689,7 @@ const UI = {
           const used = this.lobby.slots.map(s => s.nation), n = NATIONS.map((_, i) => i).find(x => !used.includes(x));
           // a friend replaces the default bot opponent
           const bi = this.lobby.slots.findIndex(s => s.kind === 'bot' && s.auto);
-          const slot = {kind: 'human', name: 'Friend ' + this.lobby.slots.filter(s => s.kind === 'human').length, nation: n === undefined ? 0 : n, team: 1, id};
+          const slot = {kind: 'human', name: 'Friend ' + this.lobby.slots.filter(s => s.kind === 'human').length, nation: n === undefined ? 0 : n, team: this.testRoom ? 0 : 1, id};
           if (bi >= 0) this.lobby.slots.splice(bi, 1, slot); else this.lobby.slots.push(slot);
           Sfx.ui(); this.invMsg('Your friend joined! Pick nations and teams, then press Start War.', 'good');
           this.inv = null; $('invStep2').classList.add('hidden'); $('invStep3').classList.add('hidden'); $('replyIn').value = '';
@@ -11787,7 +11797,7 @@ const UI = {
         box.appendChild(b);
       }
     } catch (e) { $('roomListBox').classList.remove('hidden'); $('roomList').innerHTML = '<p class="small" style="color:#ff8a80">Cannot reach the room server (' + (e && e.message || 'network error') + '). Check your internet. School and work networks can block it: tell me if so.</p>'; }
-    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-d';
+    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-e';
     clearTimeout(this.rlT); this.rlT = setTimeout(() => this.refreshRooms(), 3000);
   },
   openJoin() {
@@ -11836,11 +11846,12 @@ const UI = {
     $('optEnemies').value = L.slots.filter(s => s.kind === 'bot').length || 1; $('optEnemies').disabled = !host;
     $('bStart').classList.toggle('hidden', !host);
     const teams = new Set(L.slots.map(s => s.team));
-    $('bStart').disabled = teams.size < 2;
+    const humans = L.slots.filter(s => s.kind !== 'bot').length, canStart = !!this.testRoom || teams.size >= 2 || humans >= 2;
+    $('bStart').disabled = !canStart; $('bStart').textContent = this.testRoom ? 'Start test room (' + humans + (humans === 1 ? ' player)' : ' players)') : 'Start War';
     let st = '';
     if (this.net === 'client') st = 'Waiting for the host to start...';
-    else if (teams.size < 2) st = this.testRoom ? 'Waiting for friends: tell them to press Join a game and click your room. Put at least one player on another team to start.' : 'You need at least one opponent on another team.';
-    else if (this.net === 'host') st = this.lobby.slots.some(s => s.id && s.id !== 'host') ? 'Ready when you are.' : 'Invite a friend below, or start now against the bot.';
+    else if (!canStart) st = this.testRoom ? 'Waiting for friends: tell them to press Join a game and click your room. Put at least one player on another team to start.' : 'You need at least one opponent on another team.';
+    else if (this.net === 'host') st = this.lobby.slots.some(s => s.id && s.id !== 'host') ? 'Ready when you are.' : this.testRoom ? 'Waiting for friends. You can start alone too.' : 'Invite a friend below, or start now against the bot.';
     $('lStatus').textContent = st;
   },
   leaveLobby() {
@@ -11882,19 +11893,22 @@ const UI = {
       }
       this.lobby = m.lobby; this.mySlot = m.you; this.drawLobby();
     } else if (m.start) {
-      this.launch({mode: 'client', size: m.start.size, seed: m.start.seed, players: m.start.players, me: m.start.you, link: this.link, tut: false});
+      this.launch({mode: 'client', size: m.start.size, seed: m.start.seed, players: m.start.players, me: m.start.you, link: this.link, tut: false, sandbox: !!m.start.sandbox});
     } else if (m.g && this.g && this.g.mode === 'client') this.g.onSnap(m.g);
   },
   startGame() {
+    if (Date.now() - (this.lastStart || 0) < 4000) return; // ignore double clicks
+    this.lastStart = Date.now();
     Sfx.init();
-    if (this.link && this.link.setMeta) this.link.setMeta({open: false});
     if (Direct.isTouch()) { try { const d = document.documentElement, r = d.requestFullscreen && d.requestFullscreen(); if (r && r.then) r.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); } catch (e) {} }
     const mv = $('optMap').value, mt = mv === 'r' ? MAP_KEYS[(Math.random() * MAP_KEYS.length) | 0] : +mv;
-    const L = this.lobby, seed = ((Math.random() * 1e6) | 0) + mt * 1e7, size = Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : mt >= 11 ? 144 : 0);
+    const L = this.lobby, sb = !!this.testRoom, seed = sb ? ((Math.random() * 1e6) | 0) : ((Math.random() * 1e6) | 0) + mt * 1e7, size = sb ? 96 : Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : mt >= 11 ? 144 : 0);
     const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked, eco: s.kind === 'bot' ? null : $('optEco').value}));
     this.playersIds = L.slots.map(s => s.id || null);
-    if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id)}});
-    this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, tut: $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick, xav: $('optXav').checked && this.net !== 'host', peace: !$('optRaid').checked && this.net !== 'host' && !this.quick});
+    if (sb) for (const p of players) { p.team = 0; p.open = true; }
+    if (this.link && this.link.setMeta) this.link.setMeta({open: false});
+    if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id), sandbox: sb ? 1 : 0}});
+    this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, sandbox: sb, tut: !sb && $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick, xav: $('optXav').checked && this.net !== 'host', peace: !$('optRaid').checked && this.net !== 'host' && !this.quick});
   },
   setSpeed(v) { // time control: host-side only, so a friend's game stays in sync with the host's clock
     if (!this.g || this.g.mode === 'client') { this.addAlert('Only the host can change game speed', 'bad'); return; }
@@ -12054,6 +12068,10 @@ const UI = {
     this.refreshHud(true);
     if (this.quick) { this.quick = false; setTimeout(() => { this.deployed = true; this.openDeploy(); }, 300); }
     window.__ws = this;
+    if (o.sandbox) { // test room: drop straight into first person as your soldier
+      this.addAlert('Test room: walk around with WASD and mouse. Your friends are in here too.', 'gold');
+      let tries = 0; const go = () => { const g = this.g; if (!g || g !== this.g) return; const u = [...g.view.ents.values()].find(e => e.o === o.me && !e.b && e.d.cat === 'inf'); if (u && !Direct.on) { Direct.enter(this, u); return; } if (!u && ++tries < 40) setTimeout(go, 250); }; setTimeout(go, 400);
+    }
   },
   quit() {
     if (Direct.on) Direct.exit();
@@ -13385,6 +13403,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Multiplayer test room is now a small walk-around sandbox: no bases, no bots, everyone spawns as a soldier in first person and you can see each other move. The Start button is fixed: clear label, no double starts, and the room only hides from the list once the game starts.',
       'Multiplayer rooms: name your room and it shows up on the Join screen for everyone with a Join button. No codes to share, though the 5-letter code and link still work. It runs over a normal secure web connection so it works on school Wi-Fi, and drops reconnect on their own.',
       'Harbor Havoc: you now start as a soldier on your base island. Walk up to your runway or your boat spawner and a menu opens to pick your aircraft or boat (number keys). Far fewer bot planes, and the islands are now round tropical islets with flat green tops, sandy beaches and palms.',
       'Boats: every boat now has a machine gun and a big gun that fire together when you hold fire, plus unlimited missiles on the alt button. Destroyers and carriers have fully built interiors: bridge, combat centre, mess, galley, bunks, engine room, and on the carrier a ready room, briefing room and a hangar with aircraft.',
