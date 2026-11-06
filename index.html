@@ -11690,7 +11690,7 @@ const UI = {
         onStatus: () => this.inviteStatus(),
       });
       if (this.lobby.slots[1]) this.lobby.slots[1].auto = 1;
-      this.link.setMeta({name: this.testRoom ? 'Test room' : 'Friendly war', open: true});
+      { let nm = this.testRoom ? 'Test room' : 'Friendly war'; try { const a = window.prompt('Name your room (everyone online will see this name):', nm); if (a && a.trim()) nm = a.trim().slice(0, 28); } catch (e) {} $('roomName').value = nm; this.link.setMeta({name: nm, open: true}); }
     } else { $('invPanel').classList.add('hidden'); this.net = 'off'; $('lCode').classList.add('hidden'); $('lTitle').textContent = 'Skirmish against bots'; }
     this.drawLobby();
   },
@@ -11787,7 +11787,7 @@ const UI = {
         box.appendChild(b);
       }
     } catch (e) { $('roomListBox').classList.remove('hidden'); $('roomList').innerHTML = '<p class="small" style="color:#ff8a80">Cannot reach the room server (' + (e && e.message || 'network error') + '). Check your internet. School and work networks can block it: tell me if so.</p>'; }
-    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-c';
+    $('bld').textContent = 'Server: ' + Net.relay().split('://')[1] + ' · game version ' + 'build 6-Nov-d';
     clearTimeout(this.rlT); this.rlT = setTimeout(() => this.refreshRooms(), 3000);
   },
   openJoin() {
