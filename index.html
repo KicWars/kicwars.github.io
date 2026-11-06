@@ -398,6 +398,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
         <div id="invPanel" class="hidden">
           <div id="roomBox" class="hidden"><h3>Friends join with this room code</h3>
             <div class="big" id="roomBig" style="font-size:44px;letter-spacing:.2em;font-weight:700;text-align:center;margin:6px 0"></div>
+            <label class="small">Room name (everyone online can see and join it) <input id="roomName" maxlength="28" value="Friendly war" style="width:100%"></label>
             <div class="row"><button id="bCopyRoom" class="primary">Copy invite link</button></div>
             <div id="roomStat" class="msg"></div>
             <p class="small">They press <b>Join a Friend</b> and type the code, or just open the link. Works on school Wi-Fi.</p></div>
@@ -513,7 +514,8 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
 
 <div id="joinScr" class="screen hidden"><div class="mcard wide">
   <h2>Join a friend</h2>
-  <p class="msg">Type the 5-letter room code your friend sees on their screen. (Older long invite codes still work too.)</p>
+  <div id="roomListBox" class="hidden"><h3>Open rooms</h3><div id="roomList"></div></div>
+  <p class="msg">Or type the 5-letter room code your friend sees on their screen. (Older long invite codes still work too.)</p>
   <textarea id="joinIn" rows="2" placeholder="Room code, e.g. KQXMB" style="text-transform:uppercase"></textarea>
   <button class="big primary" id="bJoinGo">Join</button>
   <div id="joinReply" class="hidden">
@@ -725,7 +727,7 @@ HostLink.prototype.openWs = function () {
   if (this.closed) return;
   const ws = this.sock = new WebSocket(Net.relay() + '/room/' + this.code + '?role=host'); ws.binaryType = 'arraybuffer';
   const st = s => { this.wsState = s; this.h.onStatus && this.h.onStatus(); };
-  ws.onopen = () => { this.wsTries = 0; clearInterval(this.wsPing); this.wsPing = setInterval(() => { try { ws.send('ping'); } catch (e) {} }, 20000); st('up'); };
+  ws.onopen = () => { this.wsTries = 0; this.sendMeta(); clearInterval(this.wsPing); this.wsPing = setInterval(() => { try { ws.send('ping'); } catch (e) {} }, 20000); st('up'); };
   ws.onmessage = ev => {
     if (typeof ev.data === 'string') {
       let c; try { c = JSON.parse(ev.data); } catch (e) { return; }
@@ -744,6 +746,8 @@ HostLink.prototype.openWs = function () {
     st('retry'); setTimeout(() => this.openWs(), Math.min(5000, 500 * ++this.wsTries));
   };
 };
+HostLink.prototype.setMeta = function (m) { this.meta = Object.assign(this.meta || {name: 'Friendly war', open: true}, m); this.sendMeta(); };
+HostLink.prototype.sendMeta = function () { const s = this.sock; if (s && s.readyState === 1) try { s.send(JSON.stringify(Object.assign({c: 'meta'}, this.meta || {name: 'Friendly war', open: true}))); } catch (e) {} };
 // Make a WebRTC invite. Resolves to {id, code}. Later call acceptReply(replyCode).
 HostLink.prototype.invite = async function () {
   const id = 'r' + Math.random().toString(36).slice(2, 8), pc = new RTCPeerConnection(Net.rtcConfig());
@@ -11558,6 +11562,8 @@ const UI = {
     $('bCopyInv').onclick = () => this.copy($('invCode'), $('bCopyInv'));
     $('bCopyLink').onclick = () => { const ta = document.createElement('textarea'); ta.value = location.href.split('#')[0].split('?')[0] + '#join=' + this.inv.code.replace(INVITE_TAG, ''); this.copy(ta, $('bCopyLink')); };
     $('bConnect').onclick = () => this.acceptReply();
+    $('roomName').addEventListener('keydown', e => e.stopPropagation()); $('roomName').addEventListener('keyup', e => e.stopPropagation());
+    $('roomName').oninput = () => { if (this.link && this.link.setMeta) this.link.setMeta({name: $('roomName').value}); };
     $('bCopyRoom').onclick = () => { const ta = document.createElement('textarea'); ta.value = location.href.split('#')[0].split('?')[0] + '#room=' + this.code; this.copy(ta, $('bCopyRoom')); };
     $('bRelay').onclick = () => this.startRelay();
     for (const id of ['joinIn', 'replyIn', 'ghTokH', 'ghTokC', 'relayIn', 'invCode', 'replyOut']) { $(id).addEventListener('keydown', e => e.stopPropagation()); $(id).addEventListener('keyup', e => e.stopPropagation()); }
@@ -11658,7 +11664,7 @@ const UI = {
       const code = this.code = makeCode();
       $('lCode').textContent = 'Room ' + code; $('lCode').classList.remove('hidden'); $('lTitle').textContent = 'Play with friends';
       $('roomCode').textContent = code;
-      { const on = !!Net.relay(); $('roomBox').classList.toggle('hidden', !on); $('oldInv').open = !on; $('roomBig').textContent = code; $('roomStat').textContent = on ? 'Connecting to the game server...' : ''; }
+      { const on = !!Net.relay(); $('roomBox').classList.toggle('hidden', !on); $('oldInv').open = !on; $('roomBig').textContent = code; $('roomName').value = 'Friendly war'; if (this.link && this.link.setMeta) this.link.setMeta({name: 'Friendly war', open: true}); $('roomStat').textContent = on ? 'Connecting to the game server...' : ''; }
       this.lobby.slots[1].team = 1;
       this.inv = null; $('invStep2').classList.add('hidden'); $('invStep3').classList.add('hidden'); $('invStatus').textContent = ''; $('relayStatus').textContent = '';
       $('invPanel').classList.remove('hidden');
@@ -11761,8 +11767,23 @@ const UI = {
     try { await this.link.startRelay(t); } catch (e) {}
     this.inviteStatus();
   },
+  async refreshRooms() { // live rooms from the relay; click one to join
+    const url = Net.relay(); if (!url || $('joinScr').classList.contains('hidden')) { clearTimeout(this.rlT); return; }
+    try {
+      const r = await fetch(url.replace(/^ws/, 'http') + '/rooms', {cache: 'no-store'}), list = await r.json(), box = $('roomList');
+      $('roomListBox').classList.remove('hidden'); box.innerHTML = '';
+      const open = list.filter(x => x.open);
+      if (!open.length) box.innerHTML = '<p class="small">No open rooms right now. Make one with Play with Friends.</p>';
+      for (const x of open) {
+        const b = document.createElement('button'); b.className = 'big'; b.style.cssText = 'display:block;width:100%;margin:4px 0;text-align:left';
+        b.textContent = x.name + '  ·  ' + x.n + (x.n === 1 ? ' player' : ' players') + '  ·  Join'; b.onclick = () => { $('joinIn').value = x.code; this.join(x.code); };
+        box.appendChild(b);
+      }
+    } catch (e) {}
+    clearTimeout(this.rlT); this.rlT = setTimeout(() => this.refreshRooms(), 3000);
+  },
   openJoin() {
-    $('menu').classList.add('hidden'); $('joinScr').classList.remove('hidden');
+    $('menu').classList.add('hidden'); $('joinScr').classList.remove('hidden'); this.refreshRooms();
     $('joinReply').classList.add('hidden'); this.joinMsg(''); $('bJoinGo').disabled = false;
     setTimeout(() => $('joinIn').focus(), 30);
   },
@@ -11858,6 +11879,7 @@ const UI = {
   },
   startGame() {
     Sfx.init();
+    if (this.link && this.link.setMeta) this.link.setMeta({open: false});
     if (Direct.isTouch()) { try { const d = document.documentElement, r = d.requestFullscreen && d.requestFullscreen(); if (r && r.then) r.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); } catch (e) {} }
     const mv = $('optMap').value, mt = mv === 'r' ? MAP_KEYS[(Math.random() * MAP_KEYS.length) | 0] : +mv;
     const L = this.lobby, seed = ((Math.random() * 1e6) | 0) + mt * 1e7, size = Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : mt >= 11 ? 144 : 0);
@@ -13355,7 +13377,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
-      'Multiplayer rooms: the host gets a 5-letter room code (or a link) and friends just type it. No more pasting codes back and forth, and it runs over a normal secure web connection so it works on school Wi-Fi. Drops reconnect on their own.',
+      'Multiplayer rooms: name your room and it shows up on everyone's Join screen with a Join button. No codes to share, though the 5-letter code and link still work. It runs over a normal secure web connection so it works on school Wi-Fi, and drops reconnect on their own.',
       'Harbor Havoc: you now start as a soldier on your base island. Walk up to your runway or your boat spawner and a menu opens to pick your aircraft or boat (number keys). Far fewer bot planes, and the islands are now round tropical islets with flat green tops, sandy beaches and palms.',
       'Boats: every boat now has a machine gun and a big gun that fire together when you hold fire, plus unlimited missiles on the alt button. Destroyers and carriers have fully built interiors: bridge, combat centre, mess, galley, bunks, engine room, and on the carrier a ready room, briefing room and a hangar with aircraft.',
       'Missiles that are locked on now always connect. Planes: a much wider first-person field of view.',

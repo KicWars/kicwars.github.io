@@ -6,6 +6,19 @@ compatibility_date = "2024-09-01"
 name = "ROOMS"
 class_name = "Room"
 
+[[durable_objects.bindings]]
+name = "DIR"
+class_name = "Dir"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Room"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Dir"]
+
+# Optional GitHub log of every room: set vars below and run `npx wrangler@3 secret put GH_TOKEN`
+# [vars]
+# GH_REPO = "owner/repo"
+# GH_ISSUE = "1"
