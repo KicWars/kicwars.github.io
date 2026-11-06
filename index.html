@@ -1060,6 +1060,7 @@ const PWPN = {
             {n: 'Laser-Guided Bomb', t: 'bomb', dmg: 230, vs: 'bomb', spl: 3, cd: 1.6, rng: 0, guided: 1, snd: 'bomb'},
             {n: 'AIM-120 AMRAAM', t: 'msl', dmg: 150, vs: 'missile', spd: 48, spl: 1.3, cd: 2.6, rng: 100, air: 1, snd: 'missile'}],
   a10:     [{n: 'GAU-8 Avenger', t: 'hit', dmg: 20, vs: 'cannon', rpm: 1100, mag: 350, rl: 5, sp: 1, ads: .9, kick: .2, rng: 48, crit: 1.3, auto: 1, aa: 1, snd: 'cannon'},
+            {n: 'Hydra Rocket Pods', t: 'proj', dmg: 60, vs: 'rocket', spd: 50, g: .4, spl: 1.6, cd: .7, rng: 65, salvo: 1, pods: 1, snd: 'rocket'},
             {n: 'AGM-65 Maverick', t: 'msl', dmg: 220, vs: 'rocket', spd: 30, spl: 1.6, cd: 3, rng: 80, guided: 1, snd: 'rocket'},
             {n: 'AIM-9 Sidewinder', t: 'msl', dmg: 120, vs: 'missile', spd: 42, spl: 1.2, cd: 3, rng: 70, air: 1, snd: 'missile'}],
   fa18:    [{n: 'M61 Vulcan', t: 'hit', dmg: 11, vs: 'cannon', rpm: 1300, mag: 500, rl: 4, sp: .8, ads: .8, kick: .1, rng: 45, crit: 1.3, auto: 1, aa: 1, snd: 'cannon'},
@@ -1170,8 +1171,18 @@ const TIER_ROCKETS = {n: 'Rocket Pods', t: 'proj', dmg: 120, vs: 'rocket', spd: 
 const pwpnOf = e => (PWPN[e.k] || []).concat(e.tier >= 3 && TANK_CLASSES.includes(e.k) ? [TIER_ROCKETS] : []); // tier III tanks: rocket pods as a 3rd weapon
 const XP = {
   get() { try { return +localStorage.getItem('kw-xp') || 0; } catch (e) { return 0; } },
-  add(n) { const v = this.get() + n; try { localStorage.setItem('kw-xp', v); } catch (e) {} return v; },
+  add(n) { const r0 = this.rank(), v = this.get() + n; try { localStorage.setItem('kw-xp', v); } catch (e) {} const r1 = this.rank(); if (r1.i > r0.i && this.onRank) this.onRank(r1); return v; },
+  rank(x) { x = x === undefined ? this.get() : x; let i = 0; RANKS.forEach((R, j) => { if (x >= R.xp) i = j; }); return Object.assign({i}, RANKS[i], {next: RANKS[i + 1] || null}); },
   tier() { const x = this.get(); let t = 1; TIERS.forEach((T, i) => { if (x >= T.xp) t = i + 1; }); return t; },
+};
+// Ranks: XP from every mode (kills, captures, wins) moves you up
+const RANKS = [{n: 'Recruit', xp: 0, b: '·'}, {n: 'Private', xp: 300, b: '▪'}, {n: 'Corporal', xp: 1000, b: '▴'}, {n: 'Sergeant', xp: 2500, b: '▴▴'}, {n: 'Staff Sergeant', xp: 4000, b: '▴▴▴'},
+  {n: 'Lieutenant', xp: 6000, b: '★'}, {n: 'Captain', xp: 9000, b: '★★'}, {n: 'Major', xp: 14000, b: '✪'}, {n: 'Colonel', xp: 22000, b: '✪✪'}, {n: 'General', xp: 35000, b: '✪✪✪'}];
+// Lifetime stats kept in this browser
+const Stats = {
+  get() { try { return JSON.parse(localStorage.getItem('kw-stats') || '{}'); } catch (e) { return {}; } },
+  inc(k, n) { const o = this.get(); o[k] = (o[k] || 0) + (n === undefined ? 1 : n); try { localStorage.setItem('kw-stats', JSON.stringify(o)); } catch (e) {} return o[k]; },
+  max(k, n) { const o = this.get(); if (n > (o[k] || 0)) { o[k] = n; try { localStorage.setItem('kw-stats', JSON.stringify(o)); } catch (e) {} } },
 };
 const MSL_LOAD = 4; // missiles per sortie in arcade air battles (each missile weapon)
 const AIR_CLASSES = ['fighter', 'f16', 'interceptor', 'typhoon', 'fa18', 'a10', 'bomber', 'sr71', 'b2'], TANK_CLASSES = ['tank', 'htank', 'ltank', 'td', 'ifv', 'sam'];
@@ -2222,6 +2233,8 @@ Sim.prototype.issue = function (c, pi) {
     case 'rally': { const b = this.ents.get(c.b); if (b && b.o === pi) b.rally = {x: c.x, y: c.y}; break; }
     case 'jump': { const u = this.ents.get(c.id); if (!u || u.o !== pi || !u.inside) break; const T = this.ents.get(u.inside); if (!T || !T.air) break; T.cargo = (T.cargo || []).filter(i => i !== u.id); u.inside = 0; u.x = T.x; u.y = T.y; u.z = T.z - .6; u.chute = 0; break; }
     case 'steal': this.spySteal(c, pi); break;
+    case 'spot': { const a = this.pilotOk(c, pi), t = this.ents.get(c.t); if (!a || !t || t.hp <= 0 || this.friendly(t.o, pi) || t.o < 0 || (a.spotCd || 0) > this.t) break; // mark an enemy for your whole team
+      a.spotCd = this.t + 1.5; t.revealed = Math.max(t.revealed || 0, this.t + 15); this.ev({k: 'spotted', p: pi, t: t.id, by: a.id, until: 15}); break; }
     case 'answer': { const e = this.ents.get(c.id); if (e && e.o === pi && e.inter) this.answerSpy(e, !!c.ok); break; }
     case 'autotrain': { const b = this.ents.get(c.b); if (b && b.o === pi && b.d.trains) { b.auto = !!c.on; if (c.u && b.d.trains.includes(c.u)) b.autoK = c.u; } break; }
     case 'research': { const b = this.ents.get(c.b); if (b && b.o === pi && b.d.research) this.cmdResearch(b, p, c.u); break; }
@@ -3802,8 +3815,9 @@ Sim.prototype.pilotProj = function (c, pi) {
   const W = pwpnOf(a)[c.w | 0]; if (!W) return;
   a.pcdw = a.pcdw || [0, 0];
   const cd = W.cd || (W.mag && W.mag > 1 ? 60 / W.rpm : W.rl) || 1;
-  if (a.pcdw[c.w | 0] > this.t + .05) return;
-  a.pcdw[c.w | 0] = this.t + cd * .8;
+  a.pbst = a.pbst || [0, 0, 0, 0];
+  if (a.pcdw[c.w | 0] > this.t + .05) { if (W.salvo && a.pbst[c.w | 0] > 0) a.pbst[c.w | 0]--; else return; } // a salvo's follow-up rockets
+  else { a.pcdw[c.w | 0] = this.t + cd * .8; a.pbst[c.w | 0] = W.salvo ? (W.pods ? 6 : 3) : 0; }
   if (W.t === 'heal') { this.near(a.x, a.y, W.rng, t => { if (t.o === a.o && t.d.cat === 'inf' && t.hp < t.hpm) { t.hp = Math.min(t.hpm, t.hp + W.dmg); this.ev({k: 'heal', t: t.id}); } }); return; }
   if (W.t === 'leap') { this.ev({k: 'howl', id: a.id}); return; }
   const L = Math.hypot(c.dx, c.dy, c.dz) || 1, dx = c.dx / L, dy = c.dy / L, dz = c.dz / L;
@@ -8564,7 +8578,7 @@ Game.prototype.issue = function (c) {
 // Shots: hitscan weapons are resolved on this client against what you see (instant feedback) and the host checks them;
 // projectiles (rockets, shells, bombs, missiles, grenades) are simulated by the host.
 
-const BIND_DEFAULTS = {ammo: 'KeyN', vlock: 'KeyL', fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', walk: 'KeyB', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP', chaff: 'KeyZ'};
+const BIND_DEFAULTS = {ammo: 'KeyN', vlock: 'KeyL', w4: 'KeyY', spot: 'KeyK', fire: 'Space', alt: 'KeyE', ads: 'KeyQ', reload: 'KeyR', jump: 'KeyX', sprint: 'KeyC', view: 'KeyV', exit: 'KeyF', free: 'AltLeft', cycle: 'KeyT', special: 'KeyG', walk: 'KeyB', up: 'KeyX', down: 'KeyC', fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', chooser: 'KeyP', chaff: 'KeyZ'};
 const Settings = {
   view: 'fp', sens: 1, invert: false, assist: false, autofire: false, flightAssist: true, gritty: true, blobs: true,
   binds: Object.assign({}, BIND_DEFAULTS),
@@ -8584,7 +8598,7 @@ const Settings = {
 Settings.load();
 Settings.blobs = true; // the troops are always blob guys
 
-const BIND_LABELS = {ammo: 'Tanks: switch AP / HE shells', vlock: 'Planes: lock view on target', fire: 'Fire', alt: 'Secondary weapon', ads: 'Aim / scope (toggle)', reload: 'Reload / aircraft: 3rd weapon', jump: 'Jump / climb', sprint: 'Sprint / descend', view: 'First / third person', exit: 'Back to command', free: 'Free cursor', cycle: 'Cycle lock target', special: 'National special ability', walk: "Ships: leave / sit in captain's chair", fwd: 'Forward / throttle up', back: 'Back / throttle down', left: 'Left / roll left', right: 'Right / roll right', chooser: 'Unit chooser', chaff: 'Aircraft: chaff (beats missiles)'};
+const BIND_LABELS = {ammo: 'Tanks: switch AP / HE shells', vlock: 'Planes: lock view on target', w4: 'Aircraft: 4th weapon', spot: 'Spot enemy for your team (or middle click)', fire: 'Fire', alt: 'Secondary weapon', ads: 'Aim / scope (toggle)', reload: 'Reload / aircraft: 3rd weapon', jump: 'Jump / climb', sprint: 'Sprint / descend', view: 'First / third person', exit: 'Back to command', free: 'Free cursor', cycle: 'Cycle lock target', special: 'National special ability', walk: "Ships: leave / sit in captain's chair", fwd: 'Forward / throttle up', back: 'Back / throttle down', left: 'Left / roll left', right: 'Right / roll right', chooser: 'Unit chooser', chaff: 'Aircraft: chaff (beats missiles)'};
 
 const _v3 = new THREE.Vector3(), _v3b = new THREE.Vector3();
 const Direct = {
@@ -8764,11 +8778,19 @@ const Direct = {
       return;
     }
     if (this.look === 'free' || this.look === 'touch' || this.look === 'pending') { this.lockTries = 0; this.requestLock('click'); return; }
+    if (e.button === 1) { this.spot(); return; } // middle click spots
     if (this.look === 'offset' && !this.triedClickLock) { this.triedClickLock = true; this.requestLock('click'); }
     if (e.button === 0) this.mouseDown = true;
     else if (e.button === 2) this.toggleAds();
   },
   onMouseUp(e) { if (e.button === 0) this.mouseDown = false; },
+  // spot: mark the enemy nearest your crosshair for 15s; everyone on your side sees the marker
+  spot() {
+    const g = this.ui.g, v = g.view; let best = null, ba = .2;
+    for (const t of v.ents.values()) { if (t.o < 0 || v.friendly(t.o, g.me) || t.inside || !t.seenByMe) continue; const a = this.angTo(t, this.fw); if (a.dd > 260) continue; const sc = a.ang + a.dd / 4000; if (sc < ba) { ba = sc; best = t; } }
+    if (!best) { this.msg('Nothing to spot: put the crosshair on an enemy', 1.2); return; }
+    g.issue({c: 'spot', id: this.id, t: best.id}); this.msg('SPOTTED: ' + (best.b ? BUILDINGS[best.k].n : best.d.n), 1.2); Sfx.beep(1100);
+  },
   // returns true when the key was used by direct control
   onKey(e, down) {
     const B = Settings.binds, c = e.code;
@@ -8786,6 +8808,8 @@ const Direct = {
     if (c === B.view) { if (this.aboard) this.msg('Walking is first person only', 1.2); else this.toggleView(); return true; }
     if (c === B.chooser) { this.ui.deployed = true; this.exit(); this.ui.openDeploy(); return true; }
     if (c === B.ads) { this.toggleAds(); return true; }
+    if (c === (B.spot || 'KeyK')) { this.spot(); return true; }
+    if (c === (B.w4 || 'KeyY') && (this.mode === 'plane' || this.mode === 'heli' || this.mode === 'vehicle') && this.W[3]) { this.tryFire(3, this.ui.g); return true; }
     if (c === B.reload) { if ((this.mode === 'plane' || this.mode === 'heli' || this.mode === 'vehicle') && this.W[2]) this.tryFire(2, this.ui.g); else this.reload(this.slot); return true; }
     if (c === B.chaff) { this.chaff(); return true; }
     if (c === 'KeyJ' && this.strikeBank > 0) { const P = this.aimPt; if (!P) { this.msg('Aim at the ground to call artillery', 1.5); return true; } this.strikeBank--; if (this.ui.g.sim && this.ui.g.sim.scen && this.ui.g.sim.scen.arc) this.artT = performance.now() + 60000; this.ui.g.issue({c: 'streak', id: this.id, x: P.x, y: P.y, big: this.bigStrike ? 1 : 0}); this.bigStrike = false; return true; }
@@ -8944,7 +8968,8 @@ const Direct = {
   },
   toggleAds() {
     if (this.e && this.e.k === 'arty') { this.direct = !this.direct; this.msg(this.direct ? 'Direct fire: shells fly straight at the crosshair' : 'Indirect fire: shells arc onto the aim point', 1.6); return; }
-    if (this.mode === 'soldier' || this.mode === 'vehicle' || this.mode === 'ship' || this.mode === 'heli') this.ads = !this.ads; },
+    if (this.mode === 'soldier' || this.mode === 'vehicle' || this.mode === 'ship' || this.mode === 'heli') this.ads = !this.ads;
+    else if (this.mode === 'plane' && this.W.some(s => s.w.t === 'bomb')) { this.bsight = !this.bsight; this.msg(this.bsight ? 'BOMBSIGHT: drop when the target is under the cross' : 'Bombsight off', 1.4); } },
 
   // ---------- per-frame ----------
   update(dt, g) {
@@ -9029,6 +9054,10 @@ const Direct = {
     const fw = {x: Math.cos(wy) * cp, y: Math.sin(wy) * cp, z: Math.sin(A.pitch)};
     this.viewYaw = wy; this.viewPitch = A.pitch; this.fw = this.shotDir = fw; this.aimPt = null; this.aimHit = null; this.blocked = null; this.curZoom = 1; this.adsK = 0;
     const cx = p.x + (c * A.x - s * A.z) * S, cy = p.y + (s * A.x + c * A.z) * S, cz = p.z + I.worldUp;
+    if (this.mode === 'plane' && this.bsight && !this.grounded) { // bombsight: under the nose, looking down and ahead along the drop
+      const ip = this.bombImpact(); cx = p.x; cy = p.y; cz = p.z - .6;
+      fw.x = ip.x - cx; fw.y = ip.y - cy; fw.z = ip.z - cz; const fl = Math.hypot(fw.x, fw.y, fw.z) || 1; fw.x /= fl; fw.y /= fl; fw.z /= fl;
+    }
     this.camP = {x: cx, y: cy, z: cz};
     cam.position.set(cx, cz, cy); cam.up.set(0, 1, 0); cam.lookAt(cx + fw.x * 50, cz + fw.z * 50, cy + fw.y * 50);
     cam.fov = 72; cam.near = .1; cam.updateProjectionMatrix();
@@ -9383,7 +9412,7 @@ const Direct = {
     else if (this.mode === 'plane') cam.rotateZ(-(p.r) * (fp ? 1 : .35));
     else if (this.mode === 'heli' && fp) cam.rotateZ(-p.r * .5);
     // field of view: aiming zooms; scopes zoom a lot; sprint widens a touch
-    const W = this.W[this.slot] && this.W[this.slot].w, base = this.mode === 'fpv' ? 92 : this.mode === 'plane' ? (fp ? 74 : 66) : 72;
+    const W = this.W[this.slot] && this.W[this.slot].w, base = this.mode === 'fpv' ? 92 : this.mode === 'plane' ? (this.bsight && !this.grounded ? 24 : fp ? 74 : 66) : 72;
     this.adsK += ((this.ads ? 1 : 0) - this.adsK) * Math.min(1, dt * 12);
     if (!this.ads) this.zoom2 = this.zoom2 || 1;
     const z = (W && W.zoom ? 1 + (W.zoom - 1) * this.adsK : 1) * (1 - (1 - (this.zoom2 || 1)) * this.adsK); // scoped: the wheel (or Z) zooms further
@@ -9494,7 +9523,7 @@ const Direct = {
     if (pri) this.tryFire(this.slot, g);
     const altEdge = this.altWas; this.altWas = sec;
     if (sec && this.W.length > 1) { const s = this.slot === 0 ? 1 : 0; const W = this.W[s].w; if (this.mode === 'soldier' && W.mag && (s === 0 || W.mag > 1 && W.t === 'hit')) { if (!altEdge) { this.slot = s; VM.build(e, g.view.players[e.o].nation, s); } } else this.tryFire(s, g, true); }
-    if (this.salvo > 0) { this.salvoT -= dt; if (this.salvoT <= 0) { this.salvo--; this.salvoT = .09; this.fireProj(this.W[1].w, 1, g); } }
+    if (this.salvo > 0) { this.salvoT -= dt; if (this.salvoT <= 0) { this.salvo--; const ss = this.salvoS || 1, SW = this.W[ss] && this.W[ss].w; this.salvoT = SW && SW.pods ? .06 : .09; if (SW) this.fireProj(SW, ss, g); } }
   },
   tryFire(s, g, secondary) {
     const S = this.W[s]; if (!S) return;
@@ -9520,7 +9549,7 @@ const Direct = {
     Sfx.pshot(W.snd);
     if (W.t === 'hit' || W.t === 'pel' || W.t === 'cone' || W.t === 'mel') this.fireHit(W, s, g);
     else if (W.t === 'bomb') { this.fireProj(W, s, g); if (W.stick) { this.salvo = 0; } }
-    else { this.fireProj(W, s, g); if (W.salvo) { this.salvo = 3; this.salvoT = .09; } }
+      else { this.fireProj(W, s, g); if (W.salvo) { this.salvo = W.pods ? 6 : 3; this.salvoT = W.pods ? .06 : .09; this.salvoS = s; } }
     if (W.mag && S.ammo <= 0) setTimeout(() => this.reload(s), 250);
     // recoil and bloom
     const ads = this.adsK, kick = (W.kick || .3) * Math.PI / 180 * (1 - ads * .45);
@@ -9801,6 +9830,11 @@ const Direct = {
     c.textAlign = 'right'; c.font = '700 14px system-ui';
     this.feed = this.feed.filter(f => (f.t += dt) < 4);
     this.feed.forEach((f, i) => { c.fillStyle = `rgba(0,0,0,${.45 * (1 - f.t / 4)})`; const tw = c.measureText(f.text).width; c.fillRect(w - tw - 28, 70 + i * 26, tw + 16, 22); c.fillStyle = `rgba(255,235,200,${1 - f.t / 4})`; c.fillText(f.text, w - 20, 86 + i * 26); });
+    // spotted enemies: red diamond, name and range
+    if (this.ui.spots) for (const [id, until] of this.ui.spots) { const t = g.view.ents.get(id); if (!t || until < performance.now()) { this.ui.spots.delete(id); continue; }
+      const p = this.toScreen(t.rx === undefined ? t.x : t.rx, t.ryy === undefined ? t.y : t.ryy, (t.rz === undefined ? (t.z || 0) : t.rz) + (t.b ? 3 : t.air ? .8 : 1.6)); if (!p) continue;
+      const dd = Math.hypot(t.x - this.pose.x, t.y - this.pose.y); c.save(); c.fillStyle = '#ff3b30'; c.strokeStyle = '#000'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(p.x, p.y - 9); c.lineTo(p.x + 7, p.y); c.lineTo(p.x, p.y + 9); c.lineTo(p.x - 7, p.y); c.closePath(); c.fill(); c.stroke();
+      c.font = '700 11px system-ui'; c.textAlign = 'center'; c.fillStyle = '#ffd0cc'; c.fillText((t.b ? BUILDINGS[t.k].n : t.d.n) + ' · ' + Math.round(dd) + 'm', p.x, p.y - 13); c.restore(); }
     // missile lock box
     const lt = this.lockId && g.view.ents.get(this.lockId);
     if (this.W.some(s => s.w.t === 'msl') && this.fw) { // seeker circle where you aim
@@ -9831,6 +9865,7 @@ const Direct = {
       c.font = '700 13px system-ui'; c.textAlign = 'right'; c.fillStyle = n ? '#dfe7ec' : '#ff6a5a';
       c.fillText('CHAFF ' + '▮'.repeat(n) + '▯'.repeat(CHAFF_N - n) + '  [' + Settings.keyName(Settings.binds.chaff) + ']', w - 24, h - 126);
       if (W3) { c.fillStyle = '#dfe7ec'; c.fillText(Settings.keyName(Settings.binds.reload) + ': ' + W3.w.n + (this.W[2].cd > 0 ? ' (' + this.W[2].cd.toFixed(1) + 's)' : ''), w - 24, h - 108); }
+      if (this.W[3]) { c.fillText(Settings.keyName(Settings.binds.w4 || 'KeyY') + ': ' + this.W[3].w.n + (this.W[3].cd > 0 ? ' (' + this.W[3].cd.toFixed(1) + 's)' : ''), w - 24, h - 126); }
       c.textAlign = 'left';
       if ((this.warnT || 0) > performance.now()) {
         const blink = Math.floor(performance.now() / 160) % 2;
@@ -10092,11 +10127,18 @@ const Direct = {
     const p = this.toScreen(this.aimPt.x, this.aimPt.y, this.aimPt.z); if (p) { c.beginPath(); c.arc(p.x, p.y, 16, 0, 6.2832); c.stroke(); }
     c.fillStyle = '#fff'; c.font = '700 12px system-ui'; c.textAlign = 'center'; c.fillText(sol === null && !this.direct ? 'OUT OF RANGE' : (Math.hypot(this.aimPt.x - mz.x, this.aimPt.y - mz.y) * 10 | 0) + ' m', innerWidth / 2, innerHeight / 2 + 40);
   },
-  drawBombPip(c) {
+  bombImpact() { // where a bomb dropped now would land (same fall as the server's bombs)
     const p = this.pose, v = this.vel || {x: 0, y: 0, z: 0}, M = this.ui.g.view.M;
-    let x = p.x, y = p.y, z = p.z - .3, vx = v.x, vy = v.y, vz = v.z - 1;
-    for (let i = 0; i < 200; i++) { const dt = .05; vz -= 9.8 * dt; x += vx * dt; y += vy * dt; z += vz * dt; if (z < Math.max(hAt(M, x, y), 0)) break; }
+    let x = p.x, y = p.y, z = p.z - .3, vx = v.x, vy = v.y, vz = (v.z || 0) - 1, t = 0;
+    for (let i = 0; i < 300; i++) { const dt = .04; vz -= 9.8 * dt; x += vx * dt; y += vy * dt; z += vz * dt; t += dt; if (z < Math.max(hAt(M, x, y), 0)) break; }
+    return {x, y, z: Math.max(hAt(M, x, y), 0), t};
+  },
+  drawBombPip(c) {
+    const ip = this.bombImpact(), x = ip.x, y = ip.y, M = this.ui.g.view.M;
     const s = this.toScreen(x, y, Math.max(hAt(M, x, y), 0)); if (!s) return;
+    if (this.bsight) { const W = innerWidth, H = innerHeight; c.save(); c.strokeStyle = 'rgba(0,0,0,.85)'; c.lineWidth = Math.max(W, H); c.beginPath(); c.arc(W / 2, H / 2, Math.min(W, H) * .42 + Math.max(W, H) / 2, 0, 6.283); c.stroke();
+      c.strokeStyle = '#7dff8a'; c.lineWidth = 1; c.beginPath(); c.moveTo(s.x - 120, s.y); c.lineTo(s.x + 120, s.y); c.moveTo(s.x, s.y - 120); c.lineTo(s.x, s.y + 120); c.stroke();
+      c.fillStyle = '#7dff8a'; c.font = '700 13px system-ui'; c.textAlign = 'left'; c.fillText('ALT ' + Math.round(this.pose.z - Math.max(0, hAt(M, this.pose.x, this.pose.y))) + '  ·  FALL ' + ip.t.toFixed(1) + 's  ·  ' + Settings.keyName(Settings.binds.ads) + ': exit sight', 24, H - 140); c.restore(); }
     c.strokeStyle = '#7dff8a'; c.lineWidth = 2; c.beginPath(); c.arc(s.x, s.y, 12, 0, 6.2832); c.moveTo(s.x, s.y - 18); c.lineTo(s.x, s.y + 18); c.moveTo(s.x - 18, s.y); c.lineTo(s.x + 18, s.y); c.stroke();
     c.fillStyle = '#7dff8a'; c.font = '700 11px system-ui'; c.textAlign = 'center'; c.fillText('BOMB IMPACT', s.x, s.y + 32);
   },
@@ -10694,8 +10736,21 @@ const UI = {
     try { const q = localStorage.getItem('warsim-gfx'); if (q) $('optQ').value = q; } catch (e) {}
     $('optQ').onchange = () => { const q = $('optQ').value; try { localStorage.setItem('warsim-gfx', q); } catch (e) {} this.gfxAuto = q === 'auto'; this.R.setQuality(q === 'auto' ? 'high' : q); };
     this.gfxAuto = $('optQ').value === 'auto';
-    const xpLine = () => { const x = XP.get(), t = XP.tier(); $('xpLine').textContent = `⭐ ${x} XP · Tank tier ${TIERS[t - 1].n} unlocked` + (t < TIERS.length ? ` · tier ${TIERS[t].n} at ${TIERS[t].xp} XP` : ' · all tiers unlocked'); };
+    const xpLine = () => { const x = XP.get(), t = XP.tier(), R = XP.rank(); $('xpLine').textContent = `${R.b} ${R.n} · ⭐ ${x} XP · Tank tier ${TIERS[t - 1].n} unlocked` + (t < TIERS.length ? ` · tier ${TIERS[t].n} at ${TIERS[t].xp} XP` : ' · all tiers unlocked'); };
     xpLine(); this.xpLine = xpLine;
+    XP.onRank = R => { this.addAlert && this.addAlert('PROMOTED: ' + R.b + ' ' + R.n + '!', 'gold'); Sfx.good(); };
+    $('xpLine').style.cursor = 'pointer'; $('xpLine').title = 'Your profile';
+    $('xpLine').onclick = () => {
+      let el = $('profScr'); if (!el) { el = document.createElement('div'); el.id = 'profScr'; el.className = 'modal'; el.style.cssText = 'position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6)'; document.body.appendChild(el); el.onclick = e => { if (e.target === el) el.remove(); }; }
+      const R = XP.rank(), x = XP.get(), S = Stats.get(), nx = R.next, pc = nx ? Math.round((x - R.xp) / (nx.xp - R.xp) * 100) : 100, kd = ((S.pkills || 0) / Math.max(1, S.deaths || 0)).toFixed(2);
+      const row = (a, b) => `<tr><td style="color:#9fb0bb;padding:3px 14px 3px 0">${a}</td><td style="font-weight:700">${b}</td></tr>`;
+      el.innerHTML = `<div style="background:#121a22;border:1px solid #ffffff22;border-radius:12px;padding:20px 24px;min-width:300px;max-width:92vw;color:#e8eef2;font:14px system-ui">
+        <h2 style="margin:0 0 4px">${R.b} ${R.n}</h2><div style="color:#ffd97a;font-weight:700">${x} XP${nx ? ' · ' + (nx.xp - x) + ' to ' + nx.n : ' · top rank'}</div>
+        <div style="height:8px;background:#ffffff18;border-radius:4px;margin:8px 0 14px"><div style="height:100%;width:${pc}%;background:#ffd97a;border-radius:4px"></div></div>
+        <table>${row('Games', S.games || 0) + row('Wins / losses', (S.wins || 0) + ' / ' + (S.losses || 0)) + row('Kills (you in control)', S.pkills || 0) + row('Kills (whole army)', S.kills || 0) + row('Deaths', S.deaths || 0) + row('K/D', kd) + row('Planes shot down', S.airKills || 0) + row('Tanks destroyed', S.tankKills || 0) + row('Points captured', S.caps || 0) + row('Tank tier', TIERS[XP.tier() - 1].n)}</table>
+        <p style="color:#9fb0bb;font-size:12px;margin:12px 0 0">XP: kills you make yourself 25 (vehicles and planes 60), captures 100, wins 300-400. Ranks: ${RANKS.map(r => r.n).join(' → ')}.</p>
+        <button class="big sm" style="margin-top:12px" onclick="document.getElementById('profScr').remove()">Close</button></div>`;
+    };
     const code = () => { const v = $('codeIn').value.trim().toLowerCase(); $('codeIn').value = '';
       if (v === 'tester') { XP.add(Math.max(0, TIERS[TIERS.length - 1].xp + 1000 - XP.get())); try { localStorage.setItem('warsim-camp', CAMPAIGN.length); } catch (e) {} xpLine(); this.addAlert ? this.addAlert('Tester code: everything unlocked', 'gold') : 0; $('codeIn').placeholder = 'Unlocked!'; }
       else $('codeIn').placeholder = v ? 'Unknown code' : 'Enter code'; };
@@ -11192,6 +11247,7 @@ const UI = {
   // ---------- events ----------
   addAlert(text, kind, x, y) {
     const d = document.createElement('div'); d.className = 'al ' + (kind || ''); d.textContent = text;
+    if (x !== undefined && kind === 'bad') { d.textContent += '  · click or Space: go there'; d.style.cursor = 'pointer'; d.style.pointerEvents = 'auto'; d.onclick = () => { if (Direct.on) Direct.exit(); this.jump(x, y); }; }
     $('alerts').appendChild(d);
     if ($('alerts').children.length > 6) $('alerts').firstChild.remove();
     setTimeout(() => d.remove(), 7000);
@@ -11210,10 +11266,12 @@ const UI = {
       case 'diplo': if (this.diploOpen) this.renderDiplo(); break;
       case 'rearm': if (ev.p === me && Direct.on && Direct.id === ev.id) { for (const W of Direct.W) if (W && W.w) { W.ammo = W.w.mag || 1; W.rl = 0; if (W.msl !== undefined) W.msl = MSL_LOAD; } if (!Direct.rearmMsg || performance.now() - Direct.rearmMsg > 3000) { Direct.rearmMsg = performance.now(); Direct.msg('AIRFIELD: repairing and rearming', 1.8); } } break;
       case 'pen': if (ev.p === me && Direct.on) { Direct.penTxt = {t: ev.txt, good: ev.good, at: performance.now()}; ev.good ? Sfx.hitTick(true) : Sfx.empty(); } break;
-      case 'capd': if (ev.p === me) { const A = this.arcMe = this.arcMe || {k: 0, d: 0, cap: 0}; A.cap++; A.xp = (A.xp || 0) + 100; XP.add(100); } break;
+      case 'capd': if (ev.p === me) { Stats.inc('caps'); const A = this.arcMe = this.arcMe || {k: 0, d: 0, cap: 0}; A.cap++; A.xp = (A.xp || 0) + 100; XP.add(100); } break;
       case 'feed': if (this.scen) {
         const A = this.arcMe = this.arcMe || {k: 0, d: 0, cap: 0}, side = o => o === me || v.friendly(o, me) ? 'a' : 'e', nm = (k, o, pl) => (pl === me ? 'You' : (side(o) === 'a' ? 'Ally ' : 'Enemy ') + UNITS[k].n);
         if (ev.ap === me && Direct.on && Direct.mode === 'plane' && UNITS[ev.tk] && UNITS[ev.tk].cat === 'air') { let got = 0; for (const W of Direct.W) if (W && W.msl !== undefined && W.msl < MSL_LOAD) { W.msl++; got = 1; } Direct.msg('SPLASH ONE!' + (got ? '  +1 missile' : ''), 1.8); Sfx.good(); }
+        if (ev.ap === me) { Stats.inc('kills'); Stats.inc('pkills'); if (UNITS[ev.tk] && UNITS[ev.tk].cat === 'air') Stats.inc('airKills'); else if (UNITS[ev.tk] && UNITS[ev.tk].cat === 'veh') Stats.inc('tankKills'); }
+        if (ev.tp === me) Stats.inc('deaths');
         if (ev.ap === me) { A.k++; const g = UNITS[ev.tk] && (UNITS[ev.tk].cat === 'veh' || UNITS[ev.tk].cat === 'air') ? 60 : 25; A.xp = (A.xp || 0) + g; XP.add(g); }
         if (ev.tp === me) { A.d++; this.killedBy = 'Killed by ' + nm(ev.ak, ev.ao, ev.ap); }
         let F = $('feed'); if (!F) { F = document.createElement('div'); F.id = 'feed'; document.body.appendChild(F); }
@@ -11229,7 +11287,10 @@ const UI = {
       case 'spycaught': if (ev.p === me && !(Direct.on && Direct.id === ev.id)) this.addAlert('Your spy was caught and executed', 'bad'); break;
       case 'deployed': if (ev.p === me) { const u = v.ents.get(ev.id); if (u && this.deployMode === 'army') { this.addAlert(u.d.n + ' deployed', 'good'); if (!$('deploy').classList.contains('hidden')) this.openDeploy(); } else if (u) { this.deployed = true; this.flown = true; this.closeDeploy(); Direct.enter(this, u); } } break;
       case 'nukekill': this.nukes = this.nukes.filter(n => n.id !== ev.id); break;
-      case 'dead': if (ev.id === Direct.id && Direct.on && window.Tension) window.Tension.killedBy = ev.by; if (ev.air && ev.by === me && ev.o !== me && !Direct.on && !ev.quiet) { this.addAlert('Enemy ' + (UNITS[ev.kk] ? UNITS[ev.kk].n : 'aircraft') + ' shot down', 'good', ev.x, ev.y); Sfx.good(); } break;
+      case 'dead': if (ev.id === Direct.id && Direct.on) Stats.inc('deaths');
+        if (ev.by === me && ev.o !== me && ev.o >= 0 && !this.scen) { const D = UNITS[ev.kk], big = D && (D.cat === 'veh' || D.cat === 'air' || D.cat === 'heli' || D.cat === 'sea'), g = Direct.on ? (big ? 60 : 25) : (big ? 6 : 2); XP.add(g); Stats.inc('kills'); if (Direct.on) Stats.inc('pkills'); if (D && D.cat === 'air') Stats.inc('airKills'); else if (D && D.cat === 'veh') Stats.inc('tankKills'); }
+        if (ev.id === Direct.id && Direct.on && window.Tension) window.Tension.killedBy = ev.by; if (ev.air && ev.by === me && ev.o !== me && !Direct.on && !ev.quiet) { this.addAlert('Enemy ' + (UNITS[ev.kk] ? UNITS[ev.kk].n : 'aircraft') + ' shot down', 'good', ev.x, ev.y); Sfx.good(); } break;
+      case 'spotted': if (v.friendly(ev.p, me)) { (this.spots = this.spots || new Map()).set(ev.t, performance.now() + ev.until * 1000); if (ev.p !== me) { const t = v.ents.get(ev.t); if (t && Direct.on) Direct.msg('Ally spotted ' + (t.b ? BUILDINGS[t.k].n : t.d.n), 1.2); } } break;
       case 'stolen': if (ev.p === me) {
         if (ev.kind === 'cash') { Sfx.good(); break; }
         const u = v.ents.get(ev.id); if (u && Direct.on) { Direct.heist = null; Direct.exit(); this.cutShow(null); Direct.enter(this, u); Direct.msg((ev.kind === 'plane' ? 'Stolen ' + ev.n + '! Get it off the ground' : 'Stolen ' + ev.n + '! Drive!') + ' (they will be after you)', 3); Sfx.good(); }
@@ -11394,6 +11455,9 @@ const UI = {
   showOver(won) {
     if (this.overShown) return;
     this.overShown = true;
+    Stats.inc('games'); Stats.inc(won ? 'wins' : 'losses');
+    const arcGame = this.g && this.g.sim && this.g.sim.scen && this.g.sim.scen.arc;
+    { if (!arcGame) { const b = won ? 400 : 120; XP.add(b); setTimeout(() => { const st = $('oStats'); if (st) { const p2 = document.createElement('p'); p2.style.cssText = 'text-align:center;font-weight:700;color:#ffd97a'; const R = XP.rank(); p2.textContent = `+${b} XP · ${R.b} ${R.n} · ${XP.get()} XP`; st.prepend(p2); } if (this.xpLine) this.xpLine(); }, 50); } }
     if (Direct.on) Direct.exit();
     const v = this.g.view;
     $('oTitle').textContent = won ? 'Victory' : 'Defeat';
@@ -11517,11 +11581,14 @@ const UI = {
       if (!this.g || this.demo) return;
       if (this.camp && !this.campLive()) { if (e.button === 0) this.campPlace(e.clientX, e.clientY); else if (e.button === 2) this.campRemove(e.clientX, e.clientY); return; }
       if (e.button === 0) { this.mouse.down = true; this.mouse.sx = e.clientX; this.mouse.sy = e.clientY; this.mouse.box = false; }
-      else if (e.button === 2) { if (this.mode) this.cancelMode(); else this.rightClick(e.clientX, e.clientY, e.shiftKey); }
+      else if (e.button === 2) { if (this.mode) this.cancelMode(); else this.rdrag = {sx: e.clientX, sy: e.clientY, shift: e.shiftKey}; } // order on release: a drag lays out a formation line
       if (e.button === 0 && e.altKey && !this.mode) { this.mouse.down = false; this.rightClick(e.clientX, e.clientY, e.shiftKey); }
     });
     addEventListener('mouseup', e => {
       if (Direct.on) { Direct.onMouseUp(e); return; }
+      if (e.button === 2 && this.rdrag && this.g && !this.demo) { const D = this.rdrag; this.rdrag = null;
+        if (Math.hypot(e.clientX - D.sx, e.clientY - D.sy) > 24 && this.formation(D.sx, D.sy, e.clientX, e.clientY, D.shift)) return;
+        this.rightClick(D.sx, D.sy, D.shift); return; }
       if (!this.g || this.demo || e.button !== 0 || !this.mouse.down) return;
       this.mouse.down = false;
       if (e.target !== gl && !this.mouse.box) return;
@@ -11608,7 +11675,7 @@ const UI = {
     if (this.scen && c.startsWith('Digit') && !$('scenSpawn').classList.contains('hidden')) { const S = this.g.sim.scen, k = batClasses(S && S.B).concat(S && S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ['a10'] : [])[+c.slice(5) - 1]; if (k) this.scenPick(k); return; }
     if (c.startsWith('Digit') && c !== 'Digit0') {
       const n = c.slice(5);
-      if (e.ctrlKey) { this.groups[n] = [...this.sel]; this.addAlert('Group ' + n + ' set'); e.preventDefault(); return; }
+      if (e.ctrlKey) { this.groups[n] = e.shiftKey && this.groups[n] ? [...new Set(this.groups[n].concat([...this.sel]))] : [...this.sel]; this.addAlert('Group ' + n + ' set: ' + this.groups[n].length + ' units (press ' + n + ' to select, twice to jump)'); this.groupBar(); e.preventDefault(); return; }
       if (this.groups[n] && this.groups[n].length) {
         const now = performance.now();
         this.sel.clear(); for (const id of this.groups[n]) if (this.g.view.ents.has(id)) this.sel.add(id);
@@ -11683,6 +11750,36 @@ const UI = {
     this.page = 1; if (this.sel.size) Sfx.ack(); this.refreshHud(true);
   },
   ids() { return [...this.sel].filter(i => { const e = this.g.view.ents.get(i); return e && e.o === this.g.me; }); },
+  // right-drag: spread the selected units along the line you drew, in rows if there are many, facing away from where they are now
+  formation(x0, y0, x1, y1, shift) {
+    const a = this.ground(x0, y0), b = this.ground(x1, y1), G = this.g, v = G.view; if (!a || !b) return false;
+    const es = this.ids().map(i => v.ents.get(i)).filter(e => e && !e.b); if (es.length < 2) return false;
+    const L = Math.hypot(b.x - a.x, b.y - a.y); if (L < 2) return false;
+    const ux = (b.x - a.x) / L, uy = (b.y - a.y) / L, cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+    const ax = es.reduce((s2, e) => s2 + e.x, 0) / es.length, ay = es.reduce((s2, e) => s2 + e.y, 0) / es.length;
+    let nx = -uy, ny = ux; if ((cx - ax) * nx + (cy - ay) * ny < 0) { nx = -nx; ny = -ny; } // rows stack back toward where the army is coming from
+    const gap = Math.max(1.3, ...es.map(e => (e.d.r || .4) * 2.6)), per = Math.max(1, Math.min(es.length, Math.floor(L / gap) + 1)), rows = Math.ceil(es.length / per);
+    es.sort((p, q) => ((p.x - a.x) * ux + (p.y - a.y) * uy) - ((q.x - a.x) * ux + (q.y - a.y) * uy));
+    es.forEach((e, i) => { const r = Math.floor(i / per), n = r === rows - 1 ? es.length - r * per : per, j = i - r * per, f = n > 1 ? j / (n - 1) : .5, sp = Math.min(L, (n - 1) * gap);
+      const x = cx + ux * (f - .5) * sp - nx * r * gap, y = cy + uy * (f - .5) * sp - ny * r * gap;
+      G.issue({c: 'move', ids: [e.id], x: clamp(x, 1, v.N - 2), y: clamp(y, 1, v.N - 2), q: shift ? 1 : 0}); });
+    this.R.ping(a.x, a.y, 0x6dff9a); this.R.ping(b.x, b.y, 0x6dff9a); Sfx.ack();
+    this.addAlert('Formation: ' + es.length + ' units in ' + rows + (rows > 1 ? ' rows' : ' line'));
+    return true;
+  },
+  // control groups bar: shows Ctrl+1-9 groups; click to select, double-click to jump
+  groupBar() {
+    let el = $('grpBar'); if (!el) { el = document.createElement('div'); el.id = 'grpBar'; el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:46px;display:flex;gap:4px;z-index:20;font:700 12px system-ui;pointer-events:auto'; document.body.appendChild(el); }
+    const v = this.g && this.g.view, G = this.groups || {}, keys = Object.keys(G).filter(n => G[n].some(id => v && v.ents.has(id))).sort();
+    if (!v || Direct.on || this.scen || !keys.length) { el.style.display = 'none'; return; } el.style.display = 'flex';
+    const html = keys.map(n => `<button data-g="${n}" style="padding:3px 8px;border-radius:6px;border:1px solid #ffffff33;background:rgba(10,16,22,.8);color:#e8eef2;cursor:pointer"><kbd style="color:#ffd97a">${n}</kbd> ${G[n].filter(id => v.ents.has(id)).length}</button>`).join('');
+    if (el.dataset.h !== html) { el.dataset.h = html; el.innerHTML = html; el.querySelectorAll('button').forEach(b => { b.onclick = () => this.selGroup(b.dataset.g, false); b.ondblclick = () => this.selGroup(b.dataset.g, true); }); }
+  },
+  selGroup(n, jump) {
+    const v = this.g.view; this.sel.clear(); for (const id of this.groups[n] || []) if (v.ents.has(id)) this.sel.add(id);
+    if (jump && this.sel.size) { const f = v.ents.get([...this.sel][0]); this.jump(f.x, f.y); }
+    this.page = 1; this.refreshHud(true);
+  },
   rightClick(mx, my, shift) {
     const t = this.pick(mx, my), g = this.ground(mx, my);
     if (!g && !t) return;
@@ -12073,6 +12170,7 @@ const UI = {
     this.mmT = 0;
   },
   drawMinimap(dt) {
+    this.gbT = (this.gbT || 0) - dt; if (this.gbT <= 0) { this.gbT = .5; this.groupBar(); }
     const G = this.g, v = G.view, mm = $('mm'), c = mm.getContext('2d'), S = mm.width, N = v.N, R = this.R, sc = S / N;
     c.drawImage(R.mmBase, 0, 0, S, S);
     // fog
@@ -12088,6 +12186,7 @@ const UI = {
       else { c.fillRect(e.x * sc - 1, e.y * sc - 1, e.air ? 2 : 2.5, e.air ? 2 : 2.5); }
     }
     { const SM = v.players[G.me].spyMap; if (SM) { c.setLineDash([2, 2]); c.lineWidth = 1.2; for (const id in SM) { const q = SM[id], live = v.ents.get(+id); if (live && live.seenByMe) continue; const s = Math.max(4, (q.s || 3) * sc); c.strokeStyle = v.players[q.o] ? v.players[q.o].nat.color : '#f44'; c.globalAlpha = .9; c.strokeRect(q.x * sc - s / 2, q.y * sc - s / 2, s, s); if (this.bigMap) { c.fillStyle = '#fff'; c.font = '600 10px system-ui'; c.textAlign = 'center'; c.fillText((BUILDINGS[q.k] ? BUILDINGS[q.k].n : q.k) + ' (spy)', q.x * sc, q.y * sc - s / 2 - 2); } } c.setLineDash([]); c.globalAlpha = 1; } } // buildings your spies mapped
+    if (this.spots) for (const [id, until] of this.spots) { const t = v.ents.get(id); if (!t || until < performance.now()) continue; c.fillStyle = '#ff3b30'; c.beginPath(); c.moveTo(t.x * sc, t.y * sc - 4); c.lineTo(t.x * sc + 3, t.y * sc); c.lineTo(t.x * sc, t.y * sc + 4); c.lineTo(t.x * sc - 3, t.y * sc); c.fill(); } // spotted
     { // last known positions of enemy troops that slipped back into the fog, and gunfire heard out there
       const gh = this.ghosts || (this.ghosts = new Map()), now = v.t;
       for (const e of (R.visEnts || [])) if (!e.b && !v.friendly(e.o, G.me)) gh.set(e.id, {x: e.x, y: e.y, t: now, o: e.o, air: e.air});
@@ -12226,7 +12325,7 @@ const UI = {
       soldier: `${K('fwd')}${K('left')}${K('back')}${K('right')} move · mouse aims (no click needed) · ${K('fire')} or click fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} aim · ${K('reload')} reload · ${K('jump')} jump · ${K('sprint')} sprint`,
       vehicle: `${K('fwd')}${K('back')} drive · ${K('left')}${K('right')} turn hull · mouse aims turret · ${K('fire')} fire · ${w2 ? K('alt') + ' ' + w2 + ' · ' : ''}${K('ads')} ${D.e.k === 'arty' ? 'direct/indirect fire' : 'zoom (then wheel or <kbd>Z</kbd> zooms more)'}${D.W.some(q => q.w.vs === 'shell') ? ' · ' + K('ammo') + ' AP/HE' : ''}${D.W[2] ? ' · ' + K('reload') + ' ' + D.W[2].w.n + ' (' + D.W[2].ammo + ')' : ''}`,
       ship: `${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} steer · mouse aims · ${K('fire')} fire${w2 ? ' · ' + K('alt') + ' ' + w2 : ''} · ${K('walk')} leave the chair and walk`,
-      plane: `mouse or arrows steer · ${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} roll · ${K('fire')} guns · ${K('alt')} ${w2} · ${D.W[2] ? K('reload') + ' ' + D.W[2].w.n + ' · ' : ''}${K('chaff')} chaff · ${K('cycle')} next target · ${K('vlock')} lock view`,
+      plane: `mouse or arrows steer · ${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} roll · ${K('fire')} guns · ${K('alt')} ${w2} · ${D.W[2] ? K('reload') + ' ' + D.W[2].w.n + ' · ' : ''}${D.W[3] ? K('w4') + ' ' + D.W[3].w.n + ' · ' : ''}${K('chaff')} chaff · ${K('cycle')} next target · ${K('vlock')} lock view · ${K('spot')} spot${D.W.some(s => s.w.t === 'bomb') ? ' · ' + K('ads') + ' bombsight' : ''} · on the ground: W throttle, look up to take off`,
       heli: `${K('fwd')}${K('left')}${K('back')}${K('right')} fly · ${K('up')} up · ${K('down')} down · mouse aims · ${K('fire')} guns · ${K('alt')} ${w2}`,
       fpv: `mouse steers · ${K('fwd')} boost · ${K('back')} brake · ${K('up')}${K('down')} climb/sink · dive into the target · ${K('fire')} detonate`,
     };
@@ -12368,7 +12467,16 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   };
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
-    {d: '6 Nov 2026 (latest)', items: [
+    {d: '7 Nov 2026', items: [
+      'Takeoff and landing: in Air Battles you can start on the runway (or in the air, your choice on the spawn screen). W throttles up, A/D steer, look up to take off. Throttle back near your airfield to land: the gear comes down, touch down gently and stop there to repair and rearm.',
+      'Missile lock reworked, War Thunder style: a seeker circle where you aim, a yellow ring filling as it locks, a growl that speeds up and a solid tone when locked.',
+      'Sound: engine noise for planes, tanks, helicopters and boats that rises with throttle, and sound now always switches on with your first click or key press.',
+      'Ranks and progress: XP from every mode (your kills, captures, wins), ten ranks from Recruit to General with promotion alerts, and a profile with your stats (click the rank line on the home screen).',
+      'Commanding: control groups show as buttons at the top (Ctrl+1-9 to set, Ctrl+Shift to add, 1-9 to select, twice to jump). Right-drag to lay your units out in a formation line. Attack alerts can be clicked (or press Space) to jump there.',
+      'Spotting: K or middle click marks the enemy under your crosshair for your whole team for 15 seconds.',
+      'Bombsight: Q in a bomber looks down through a zoomed sight with the impact cross, altitude and fall time.',
+      'A-10: Hydra rocket pods (E, a 7-rocket salvo), Maverick moved to R and Sidewinder to Y. Fixed rocket salvos only firing one rocket.']},
+    {d: '6 Nov 2026 (late)', items: [
       'Fog fix: enemy bases now show as soon as any part of them is in sight (before, big bases could stay hidden while your troops were attacking their edge). Fog also keeps up at fast game speeds.',
       'Spies (played in person): press G near an enemy building to steal steel and fuel, next to a parked enemy vehicle to hot-wire it and drive off, or at their Airfield to steal a jet. Each one has a short cutscene. There is a 25% chance the theft is noticed and the guards get suspicious.',
       'Spies map every enemy building they see: they stay on your minimap and big map (dashed outlines) until destroyed.',
