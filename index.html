@@ -12,13 +12,13 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0a0f14;color:var(--tx
 #ov{pointer-events:none}
 #vig{position:fixed;inset:0;pointer-events:none;display:none;z-index:1;background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 58%,rgba(8,6,4,.32) 100%)}
 body.neo #vig{display:block}
-body.neo .res,body.neo #selpanel,body.neo #cards,body.neo #selBar button,body.neo #mmwrap{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:10px}
-body.neo .res{background:linear-gradient(180deg,rgba(40,46,52,.72),rgba(14,16,20,.72));border-color:rgba(255,226,170,.16)}
-body.neo #selpanel,body.neo #cards{background:linear-gradient(180deg,rgba(30,34,40,.78),rgba(10,12,15,.84));border-color:rgba(255,226,170,.14);box-shadow:0 8px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,240,210,.08)}
+body.neo .res,body.neo #selpanel,body.neo #cards,body.neo #selBar button,body.neo #mmwrap{border-radius:10px}
+body.neo .res{background:linear-gradient(180deg,rgba(40,46,52,.84),rgba(14,16,20,.84));border-color:rgba(255,226,170,.16)}
+body.neo #selpanel,body.neo #cards{background:linear-gradient(180deg,rgba(30,34,40,.88),rgba(10,12,15,.92));border-color:rgba(255,226,170,.14);box-shadow:0 8px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,240,210,.08)}
 body.neo #cards{border-top:2px solid #e9b85a}
 body.neo .card{border-radius:9px;background:linear-gradient(180deg,rgba(255,250,240,.1),rgba(255,255,255,.02))}
 body.neo .card:hover{border-color:rgba(255,214,140,.55);box-shadow:0 0 0 1px rgba(255,214,140,.25),0 4px 14px rgba(0,0,0,.4)}
-body.neo #selBar button{background:linear-gradient(180deg,rgba(40,46,52,.75),rgba(14,16,20,.75));border-color:rgba(255,226,170,.14)}
+body.neo #selBar button{background:linear-gradient(180deg,rgba(40,46,52,.86),rgba(14,16,20,.86));border-color:rgba(255,226,170,.14)}
 body.neo #selBar button:hover{border-color:rgba(255,214,140,.5)}
 body.neo .primary{background:linear-gradient(180deg,#d9a441,#a8741f);border-color:#f0c86a;color:#1b1206;font-weight:700}
 body.neo .primary:hover{background:linear-gradient(180deg,#e8b552,#b8822a)}
@@ -5781,6 +5781,13 @@ function nodeGeoOil() {
 }
 
 // Trees: index by look. They share one instanced mesh per type.
+const _treeLo = {};
+function treeGeoLo(type) {
+  if (_treeLo[type]) return _treeLo[type];
+  const keep = {ico1: GEO.ico1, cone: GEO.cone, cyl6: GEO.cyl6}; GEO.lc = GEO.lc || new THREE.ConeGeometry(1, 1, 5); GEO.lcy = GEO.lcy || new THREE.CylinderGeometry(1, 1, 1, 4, 1, true);
+  GEO.ico1 = GEO.ico; GEO.cone = GEO.lc; GEO.cyl6 = GEO.lcy;
+  try { return (_treeLo[type] = treeGeo(type)); } finally { Object.assign(GEO, keep); }
+}
 function treeGeo(type) {
   const b = new Batch(), TR = 0x4e3a26, r = mulberry(31 + type);
   if (type === 0) { // pine: a tall trunk and five drooping tiers, darker inside
@@ -7272,7 +7279,7 @@ Renderer.prototype.loadWorld = function (view) {
   this.view = view;
   const M = view.M, N = view.N;
   this.world = new THREE.Group(); this.scene.add(this.world);
-  this.applyLook(M, N);
+  this.applyLook(M, N); this.lodTiles = [];
   this.buildTerrain(M, N);
   this.buildWater(M, N);
   this.buildTrees(M, N);
@@ -7325,7 +7332,7 @@ Renderer.prototype.terrainMat = function (tex) {
 };
 // New look: grass tufts on grassland and swamp, sparse dry tufts in desert. Visual only; hidden where you dig.
 Renderer.prototype.buildGrass = function (M, N) {
-  if (this.grassM) { this.world.remove(this.grassM); this.grassM.dispose(); this.grassM = null; }
+  this.grassM = null; this.grassSp = null;
   if (!LOOK.neo || this.quality === 'low' || M.lite) return;
   const r = mulberry(M.seed + 77), L = [], dens = this.quality === 'high' ? 2.6 : 1.2;
   for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) {
@@ -7354,12 +7361,12 @@ Renderer.prototype.buildGrass = function (M, N) {
     im.setColorAt(k, c.convertSRGBToLinear());
     let sl = this.grassSlots.get(cell); if (!sl) this.grassSlots.set(cell, sl = []); sl.push(k);
   });
-  im.receiveShadow = true; im.castShadow = false; this.world.add(im);
+  im.receiveShadow = true; im.castShadow = false; this.grassSp = this.addTiles(im, {far: 70, hide: 1});
 };
 Renderer.prototype.hideGrass = function (cells) {
-  if (!this.grassM) return; const z = new THREE.Matrix4().makeScale(0, 0, 0); let d = false;
-  for (const i of cells) { const sl = this.grassSlots.get(i); if (!sl) continue; for (const k of sl) this.grassM.setMatrixAt(k, z); this.grassSlots.delete(i); d = true; }
-  if (d) this.grassM.instanceMatrix.needsUpdate = true;
+  if (!this.grassSp) return; const z = new THREE.Matrix4().makeScale(0, 0, 0), d = new Set();
+  for (const i of cells) { const sl = this.grassSlots.get(i); if (!sl) continue; for (const k of sl) { const [m, j] = this.grassSp.at(k); m.setMatrixAt(j, z); d.add(m); } this.grassSlots.delete(i); }
+  for (const m of d) m.instanceMatrix.needsUpdate = true;
 };
 
 Renderer.prototype.buildTerrain = function (M, N) {
@@ -7416,7 +7423,7 @@ Renderer.prototype.buildTerrain = function (M, N) {
   // seabed beyond the edge of the map
   const sb = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshBasicMaterial({color: 0x1b4153}));
   sb.rotation.x = -Math.PI / 2; sb.position.set(N / 2, -3.7, N / 2); this.world.add(sb);
-  this.scar = []; this.texDirty = false; this.texT = 0;
+  this.scar = []; this.texDirty = false; this.texT = 0; this.texRect = null;
   this.mmBase = this.makeMinimapBase(M, N);
   // the highways that come with the map
   { const q = S / N; ctx.fillStyle = '#6a645a'; for (let i = 0; i < N * N; i++) if (M.road[i]) { ctx.beginPath(); ctx.arc((i % N) * q, ((i / N) | 0) * q, q * .9, 0, 6.3); ctx.fill(); }
@@ -7426,10 +7433,50 @@ Renderer.prototype.buildTerrain = function (M, N) {
 };
 
 // Boulders and rock outcrops on steep mountainsides and scattered across open ground (visual only).
+// Speed: split a big map-wide InstancedMesh into map tiles with real bounds, so the camera and the shadow pass skip
+// tiles that are off screen (a whole-map instanced mesh can never be culled). Same instances, same look.
+// Returns {meshes, at(i) -> [mesh, index]} so per-instance edits (felled trees, hidden grass) still work.
+Renderer.prototype.tileSplit = function (im, T, lod) {
+  T = T || 16; const n = im.count, A = im.instanceMatrix.array, C = im.instanceColor ? im.instanceColor.array : null, geo = im.geometry;
+  if (!geo.boundingSphere) geo.computeBoundingSphere();
+  const gr = geo.boundingSphere.radius + geo.boundingSphere.center.length(), groups = new Map();
+  for (let i = 0; i < n; i++) { const key = Math.floor(A[i * 16 + 12] / T) * 4096 + Math.floor(A[i * 16 + 14] / T); let g = groups.get(key); if (!g) groups.set(key, g = []); g.push(i); }
+  const meshes = [], meshOf = new Array(n), idx = new Int32Array(n);
+  for (const L of groups.values()) {
+    const share = G0 => { const g = new THREE.BufferGeometry(); for (const k in G0.attributes) g.setAttribute(k, G0.attributes[k]); if (G0.index) g.setIndex(G0.index); return g; };
+    const g = share(geo), gl = lod && lod.geo ? share(lod.geo) : null;
+    const m = new THREE.InstancedMesh(g, im.material, L.length), MA = m.instanceMatrix.array;
+    if (C) m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(L.length * 3), 3);
+    let x0 = 1e9, y0 = 1e9, z0 = 1e9, x1 = -1e9, y1 = -1e9, z1 = -1e9, ms = 0;
+    L.forEach((i, k) => {
+      const o = i * 16; MA.set(A.subarray(o, o + 16), k * 16); if (C) m.instanceColor.array.set(C.subarray(i * 3, i * 3 + 3), k * 3);
+      const x = A[o + 12], y = A[o + 13], z = A[o + 14]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; if (z < z0) z0 = z; if (z > z1) z1 = z;
+      ms = Math.max(ms, Math.hypot(A[o], A[o + 1], A[o + 2]), Math.hypot(A[o + 4], A[o + 5], A[o + 6]), Math.hypot(A[o + 8], A[o + 9], A[o + 10]));
+      meshOf[i] = m; idx[i] = k;
+    });
+    g.boundingSphere = new THREE.Sphere(new THREE.Vector3((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2), Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + gr * ms + .5);
+    if (gl) gl.boundingSphere = g.boundingSphere;
+    if (lod) (this.lodTiles = this.lodTiles || []).push({m, hi: g, lo: gl, s: g.boundingSphere, far: lod.far, hide: !!lod.hide});
+    m.castShadow = im.castShadow; m.receiveShadow = im.receiveShadow; m.renderOrder = im.renderOrder; m.frustumCulled = true;
+    meshes.push(m);
+  }
+  return {meshes, at: i => [meshOf[i], idx[i]]};
+};
+// Distance detail per tile: far tiles swap to the light mesh (trees) or are hidden (grass, a couple of pixels tall out there).
+Renderer.prototype.updateLod = function () {
+  const L = this.lodTiles; if (!L) return; const c = this.cam.position;
+  for (const t of L) {
+    const d = c.distanceTo(t.s.center) - t.s.radius, far = d > t.far;
+    if (t.hide) { if (t.m.visible === far) t.m.visible = !far; }
+    else { const g = far ? t.lo : t.hi; if (t.m.geometry !== g) t.m.geometry = g; }
+  }
+};
+Renderer.prototype.addTiles = function (im, lod) { const sp = this.tileSplit(im, 0, lod); for (const m of sp.meshes) this.world.add(m); return sp; };
+
 // New look: a rounded boulder with lumpy, noise-displaced faces, cracks and lichen-dark bottoms (smooth shading).
-function rockGeoNeo() {
-  if (rockGeoNeo.g) return rockGeoNeo.g;
-  const g = new THREE.IcosahedronGeometry(1, 2), P = g.attributes.position, r = mulberry(4242), nz = makeNoise(r), cols = [];
+function rockGeoNeo(lo) {
+  const ck = lo ? 'gl' : 'g'; if (rockGeoNeo[ck]) return rockGeoNeo[ck];
+  const g = new THREE.IcosahedronGeometry(1, lo ? 1 : 2), P = g.attributes.position, r = mulberry(4242), nz = makeNoise(r), cols = [];
   const v = new THREE.Vector3(), CUTS = [];
   for (let j = 0; j < 7; j++) { const a = r() * 6.283, b = (r() - .3) * 1.4, d = .62 + r() * .2; CUTS.push([Math.cos(a) * Math.cos(b), Math.sin(b), Math.sin(a) * Math.cos(b), d]); }
   for (let i = 0; i < P.count; i++) {
@@ -7444,10 +7491,10 @@ function rockGeoNeo() {
   const N = g.attributes.normal, acc = new Map(), key = i => Math.round(P.getX(i) * 1e4) + ',' + Math.round(P.getY(i) * 1e4) + ',' + Math.round(P.getZ(i) * 1e4);
   for (let i = 0; i < P.count; i++) { const k = key(i), a = acc.get(k) || [0, 0, 0]; a[0] += N.getX(i); a[1] += N.getY(i); a[2] += N.getZ(i); acc.set(k, a); }
   for (let i = 0; i < P.count; i++) { const a = acc.get(key(i)), l = Math.hypot(a[0], a[1], a[2]) || 1, fx = N.getX(i) * .55 + a[0] / l * .45, fy = N.getY(i) * .55 + a[1] / l * .45, fz = N.getZ(i) * .55 + a[2] / l * .45, L2 = Math.hypot(fx, fy, fz) || 1; N.setXYZ(i, fx / L2, fy / L2, fz / L2); } // half flat, half smooth: crisp but not blocky
-  return (rockGeoNeo.g = g);
+  return (rockGeoNeo[ck] = g);
 }
 Renderer.prototype.buildRocks = function (M, N) {
-  if (this.rockMesh) { this.world.remove(this.rockMesh); this.rockMesh.dispose(); }
+  this.rockMesh = null;
   if (M.lite) return; // huge air maps: rocks are too small to see from a plane
   const r = mulberry(M.seed + 909), L = [];
   for (let y = 2; y < N - 2; y++) for (let x = 2; x < N - 2; x++) {
@@ -7464,7 +7511,7 @@ Renderer.prototype.buildRocks = function (M, N) {
     m.compose(new THREE.Vector3(x, hAt(M, x, y) - s * .18, y), q, new THREE.Vector3(s * (1 + r() * .5), s * (.7 + r() * .5), s));
     im.setMatrixAt(k, m); const t = tints[k % 4], v = .85 + r() * .3; im.setColorAt(k, c.setRGB(t[0] * v * .5, t[1] * v * .5, t[2] * v * .5));
   });
-  im.castShadow = this.quality === 'high'; im.receiveShadow = true; this.world.add(im);
+  im.castShadow = this.quality === 'high'; im.receiveShadow = true; this.rockSp = this.addTiles(im, LOOK.neo ? {far: 36, geo: rockGeoNeo(1)} : null);
 };
 
 // Ruined city blocks (Stalingrad): broken walls with jagged tops, dark window holes, rubble heaps. One merged mesh.
@@ -7514,7 +7561,7 @@ Renderer.prototype.paintRoad = function (x, y) {
   const M = this.view.M, N = this.view.N, S = this.tc.width, q = S / N, g = this.tg;
   g.fillStyle = '#5f5a52'; g.beginPath(); g.arc((x + .5) * q - q / 2, (y + .5) * q - q / 2, q * .85, 0, 6.3); g.fill();
   g.fillStyle = 'rgba(190,180,160,.35)'; g.beginPath(); g.arc(x * q, y * q, q * .3, 0, 6.3); g.fill();
-  this.texDirty = true;
+  this.texDirty = true; this.texMark(x - 2, y - 2, x + 2, y + 2);
   const mg = this.mmBase.getContext('2d'); mg.fillStyle = '#b8ae98'; mg.fillRect(x / N * 256 - 1, y / N * 256 - 1, 2, 2);
 };
 // Re-light only the vertices around a change (central differences on the height grid) instead of recomputing the whole terrain's normals.
@@ -7536,7 +7583,7 @@ Renderer.prototype.digTerrain = function (x, y) { // re-shape the terrain mesh a
   const q = this.tc.width / N, g = this.tg, gr = g.createRadialGradient(x * q, y * q, 0, x * q, y * q, (DIG_R + 1.2) * q);
   gr.addColorStop(0, 'rgba(122,98,70,.95)'); gr.addColorStop(.75, 'rgba(122,98,70,.8)'); gr.addColorStop(1, 'rgba(122,98,70,0)');
   g.fillStyle = gr; g.beginPath(); g.arc(x * q, y * q, (DIG_R + 1.2) * q, 0, 6.3); g.fill();
-  this.texDirty = true;
+  this.texDirty = true; this.texMark(x - DIG_R - 2, y - DIG_R - 2, x + DIG_R + 2, y + DIG_R + 2);
 };
 // Dug ground: reshape the mesh, paint the earth darker the deeper it goes, and roof tunnels with timber planks.
 Renderer.prototype.flushDig = function () {
@@ -7549,7 +7596,7 @@ Renderer.prototype.flushDig = function () {
     g.fillStyle = `rgba(${86 - k * 40 | 0},${66 - k * 34 | 0},${46 - k * 26 | 0},.9)`; g.beginPath(); g.arc(x * q, y * q, q * .85, 0, 6.3); g.fill();
     if (d >= TUNNEL_D) tun.add(i); else tun.delete(i);
     if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; }
-  pos.needsUpdate = true; this.fixNormals(bx0, by0, bx1, by1); this.texDirty = true; this.texT = Math.min(this.texT, .6); this.hideGrass(seen);
+  pos.needsUpdate = true; this.fixNormals(bx0, by0, bx1, by1); this.texDirty = true; this.texMark(bx0 - 2, by0 - 2, bx1 + 2, by1 + 2); this.texT = Math.min(this.texT, .6); this.hideGrass(seen);
   // timber roofs over every tunnel cell
   if (!this.tunnelsInit) { this.tunnelsInit = 1; if (M.dug) for (let i = 0; i < N * N; i++) if (M.dug[i] >= TUNNEL_D) tun.add(i); }
   const cells = [...tun];
@@ -7565,11 +7612,27 @@ Renderer.prototype.flushDig = function () {
     for (const o of [-.27, .27]) { p.set(x + (rot ? o : 0), top, y + (rot ? 0 : o)); m.compose(p, qq, sc); this.roofM.setMatrixAt(n++, m); } }
   this.roofM.count = n; this.roofM.instanceMatrix.needsUpdate = true;
 };
+// Speed: remember which part of the ground texture changed, so only that rectangle is re-uploaded (not all 2048x2048).
+Renderer.prototype.texMark = function (x0, y0, x1, y1) {
+  const q = this.tc.width / this.view.N, S = this.tc.width, R = this.texRect || (this.texRect = [S, S, 0, 0]);
+  R[0] = Math.max(0, Math.min(R[0], Math.floor(x0 * q))); R[1] = Math.max(0, Math.min(R[1], Math.floor(y0 * q)));
+  R[2] = Math.min(S, Math.max(R[2], Math.ceil(x1 * q))); R[3] = Math.min(S, Math.max(R[3], Math.ceil(y1 * q)));
+};
+Renderer.prototype.texFlush = function () {
+  const R = this.texRect; this.texRect = null;
+  const tp = this.r.properties.get(this.terrainTex), wt = tp && tp.__webglTexture, S = this.tc.width;
+  if (!R || !wt || R[2] <= R[0] || R[3] <= R[1] || (R[2] - R[0]) * (R[3] - R[1]) > S * S * .35) { this.terrainTex.needsUpdate = true; return; }
+  const gl = this.r.getContext(), w = R[2] - R[0], h = R[3] - R[1], img = this.tg.getImageData(R[0], R[1], w, h);
+  this.r.state.bindTexture(gl.TEXTURE_2D, wt);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+  gl.texSubImage2D(gl.TEXTURE_2D, 0, R[0], R[1], w, h, gl.RGBA, gl.UNSIGNED_BYTE, img);
+  gl.generateMipmap(gl.TEXTURE_2D);
+};
 Renderer.prototype.paintScar = function (x, y, r) {
   const q = this.tc.width / this.view.N, g = this.tg, gr = g.createRadialGradient(x * q, y * q, 0, x * q, y * q, r * q);
   gr.addColorStop(0, 'rgba(18,14,12,.75)'); gr.addColorStop(.7, 'rgba(30,24,20,.45)'); gr.addColorStop(1, 'rgba(30,24,20,0)');
   g.fillStyle = gr; g.beginPath(); g.arc(x * q, y * q, r * q, 0, 6.3); g.fill();
-  this.texDirty = true;
+  this.texDirty = true; this.texMark(x - r - 1, y - r - 1, x + r + 1, y + r + 1);
 };
 
 Renderer.prototype.buildWater = function (M, N) {
@@ -7626,8 +7689,7 @@ Renderer.prototype.buildTrees = function (M, N) {
       sl.push([t, i]);
     });
     im.castShadow = !M.lite; im.receiveShadow = false;
-    this.world.add(im);
-    return im;
+    return this.addTiles(im, {far: 55, geo: treeGeoLo(t)});
   });
   this.treeTick = 0;
 };
@@ -7636,10 +7698,10 @@ Renderer.prototype.updateTrees = function () {
   const M = this.view.M, zero = new THREE.Matrix4().makeScale(0, 0, 0), dirty = new Set();
   for (const [cell, sl] of this.treeSlots) {
     if (M.tree[cell] && !M.occ[cell]) continue;
-    for (const [t, i] of sl) { this.treeM[t].setMatrixAt(i, zero); dirty.add(t); }
+    for (const [t, i] of sl) { const [m, j] = this.treeM[t].at(i); m.setMatrixAt(j, zero); dirty.add(m); }
     this.treeSlots.delete(cell);
   }
-  for (const t of dirty) this.treeM[t].instanceMatrix.needsUpdate = true;
+  for (const m of dirty) m.instanceMatrix.needsUpdate = true;
   if (this.grassSlots) { const h = []; for (const c of this.grassSlots.keys()) if (M.occ[c]) h.push(c); if (h.length) this.hideGrass(h); }
 };
 
@@ -7705,13 +7767,17 @@ Renderer.prototype.updateFog = function (dt) {
       }
     }
     for (let i = 0; i < R * R; i++) { const f = all ? 255 : F[i]; vis[i] = f > 90 ? 1 : 0; if (f > 90) this.explored[i] = 1; F[i] = f; }
+    this.fogMoving = true;
   }
-  const k = Math.min(1, dt * 7), C = this.fogC, D = this.fogD;
+  if (!this.fogMoving) return; // settled: no blend pass and no texture upload until vision changes
+  const k = Math.min(1, dt * 7), C = this.fogC, D = this.fogD; let ch = 0, mv = false;
   for (let i = 0; i < R * R; i++) {
     const f = F[i] / 255, base = this.explored[i] ? 82 : 178, want = base * (1 - f);
     C[i] += (want - C[i]) * k;
-    const c = C[i] | 0, o = i * 4; D[o] = c; D[o + 1] = c; D[o + 2] = c; D[o + 3] = 255;
+    const c = C[i] | 0, o = i * 4; if (D[o] !== c) { D[o] = c; D[o + 1] = c; D[o + 2] = c; D[o + 3] = 255; ch++; }
+    if (!mv && Math.abs(want - C[i]) > .6) mv = true;
   }
+  this.fogMoving = mv; if (!ch) return;
   this.fogTex.needsUpdate = true;
 };
 Renderer.prototype.isVisible = function (x, y) {
@@ -7824,7 +7890,7 @@ Renderer.prototype.drawUnit = function (e, dt, tint) {
     let sy = mv && !bike ? 1 + Math.cos(ph * 2) * .07 : 1 + idle * .025, hop = mv && !bike ? Math.abs(Math.sin(ph)) * .05 : 0;
     if (hurt) sy *= .86;
     const lean = mv ? (bike ? .06 : .1) : 0, wob = mv ? Math.sin(ph) * (bike ? .03 : .09) : idle * .02;
-    const lo = this.camDist !== undefined && this.camDist > 60;
+    const cp = this.cam.position, lo = (this.camDist !== undefined && this.camDist > 60) || (x - cp.x) * (x - cp.x) + (y - cp.y) * (y - cp.y) + (z - cp.z) * (z - cp.z) > 1600; // far troops (40 m+) use the light model
     if (e.d.para && e.ch !== 0 && y - Math.max(0, hAt(this.view.M, e.rx, e.ryy)) > .8) { // paratrooper under canopy
       this.put('chute|' + nat, () => { const b = new Batch(), P = palette(nat); b.add(GEO.sph, P.main, 0, 0, 0, 1.1, .45, 1.1); b.add(GEO.sph, 0xf1f1ec, 0, -.06, 0, 1.05, .38, 1.05); for (const [a, c] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) b.add(GEO.cyl6, 0xdddddd, a * .45, -.75, c * .45, .012, 1.5, .012, c * .55, 0, -a * .55); return b.geo(); }, 32, null, x, y + 2.1, z, h, 0, 0, 1, tint);
     }
@@ -8225,7 +8291,7 @@ Renderer.prototype.draw = function (dt, view) {
   if (this.treeTick <= 0) { this.updateTrees(); this.treeTick = 2; } this.treeTick -= dt;
   if (this.digQ && this.digQ.length && (this.digT = (this.digT || 0) - dt) <= 0) { this.digT = .3; this.flushDig(); }
   this.texT -= dt;
-  if (this.texDirty && this.texT <= 0) { this.terrainTex.needsUpdate = true; this.texDirty = false; this.texT = 2.5; } // a full-map texture upload is the costly part of digging, so keep them rare
+  if (this.texDirty && this.texT <= 0) { const part = !!this.texRect; this.texFlush(); this.texDirty = false; this.texT = part ? .25 : 2.5; } // a full-map texture upload is the costly part of digging, so keep them rare
   this.sky.position.copy(this.cam.position);
   // shadow frustum follows the camera target
   const c = this.camTarget || new THREE.Vector3(v.N / 2, 0, v.N / 2);
@@ -8476,7 +8542,7 @@ const _origDraw = Renderer.prototype.draw;
 Renderer.prototype.draw = function (dt, view) {
   const t = this.r.render; const self = this;
   // commit instance counts just before rendering, after every put() of this frame
-  this.r.render = function (s, c) { self.commit(); self.r.render = t; t.call(self.r, s, c); };
+  this.r.render = function (s, c) { self.updateLod(); self.commit(); self.r.render = t; t.call(self.r, s, c); };
   const post = this.gradeOn();
   if (post) this.r.setRenderTarget(this.gradeRT);
   _origDraw.call(this, dt, view);
@@ -12643,18 +12709,18 @@ const UI = {
     if (!G) return;
     if (Direct.on) Direct.update(dt, G);
     if (WarRoom.on) WarRoom.frame(dt);
-    $('freePanel').classList.toggle('hidden', !(Direct.on && (Direct.look === 'free')));
+    { const fp = !(Direct.on && (Direct.look === 'free')); if (fp !== this._fpH) { this._fpH = fp; $('freePanel').classList.toggle('hidden', fp); } }
     if (!Direct.on) this.updateCam(dt);
     if (!this.demo && !Direct.on) {
       this.updateMode();
       const h = this.pick(this.mouse.x, this.mouse.y);
       this.R.hoverId = h ? h.id : 0;
       const hostile = h && !G.view.friendly(h.o, G.me) && this.sel.size;
-      $('gl').style.cursor = this.mode ? 'crosshair' : hostile ? 'crosshair' : h ? 'pointer' : '';
+      const cu = this.mode ? 'crosshair' : hostile ? 'crosshair' : h ? 'pointer' : ''; if (cu !== this._cur) { this._cur = cu; $('gl').style.cursor = cu; }
     }
     this.R.sel = this.sel;
     this.R.draw(dt, G.view);
-    $('whiteout').style.opacity = Math.min(1, this.R.flashA * 1.5);
+    { const wo = Math.round(Math.min(1, this.R.flashA * 1.5) * 100) / 100; if (wo !== this._wo) { this._wo = wo; $('whiteout').style.opacity = wo; } }
     this.drawOverlay();
     if (!this.demo) {
       this.hudT -= dt; this.mmT -= dt;
@@ -12737,6 +12803,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Smoother frame rate with the same graphics: trees, rocks and grass now skip whatever is off screen, including in the shadow pass. Far-away trees and troops use lighter models. Craters and digging no longer cause a hitch, and fog of war and the HUD do less work each frame.',
       'New look: each map gets clear day, golden hour or overcast lighting. Grass sways in the wind, trees sway and vary, rocks are chiseled boulders, and the ground has fine relief when seen close up. There is a soft vignette and a warmer HUD. Want the old graphics back? Main menu → 🎨 Look → Classic (applies from the next battle).',
       'Workers: choose how many are builders and how many are miners (− / + in the worker build menu). Builders build and repair on their own and mine when there is nothing to do. Idle workers always go back to mining, so nobody stands around.',
       'First person: moving the mouse always turns the view, even when the browser has not locked the mouse. No click needed. Hold the cursor at the screen edge to keep turning.',
