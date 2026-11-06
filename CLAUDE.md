@@ -75,3 +75,6 @@ Browser war game in one file: `index.html` (Three.js r170, inlined: the ESM buil
 - **Open GitHub issues:**
   - #1: rename. Done, can be closed.
   - #2: fog with sent troops. Fixed by the building-footprint visibility change, but never reproduced exactly; ask the user if it still happens.
+
+## Plans
+Saved design plans and the build order for future modes (bomber co-op, convoy, submarine, heist, campaign, 1v1) live in `docs/plans/`. Read `docs/plans/README.md` first, and keep it up to date when a plan is built or changes.
