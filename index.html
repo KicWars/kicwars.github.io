@@ -937,6 +937,7 @@ const UNITS = {
   fa18:     {n: 'F/A-18 Super Hornet', cat: 'air', arm: 'air', hp: 320, dmg: 34, rng: 14, cd: .85, spd: 15.5, vis: 17, cost: [260, 120], pop: 3, t: 20, from: 'airfield', shot: 'cannon', aa: 1, alt: 11, turn: 1.85, r: .95, hk: 'O', desc: 'Carrier multirole. Gun, Sidewinders and a stick of bombs.'},
   typhoon:  {n: 'Eurofighter Typhoon', cat: 'air', arm: 'air', hp: 300, dmg: 85, rng: 21, cd: 2, spd: 19.5, vis: 21, cost: [290, 140], pop: 3, t: 22, from: 'airfield', shot: 'missile', aa: 1, noGround: 1, alt: 13, turn: 2.05, r: .95, hk: 'J', desc: 'Agile delta-wing dogfighter. Meteor and IRIS-T missiles.'},
   gunship:  {n: 'Gunship', cat: 'heli', arm: 'air', hp: 320, dmg: 30, rng: 10, cd: .8, spd: 8, vis: 14, cost: [220, 90], pop: 3, t: 16, from: 'airfield', shot: 'rocket', aa: 1, alt: 6, r: 1, hk: 'U', desc: 'Hovering rocket helicopter. Dominates ground troops.'},
+  carrier: {n: 'Aircraft Carrier', cat: 'sea', arm: 'sea', hp: 9000, dmg: 28, rng: 16, cd: .5, spd: 1, vis: 22, cost: [900, 400], pop: 8, t: 60, shot: 'cannon', aa: 1, noGround: 1, turret: 1, r: 2.6, desc: 'Floating airbase. Fly low over the deck to repair and rearm.'},
   destroyer: {n: 'Destroyer', cat: 'sea', arm: 'sea', hp: 750, dmg: 55, rng: 17, cd: 2.2, spd: 3.8, vis: 18, cost: [280, 90], pop: 4, t: 22, from: 'yard', shot: 'shell', splash: 1.4, aa: 1, turret: 1, detect: 1, r: 1.5, hk: 'R', desc: 'Warship. Shells the coast and detects submarines.'},
   attacksub: {n: 'Attack Sub', cat: 'sea', arm: 'sea', hp: 380, dmg: 150, rng: 12, cd: 4, spd: 4.4, vis: 12, cost: [240, 100], pop: 3, t: 20, from: 'yard', shot: 'torpedo', seaOnly: 1, stealth: 4, r: 1.2, sub: 1, hk: 'T', desc: 'Silent hunter. Torpedoes only hit ships.'},
   nukesub:  {n: 'Nuclear Sub', cat: 'sea', arm: 'sea', hp: 800, dmg: 0, rng: 0, cd: 1, spd: 3.2, vis: 12, cost: [600, 400], pop: 6, t: 45, from: 'yard', shot: null, stealth: 5, r: 1.8, sub: 1, nukeT: 120, only: ['toms'], hk: 'Y', desc: 'Hidden mobile ICBM launcher. Charges an ICBM every 2 minutes.'},
@@ -1232,10 +1233,10 @@ BATTLES.push(
 const HH_CLASSES = ['f16', 'fa18', 'a10', 'bomber', 'fighter', 'patrolboat', 'destroyer'];
 BATTLES.push({n: 'Harbor Havoc: Island Harbors', arc: 'air', harbor: 1, team: 7, map: 2, seed: 41, size: 240, foe: 'toms', tickets: 1e9, tix: 3000, sea: [0, 1], obj: [], land: [], def: [], classes: HH_CLASSES,
   comp: ['f16', 'bomber', 'fa18', 'a10', 'fighter', 'bomber'],
-  blurb: 'Two nations, two harbors, one sea. Fly fast and low over the water, bomb the enemy harbor, sink their fleet and shoot down their jets, or take a patrol boat or destroyer out yourself. Destroy the enemy harbor core to win. Pick both nations.'},
+  blurb: 'Two nations, two harbors, one sea. Arcade flying (no stalls, no crashes): launch from your aircraft carrier, bomb the enemy harbor, sink their fleet and shoot down their jets, or take a patrol boat or destroyer out yourself. Fly low over your carrier to repair and rearm. Destroy the enemy harbor core to win. Pick both nations.'},
   {n: 'Harbor Havoc: Desert Coast', arc: 'air', harbor: 1, team: 7, map: 6, seed: 23, size: 240, foe: 'jethroes', tickets: 1e9, tix: 3000, sea: [0, 1], obj: [], land: [], def: [], classes: HH_CLASSES,
   comp: ['a10', 'f16', 'bomber', 'fa18', 'fighter', 'bomber'],
-  blurb: 'Harbor Havoc on a desert coast. Same rules: speed-fly low over the sea, level the enemy harbor core and defend yours.'});
+  blurb: 'Harbor Havoc on a desert coast. Same rules and arcade flying: launch off your carrier, level the enemy harbor core and defend yours.'});
 const BAT_CLASSES = ['rifle', 'mg', 'rocket', 'assault', 'sniper', 'medic', 'grenadier'];
 const batClasses = B => B && B.classes || BAT_CLASSES;
 // the Toms' special swaps the pilot's guns for this blade for a few seconds (sent as weapon slot 9)
@@ -3876,7 +3877,7 @@ function hitShape(e, x, y, z, h) {
     const sc = 1 + (e.vet || 0) * .08, r = .3 * sc * (T ? 1.1 : 1);
     return {sph: 1, x, y, z: z + (.36 * (T ? .9 : 1) + (bike ? .2 : 0)) * sc, r: r * 1.08};
   }
-  const L = {tank: [1.12, .62, .58], ifv: [.95, .55, .45], arty: [1, .55, .45], sam: [.9, .5, .5], destroyer: [2.4, .55, .6], attacksub: [1.7, .3, .3], nukesub: [2.3, .38, .35],
+  const L = {tank: [1.12, .62, .58], ifv: [.95, .55, .45], arty: [1, .55, .45], sam: [.9, .5, .5], carrier: [4.8, .9, 1.3], destroyer: [2.4, .55, .6], attacksub: [1.7, .3, .3], nukesub: [2.3, .38, .35],
     bomber: [1.6, 1.4, .3], gunship: [1, .6, .35], fpv: [.35, .35, .15], hunter: [.4, .3, .15]}[e.k] || (d.cat === 'air' ? [1.1, 1, .25] : [d.r, d.r * .7, .4]);
   return {box: 1, x, y, z: z + (d.cat === 'veh' ? L[2] : d.cat === 'sea' ? .3 : 0), hx: L[0], hy: L[1], hz: L[2], h: h || 0};
 }
@@ -4615,7 +4616,8 @@ Sim.prototype.arcSetup = function (B) {
     const q0 = land(hb.x, hb.y), core = this.addBuilding('bunker', o, Math.round(q0.x), Math.round(q0.y), true); if (core) { core.base = 1; core.core = 1; core.hp = core.hpm = 6000; }
     for (const sd of [-2, -1, 1, 2]) { const q = land(q0.x + px * sd * 7, q0.y + py * sd * 7); const b = this.addBuilding(sd % 2 ? 'aa' : 'tower', o, Math.round(q.x), Math.round(q.y), true); if (b) { b.base = 1; b.hp = b.hpm = 1500; } }
     ['destroyer', 'destroyer', 'patrolboat', 'patrolboat', 'patrolboat'].forEach((k, i) => { const w = wat(q0.x + px * (i - 2) * 9, q0.y + py * (i - 2) * 9); if (w) { const e = this.addUnit(k, o, w.x, w.y); e.gt = 1; e.stance = 'hold'; } });
-    const af = land(H[o].x, H[o].y); const A = this.addBuilding('airfield', o, Math.round(af.x), Math.round(af.y), true); if (A) { A.hp = A.hpm = 1e6; A.field = 1; S.field = S.field || []; S.field[o] = {x: A.x, y: A.y}; }
+    const cw = wat(H[o].x + (mx - H[o].x) * .08, H[o].y + (my - H[o].y) * .08) || wat(H[o].x, H[o].y); // the carrier is your airfield: low pass over the deck to repair and rearm
+    if (cw) { const c = this.addUnit('carrier', o, cw.x, cw.y); c.gt = 1; c.base = 1; c.stance = 'hold'; c.h = Math.atan2(ay, ax) * (o ? -1 : 1) + (o ? Math.PI : 0); S.field = S.field || []; S.field[o] = {x: cw.x, y: cw.y}; }
   }
   else for (const o of [0, 1]) { // ground targets: an armour column, trucks and AA on each side
     const bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45;
@@ -4753,6 +4755,9 @@ Sim.prototype.arcSpawn = function (o, k, rwy) {
   if (d.cat === 'sea') { // Harbor Havoc ships launch from the water off your harbor
     for (let t = 0; t < 200; t++) { const a = t * 2.4, r = 4 + t * .5, x = clamp(sp.x + Math.cos(a) * r, 3, N - 4), y = clamp(sp.y + Math.sin(a) * r, 3, N - 4); if (!this.landOk(x, y)) { const e = this.addUnit(k, o, x, y); e.h = h; e.sq = 0; return e; } }
     return null;
+  }
+  if (d.cat === 'air' && this.scen && this.scen.B.harbor && F) { // Harbor Havoc: launch off the carrier
+    const e = this.addUnit(k, o, clamp(F.x + Math.cos(h) * 4, 3, N - 4), clamp(F.y + Math.sin(h) * 4, 3, N - 4)); e.h = h; e.z = Math.max(hAt(this.M, e.x, e.y), 0) + 6; e.sp = d.spd; e.sq = 0; return e;
   }
   if (d.cat === 'air' || d.cat === 'heli') { // planes spawn in the air, already flying toward the fight
     const x = clamp(sp.x - Math.cos(h) * 6 + (this.rnd() - .5) * 16, 3, N - 4), y = clamp(sp.y - Math.sin(h) * 6 + (this.rnd() - .5) * 16, 3, N - 4);
@@ -7027,6 +7032,22 @@ function airGear(k) {
   { const f = VEH.mlrs; VEH.mlrs = P => { const v = f(P); v.h.parts.splice(0, 12); runningGear(v.h, {z: .5, w: .24, wx: [-.6, -.3, 0, .3, .6], wy: .12, wr: .105, rear: [-.82, .22, .1], front: [.82, .24, .11], hub: shade(camo(P), .9), driveFront: true}); return v; }; }
 
   // =================== DESTROYER (Arleigh Burke) ===================
+  VEH.carrier = function (P) {
+    const g = NAVY, h = new Batch(), deck = 0x4a4f54;
+    h.box(8.6, .5, 1.5, -.2, .25, 0, g).add(GEO.wedge, g, 4.6, .25, 0, 1.4, .5, 1.5);
+    h.box(8.8, .04, 1.54, -.2, .03, 0, 0x6b1c1c);
+    h.box(9.4, .07, 2.3, -.1, .56, 0, deck);                    // flight deck, wider than the hull
+    h.box(.9, .07, 2.3, 4.85, .56, 0, deck);                    // bow end of the deck
+    h.box(8.8, .008, .06, -.1, .6, 0, WHITE);                   // centreline
+    h.box(5.2, .008, .05, -1.2, .6, .5, WHITE, 0, 0, .12);      // angled landing line
+    for (let i = 0; i < 4; i++) h.box(.05, .008, 1.3, -3.4 + i * .35, .6, .3, 0xf2d43a); // arresting wires
+    h.box(.6, .008, .3, 3.6, .6, -.6, WHITE); h.box(.3, .008, .3, 3.6, .6, .1, 0xf2d43a);
+    h.box(1.1, .5, .5, .8, .9, 1.0, shade(g, 1.15)); h.box(.7, .3, .45, .8, 1.35, 1.0, shade(g, 1.1)); // island
+    h.box(.06, .5, .06, .6, 1.8, 1.0, shade(g, .8)); h.box(.3, .04, .04, .6, 1.7, 1.0, shade(g, .8));
+    h.box(.5, .1, .4, .8, 1.5, 1.0, GLASS);
+    [-1, 1].forEach(sd => { h.box(.3, .1, .16, -4.2, .52, sd * 1.15, shade(g, .8)); h.box(.3, .1, .16, 4.2, .52, sd * 1.15, shade(g, .8)); });
+    return {h};
+  };
   VEH.destroyer = function (P) {
     const g = NAVY, gl = shade(g, 1.12), gd = shade(g, .78), h = new Batch(), t = new Batch();
     // stations: x, deck height, half beam at deck, half beam at waterline, keel depth, bow rake offsets
@@ -9647,6 +9668,7 @@ const Direct = {
     // thrust, drag (parasitic + induced + post-stall) and gravity trade speed and height. Mouse-aim is an autopilot on top.
     const k = this.keys, B = Settings.binds, d = e.d, p = this.pose, vc = d.spd, G = 9, aS = .3, LM = 1.7 * (d.turn || 1.6) * vc, FL = FlightScratch;
     this.camYaw += this.lookX; this.camPitch = clamp(this.camPitch - this.lookY, -1.3, 1.3);
+    { const g0 = this.ui.g, S0 = g0.sim && g0.sim.scen || g0.view.scen; if (S0 && S0.B && S0.B.harbor) { this.moveArcade(dt, e, M, N); return; } }
     if (this.vLock) { // view locked on a target: the camera (and so the mouse-aim autopilot) tracks it, leading it a little
       const T = this.ui.g.view.ents.get(this.vLock);
       if (!T || T.hp <= 0) { this.vLock = 0; this.msg('Target lost', 1.2); }
@@ -9714,8 +9736,8 @@ const Direct = {
     FL.d.setFromEuler(FL.e.set(this.rr * dt, -pr * dt, yawCmd * auth * dt, 'XYZ')); q.multiply(FL.d).normalize(); axes();
     // forces: thrust along the nose, lift along body-up (peaks at the stall AoA), side-slip damping, drag, gravity
     const CL = Math.sign(al) * (ca < aS ? ca / aS : Math.max(.25, 1 - (ca - aS) * 2.5)), lift = LM * qd * CL;
-    const hhS = UI.g && UI.g.sim.scen && UI.g.sim.scen.B.harbor ? 1 + .4 * (1 - clamp((p.z - ground) / 14, 0, 1)) * this.throttle : 1; // Harbor Havoc: hugging the waves is faster
-    const tgt = vc * hhS * (.45 + 1.1 * this.throttle), cd = .35 / vc, thrust = cd * tgt * tgt * (1 - clamp(p.z / 70, 0, 1) * .25) * (1 - clamp(hurt - .4, 0, .6) * 1.1);
+
+    const tgt = vc * (.45 + 1.1 * this.throttle), cd = .35 / vc, thrust = cd * tgt * tgt * (1 - clamp(p.z / 70, 0, 1) * .25) * (1 - clamp(hurt - .4, 0, .6) * 1.1);
     const dragK = cd * sp + (.04 * Math.abs(lift) + sp * Math.max(0, ca - aS) * 1.5) / sp;
     FL.a.set(0, 0, -G).addScaledVector(F, thrust).addScaledVector(U, lift).addScaledVector(L, -V.dot(L) * 2.5 * (.3 + qd)).addScaledVector(V, -dragK);
     V.addScaledVector(FL.a, dt); if (V.length() > vc * 1.9) V.setLength(vc * 1.9);
@@ -9751,6 +9773,30 @@ const Direct = {
     if (this.agl < 5 && this.speed > vc * .6) { const R = this.ui.g.R, wet = M.water[Math.round(p.y) * N + Math.round(p.x)], n = this.agl < 2.5 ? 2 : 1;
       for (let i = 0; i < n; i++) { const r = Math.random(), bx = p.x - V.x * .08 * (1 + r), by = p.y - V.y * .08 * (1 + r), c = wet ? .9 : .62;
         R.addP(bx + (Math.random() - .5), ground + .15, by + (Math.random() - .5), (Math.random() - .5) * 3, 1 + Math.random() * 2, (Math.random() - .5) * 3, .5, .9 + Math.random() * .6, c, wet ? .95 : .55, wet ? 1 : .45, false, .5, 2.4); } }
+  },
+  // Harbor Havoc: arcade flight. No stalls, no crashes: the nose follows the mouse, A/D skid-turn, W/S set the speed
+  moveArcade(dt, e, M, N) {
+    const k = this.keys, B = Settings.binds, d = e.d, p = this.pose, vc = d.spd, wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+    if (this.grounded) { this.grounded = false; p.z += 3; }
+    if (!this.arcOn) { this.arcOn = 1; this.camYaw = p.h; this.camPitch = 0; this.spdA = vc; this.rollR = 0; }
+    const thr = ((k[B.fwd] || k.KeyW) ? 1 : 0) - ((k[B.back] || k.KeyS) ? 1 : 0), rollIn = (k[B.left] || k.KeyA) ? -1 : (k[B.right] || k.KeyD) ? 1 : 0;
+    this.throttle = clamp((this.throttle === undefined ? .7 : this.throttle) + thr * dt * .6, 0, 1);
+    const tn = (d.turn || 1.6) / 1.6, aimP = clamp(this.camPitch, -1.05, 1.05);
+    const hr = clamp(wrap(this.camYaw - p.h) * 3.5, -2.8 * tn, 2.8 * tn) - rollIn * 1.5 * tn;    // heading rate (rad/s): left is positive
+    p.h = wrap(p.h + hr * dt);
+    const pr = clamp((aimP - (p.p || 0)) * 3.5, -2.2 * tn, 2.2 * tn); p.p = clamp((p.p || 0) + pr * dt, -1.2, 1.2);
+    this.rollR = (this.rollR || 0) + (clamp(-hr * .4, -1.2, 1.2) - (this.rollR || 0)) * Math.min(1, dt * 6); this.roll = p.r = -this.rollR;
+    const tgt = vc * (.6 + .7 * this.throttle) * (1 - p.p * .15);
+    this.spdA += (tgt - this.spdA) * Math.min(1, dt * 1.5); const sp = this.spdA;
+    const cp = Math.cos(p.p), V = {x: Math.cos(p.h) * cp * sp, y: Math.sin(p.h) * cp * sp, z: Math.sin(p.p) * sp};
+    p.x += V.x * dt; p.y += V.y * dt; p.z += V.z * dt;
+    const ground = Math.max(hAt(M, p.x, p.y), 0);
+    if (p.z < ground + 1.2) { p.z = ground + 1.2; if (p.p < 0) p.p *= .5; }                  // skim the waves, never crash
+    if (p.z > 70) { p.z = 70; if (p.p > 0) p.p *= .5; }
+    if (p.x < 3 || p.y < 3 || p.x > N - 4 || p.y > N - 4) { this.camYaw = Math.atan2(N / 2 - p.y, N / 2 - p.x); this.msg('Leaving the battle area: turning back', .5); p.x = clamp(p.x, 1, N - 2); p.y = clamp(p.y, 1, N - 2); }
+    this.speed = sp; this.gLoad = Math.abs(hr) * sp / 9; this.aoa = 0; this.pRate = pr; this.rollRate = hr; this.stalled = false; this.landing = false;
+    this.vel = V; this.mv = true; this.aimYaw = p.h; this.aimPitch = p.p; this.afterburner = this.throttle > .92; this.agl = p.z - ground; this.flyT = (this.flyT || 0) + dt;
+    if (this.agl < 7 && this.nearField(p.x, p.y, 14) && (!this.padMsg || this.flyT - this.padMsg > 6)) { this.padMsg = this.flyT; this.msg('Over the carrier: repairing and rearming', 2); }
   },
   // own airfield nearby (arcade fields, or any of your Airfield buildings)
   nearField(x, y, r) {
@@ -11580,7 +11626,7 @@ const UI = {
     this.scen.cls = batClasses(B)[0];
     if (B.arc) setTimeout(() => { if (this.scen && !Direct.on) this.showScenSpawn(true); }, 300); // air/tank battles: pick what you start in
     else this.g.issue({c: 'scenSpawn', u: this.scen.cls});
-    this.addAlert(B.harbor ? 'Harbor Havoc! Fly low for speed, sink their fleet and destroy the enemy harbor core.' : B.arc === 'air' ? 'Air battle! Shoot down planes and hit their ground targets.' : B.arc ? 'Tank battle! Capture A, B and C.' : B.tdm ? 'Team deathmatch: first to ' + B.tdm + ' kills!' : 'Landing craft inbound. Get ready!', 'gold');
+    this.addAlert(B.harbor ? 'Harbor Havoc! Launch off your carrier, sink their fleet and destroy the enemy harbor core.' : B.arc === 'air' ? 'Air battle! Shoot down planes and hit their ground targets.' : B.arc ? 'Tank battle! Capture A, B and C.' : B.tdm ? 'Team deathmatch: first to ' + B.tdm + ' kills!' : 'Landing craft inbound. Get ready!', 'gold');
   },
   showScenSpawn(show) {
     const el = $('scenSpawn');
@@ -11596,7 +11642,7 @@ const UI = {
     const CL = batClasses(S.B).concat(S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ['a10'] : []);
     $('ssBtns').innerHTML = CL.map((k, i) => `<button data-k="${k}" class="${k === this.scen.cls ? 'primary' : ''}"><kbd>${i + 1}</kbd>${UNITS[k].n}</button>`).join('');
     $('ssBtns').querySelectorAll('button').forEach(b => b.onclick = () => this.scenPick(b.dataset.k));
-    if (S.arc === 'air') { // take off from the runway or start in the air
+    if (S.arc === 'air' && !S.B.harbor) { // take off from the runway or start in the air
       if (S.arc === 'air' && !this.airStart) this.airStart = 'rwy';
       const row = document.createElement('div'); row.className = 'tierRow';
       row.innerHTML = 'Start: ' + [['rwy', '🛫 Runway'], ['air', '✈ In the air']].map(([v2, n]) => `<button data-a="${v2}" class="${(this.airStart || 'air') === v2 ? 'primary' : ''}">${n}</button>`).join('') + '<span class="small"> · land on your airfield to repair and rearm</span>';
@@ -11612,7 +11658,7 @@ const UI = {
   },
   scenPick(k) {
     if (!this.scen) return;
-    this.scen.cls = k; this.g.issue({c: 'scenSpawn', u: k, t: this.tierSel || 1, rwy: this.airStart !== 'air' && UNITS[k].cat === 'air' ? 1 : 0}); Sfx.ui();
+    this.scen.cls = k; this.g.issue({c: 'scenSpawn', u: k, t: this.tierSel || 1, rwy: this.airStart !== 'air' && UNITS[k].cat === 'air' && !(this.scen.B && this.scen.B.harbor) ? 1 : 0}); Sfx.ui();
     $('ssBtns').querySelectorAll('button[data-k]').forEach(b => b.classList.toggle('primary', b.dataset.k === k));
     $('ssInfo').textContent = (this.g.sim.scen && this.g.sim.scen.arc ? 'Spawning as ' : 'Coming ashore as ') + UNITS[k].n + (this.g.sim.scen && this.g.sim.scen.arc === 'ground' && TANK_CLASSES.includes(k) && this.tierSel > 1 ? ' ' + TIERS[this.tierSel - 1].n : '') + '...';
   },
@@ -13007,7 +13053,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
-      'New mode: Harbor Havoc (Air & Tank Battles). Pick both nations, speed-fly low over the sea, sink the enemy fleet and destroy their harbor core, or take a patrol boat or destroyer yourself.',
+      'New mode: Harbor Havoc (Air & Tank Battles). Pick both nations, fly arcade-style (no stalls, no crashes) off your aircraft carrier, sink the enemy fleet and destroy their harbor core, or take a patrol boat or destroyer yourself.',
       'Upgraded the 3D engine (Three.js) to a much newer version. The game looks the same for now, but this makes room for better graphics next.',
       'Planes: the camera field of view now matches War Thunder (about 80° across in chase view, 85° in the cockpit) instead of a fish-eye wide view, and the speed effect is subtler.',
       'Real roads: paved asphalt with edge lines and a centre line, levelled into the ground. Where a road crosses a river, strait or ravine it now runs over a proper bridge with railings and piers, and boats can sail underneath. Workers can build bridges across rivers (8 steel per section).',
