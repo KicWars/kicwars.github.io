@@ -352,9 +352,9 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
     <div class="mgroup">Arcade: air &amp; tanks</div>
     <button class="big mtile" id="bArc" style="grid-column:1/-1" title="Arcade air and tank battles: endless respawns, tickets and capture points"><b>✈ Air &amp; Tank Battles</b><small>Dogfights and tank fights · 12 vs 12, tickets, capture points</small></button>
     <div class="mgroup">With friends</div>
-    <button class="big mtile" id="bHost"><b>🛰 Host a game</b><small>Get a code to share</small></button>
+    <button class="big mtile" id="bHost"><b>🛰 Host a game</b><small>Open a room with bots, friends click Join</small></button>
     <button class="big mtile" id="bTest"><b>🧪 Multiplayer test room</b><small>No bots, just you and friends</small></button>
-    <button class="big mtile" id="bJoin"><b>🔗 Join a friend</b><small>Enter their code</small></button>
+    <button class="big mtile" id="bJoin"><b>🔗 Join a game</b><small>Pick an open room from the list</small></button>
     <div class="mfoot">
       <button class="big sm" id="bSettings">⚙ Controls &amp; settings</button>
       <button class="big sm" id="bLog">✦ What's new</button>
@@ -397,13 +397,15 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
         <div id="slots"></div>
         <button id="addBot">+ Add bot</button>
         <div id="invPanel" class="hidden">
-          <div id="roomBox" class="hidden"><h3>Friends join with this room code</h3>
-            <div class="big" id="roomBig" style="font-size:44px;letter-spacing:.2em;font-weight:700;text-align:center;margin:6px 0"></div>
-            <label class="small">Room name (everyone online can see and join it) <input id="roomName" maxlength="28" value="Friendly war" style="width:100%"></label>
-            <div class="row"><button id="bCopyRoom" class="primary">Copy invite link</button></div>
+          <div id="roomBox" class="hidden"><h3>Your room is open to everyone online</h3>
+            <ol class="steps">
+              <li><b>Name it</b> (optional): <input id="roomName" maxlength="28" value="Friendly war" style="width:100%"></li>
+              <li><b>Friends press "Join a game"</b> on the main menu and click your room in the list. No code needed.</li>
+              <li><b>Pick nations and teams</b> below when they appear, then press <b>Start War</b>.</li>
+            </ol>
             <div id="roomStat" class="msg"></div>
-            <p class="small">They press <b>Join a Friend</b> and type the code, or just open the link. Works on school Wi-Fi.</p></div>
-          <details id="oldInv"><summary>Other ways to connect (no server)</summary>
+            <p class="small">Want to invite someone directly? Room code <b id="roomBig" style="letter-spacing:.15em;font-size:20px"></b> <button id="bCopyRoom">Copy invite link</button></p></div>
+          <details id="oldInv" hidden style="display:none"><summary>Other ways to connect (no server)</summary>
           <h3>Invite a friend (no server needed)</h3>
           <ol class="steps">
             <li><button id="bInvite" class="primary">1. Make invite code</button></li>
@@ -514,9 +516,9 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
 <div id="freePanel" class="hidden"><b>Cursor free</b><button id="fpResume" class="primary">Aim again (Alt)</button><button id="fpChooser">Unit chooser (P)</button><button id="fpCommand">Command view (F)</button><button id="fpSettings">Settings</button></div>
 
 <div id="joinScr" class="screen hidden"><div class="mcard wide">
-  <h2>Join a friend</h2>
-  <div id="roomListBox" class="hidden"><h3>Open rooms</h3><div id="roomList"></div></div>
-  <p class="msg">Or type the 5-letter room code your friend sees on their screen. (Older long invite codes still work too.)</p>
+  <h2>Join a game</h2>
+  <div id="roomListBox" class="hidden"><h3>Open rooms (updates by itself)</h3><div id="roomList"></div></div>
+  <p class="msg">Click a room above to join it. Not listed? Type the 5-letter room code your friend sees.</p>
   <textarea id="joinIn" rows="2" placeholder="Room code, e.g. KQXMB" style="text-transform:uppercase"></textarea>
   <button class="big primary" id="bJoinGo">Join</button>
   <div id="joinReply" class="hidden">
@@ -525,7 +527,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
     <button class="big" id="bCopyReply">Copy reply code</button>
   </div>
   <div id="joinMsg" class="msg"></div>
-  <details><summary>Joining through the GitHub relay</summary>
+  <details style="display:none"><summary>Joining through the GitHub relay</summary>
     <p class="small">Your friend shares a relay room starting with <b>G:</b>. You need your own GitHub token with only the <b>gist</b> scope (github.com &rarr; Settings &rarr; Developer settings &rarr; Tokens (classic), tick only gist, 7 day expiry). It stays in this browser and is only sent to api.github.com. Delete it after playing.</p>
     <input id="ghTokC" type="password" placeholder="Your GitHub token (gist scope)" autocomplete="off">
     <label class="small"><input type="checkbox" id="ghRemC"> Remember on this computer</label>
@@ -11777,7 +11779,7 @@ const UI = {
       const r = await fetch(url.replace(/^ws/, 'http') + '/rooms', {cache: 'no-store'}), list = await r.json(), box = $('roomList');
       $('roomListBox').classList.remove('hidden'); box.innerHTML = '';
       const open = list.filter(x => x.open);
-      if (!open.length) box.innerHTML = '<p class="small">No open rooms right now. Make one with Play with Friends.</p>';
+      if (!open.length) box.innerHTML = '<p class="small">No open rooms right now. Ask a friend to press Host a game, or make your own.</p>';
       for (const x of open) {
         const b = document.createElement('button'); b.className = 'big'; b.style.cssText = 'display:block;width:100%;margin:4px 0;text-align:left';
         b.textContent = x.name + '  ·  ' + x.n + (x.n === 1 ? ' player' : ' players') + '  ·  Join'; b.onclick = () => { $('joinIn').value = x.code; this.join(x.code); };
@@ -11835,7 +11837,7 @@ const UI = {
     $('bStart').disabled = teams.size < 2;
     let st = '';
     if (this.net === 'client') st = 'Waiting for the host to start...';
-    else if (teams.size < 2) st = this.testRoom ? 'Waiting for friends. Share the room code or tell them to press Join a Friend. Put at least one player on another team to start.' : 'You need at least one opponent on another team.';
+    else if (teams.size < 2) st = this.testRoom ? 'Waiting for friends: tell them to press Join a game and click your room. Put at least one player on another team to start.' : 'You need at least one opponent on another team.';
     else if (this.net === 'host') st = this.lobby.slots.some(s => s.id && s.id !== 'host') ? 'Ready when you are.' : 'Invite a friend below, or start now against the bot.';
     $('lStatus').textContent = st;
   },
