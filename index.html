@@ -529,7 +529,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
 <div id="campScr" class="screen hidden"><div class="mcard wide"><h2 style="margin:0">Campaign</h2><p style="margin:0;color:#c7d3da">You get a budget. Buy troops, place them in your zone, then press Start and watch the battle. Wipe out the enemy army to unlock the next level.</p>
   <label style="display:flex;gap:8px;align-items:center">Your nation <select id="campNat"></select></label><div id="campList" class="camplist"></div><button class="big" id="campBack">Back</button></div></div>
 <div id="batScr" class="screen hidden"><div class="mcard wide"><h2 style="margin:0" id="batH">FPS Battles</h2><p style="margin:0;color:#c7d3da" id="batP">You are one soldier in a huge amphibious assault. Ride the landing craft in, fight up the beach and capture each objective in turn. Every soldier who lands costs a reinforcement ticket; run out and the assault fails. Capture objectives to land closer to the front.</p>
-  <label style="display:flex;gap:8px;align-items:center">Your nation <select id="batNat"></select></label><div id="batList" class="camplist"></div><button class="big" id="batBack">Back</button></div></div>
+  <label style="display:flex;gap:8px;align-items:center">Your nation <select id="batNat"></select></label><label style="display:flex;gap:8px;align-items:center">Enemy nation <select id="batFoe"></select></label><div id="batList" class="camplist"></div><button class="big" id="batBack">Back</button></div></div>
 <div id="warHud" class="hidden"><div id="wrTitle">WAR ROOM</div><div id="wrPrompt"></div><div id="wrHelp">WASD walk · mouse look (click to capture) · E use · F or Esc back to command</div><div id="wrX">+</div></div>
 <div id="scenSpawn" class="hidden"><h3>Choose your soldier</h3><div id="ssInfo"></div><div id="ssBtns"></div><p class="small">Press 1 to 7, or click. You land with the next boat, or at the forward position once you have captured an objective.</p></div>
 <div id="campHud" class="hidden"><div class="ch-top"><b id="chName"></b><span id="chBudget"></span><button id="chClear">Clear</button><button id="chStart" class="primary">Start battle</button><button id="chQuit">Quit</button></div>
@@ -1229,6 +1229,13 @@ BATTLES.push(
   {n: 'Tank Battle: Sandstone Gorge', arc: 'ground', team: 11, map: 17, seed: 53, size: 144, foe: 'jethroes', tickets: 1e9, tix: 2500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
     comp: ['tank', 'ltank', 'htank', 'td', 'tank', 'ltank', 'tank', 'htank', 'td', 'ifv', 'sam'],
     blurb: 'Desert. B is a walled old town, A an oasis in the palms, and C lies at the bottom of a canyon you can only enter from the ends. Rock mesas break the long sightlines: perfect for ambushes.'});
+const HH_CLASSES = ['f16', 'fa18', 'a10', 'bomber', 'fighter', 'patrolboat', 'destroyer'];
+BATTLES.push({n: 'Harbor Havoc: Island Harbors', arc: 'air', harbor: 1, team: 7, map: 2, seed: 41, size: 240, foe: 'toms', tickets: 1e9, tix: 3000, sea: [0, 1], obj: [], land: [], def: [], classes: HH_CLASSES,
+  comp: ['f16', 'bomber', 'fa18', 'a10', 'fighter', 'bomber'],
+  blurb: 'Two nations, two harbors, one sea. Fly fast and low over the water, bomb the enemy harbor, sink their fleet and shoot down their jets, or take a patrol boat or destroyer out yourself. Destroy the enemy harbor core to win. Pick both nations.'},
+  {n: 'Harbor Havoc: Desert Coast', arc: 'air', harbor: 1, team: 7, map: 6, seed: 23, size: 240, foe: 'jethroes', tickets: 1e9, tix: 3000, sea: [0, 1], obj: [], land: [], def: [], classes: HH_CLASSES,
+  comp: ['a10', 'f16', 'bomber', 'fa18', 'fighter', 'bomber'],
+  blurb: 'Harbor Havoc on a desert coast. Same rules: speed-fly low over the sea, level the enemy harbor core and defend yours.'});
 const BAT_CLASSES = ['rifle', 'mg', 'rocket', 'assault', 'sniper', 'medic', 'grenadier'];
 const batClasses = B => B && B.classes || BAT_CLASSES;
 // the Toms' special swaps the pilot's guns for this blade for a few seconds (sent as weapon slot 9)
@@ -4602,6 +4609,14 @@ Sim.prototype.arcSetup = function (B) {
   const land = (x, y) => { for (let t = 0; t < 60; t++) { const a = t * 2.4, r = t * .6, qx = clamp(x + Math.cos(a) * r, 5, N - 6), qy = clamp(y + Math.sin(a) * r, 5, N - 6); if (this.landOk(qx, qy)) return {x: qx, y: qy}; } return {x, y}; };
   if (!air && this.M.caps) for (const C of this.M.caps) { const q = land(C.x, C.y); S.caps.push({n: C.n, x: q.x, y: q.y, r: 8, own: -1, prog: 0}); }
   else if (!air) ['A', 'B', 'C'].forEach((n, i) => { const o = (i - 1) * N * .26, q = land(mx + px * o, my + py * o); S.caps.push({n, x: q.x, y: q.y, r: 8, own: -1, prog: 0}); });
+  else if (B.harbor) for (const o of [0, 1]) { // Harbor Havoc: a harbor with a core, turrets, a fleet and an airfield each side
+    const hb = {x: H[o].x + (mx - H[o].x) * .2, y: H[o].y + (my - H[o].y) * .2};
+    const wat = (x, y) => { for (let t = 0; t < 120; t++) { const a = t * 2.4, r = t * .7, qx = clamp(x + Math.cos(a) * r, 5, N - 6), qy = clamp(y + Math.sin(a) * r, 5, N - 6); if (!this.landOk(qx, qy)) return {x: qx, y: qy}; } return null; };
+    const q0 = land(hb.x, hb.y), core = this.addBuilding('bunker', o, Math.round(q0.x), Math.round(q0.y), true); if (core) { core.base = 1; core.core = 1; core.hp = core.hpm = 6000; }
+    for (const sd of [-2, -1, 1, 2]) { const q = land(q0.x + px * sd * 7, q0.y + py * sd * 7); const b = this.addBuilding(sd % 2 ? 'aa' : 'tower', o, Math.round(q.x), Math.round(q.y), true); if (b) { b.base = 1; b.hp = b.hpm = 1500; } }
+    ['destroyer', 'destroyer', 'patrolboat', 'patrolboat', 'patrolboat'].forEach((k, i) => { const w = wat(q0.x + px * (i - 2) * 9, q0.y + py * (i - 2) * 9); if (w) { const e = this.addUnit(k, o, w.x, w.y); e.gt = 1; e.stance = 'hold'; } });
+    const af = land(H[o].x, H[o].y); const A = this.addBuilding('airfield', o, Math.round(af.x), Math.round(af.y), true); if (A) { A.hp = A.hpm = 1e6; A.field = 1; S.field = S.field || []; S.field[o] = {x: A.x, y: A.y}; }
+  }
   else for (const o of [0, 1]) { // ground targets: an armour column, trucks and AA on each side
     const bx = H[o].x + (mx - H[o].x) * .45, by = H[o].y + (my - H[o].y) * .45;
     ['tank', 'tank', 'tank', 'truck', 'truck', 'truck', 'sam', 'ifv', 'tank', 'truck'].forEach((k, i) => { const q = land(bx + px * (i - 4.5) * 3.2, by + py * (i - 4.5) * 3.2); const e = this.addUnit(k, o, q.x, q.y); e.gt = 1; e.stance = 'hold'; e.h = Math.atan2(-ay * (o ? -1 : 1), -ax * (o ? -1 : 1)); e.sq = 0; S.gt[o].push(k); });
@@ -4613,9 +4628,9 @@ Sim.prototype.arcSetup = function (B) {
 };
 Sim.prototype.arcLoss = function (t, by) {
   const S = this.scen, o = t.o; if (o !== 0 && o !== 1) return;
-  const air = S.arc === 'air', cost = t.base ? 120 : air ? (t.gt ? 12 : t.air ? 30 : 8) : (t.air ? 12 : 16);
+  const air = S.arc === 'air', cost = t.core ? 0 : t.base ? (S.B.harbor ? 150 : 120) : air ? (t.gt ? 12 : t.air ? 30 : 8) : (t.air ? 12 : 16);
   if (t.base) this.ev({k: 'msg', p: 0, text: (o === 0 ? 'Our base was destroyed' : 'Enemy base destroyed') + ': −120 tickets', kind: o === 0 ? 'bad' : 'good', x: t.x, y: t.y});
-  S.tix[o] = Math.max(0, S.tix[o] - cost);
+  S.tix[o] = Math.max(0, S.tix[o] - cost); if (t.core) S.tix[o] = 0;
   if (t.pilot) { S.streak[o + ':' + (t.pilot - 1)] = 0; }
   const killer = by === 0 || by === 1 ? by : null;
   if (killer !== null) for (const e of this.ents.values()) if (e.pilot && e.o === killer && Math.hypot(e.x - t.x, e.y - t.y) < 60) { // credit the player nearby with a streak
@@ -4734,6 +4749,10 @@ Sim.prototype.arcSpawn = function (o, k, rwy) {
   const F = this.scen && this.scen.field && this.scen.field[o];
   if (rwy && F && d.cat === 'air') { // a player who chose the runway: parked on the airfield, pointing at the enemy
     const e = this.addUnit(k, o, clamp(F.x + Math.cos(h) * 2, 3, N - 4), clamp(F.y + Math.sin(h) * 2, 3, N - 4)); e.h = h; e.z = Math.max(hAt(this.M, e.x, e.y), 0) + .35; e.sp = 0; e.sq = 0; e.rwy = 1; return e;
+  }
+  if (d.cat === 'sea') { // Harbor Havoc ships launch from the water off your harbor
+    for (let t = 0; t < 200; t++) { const a = t * 2.4, r = 4 + t * .5, x = clamp(sp.x + Math.cos(a) * r, 3, N - 4), y = clamp(sp.y + Math.sin(a) * r, 3, N - 4); if (!this.landOk(x, y)) { const e = this.addUnit(k, o, x, y); e.h = h; e.sq = 0; return e; } }
+    return null;
   }
   if (d.cat === 'air' || d.cat === 'heli') { // planes spawn in the air, already flying toward the fight
     const x = clamp(sp.x - Math.cos(h) * 6 + (this.rnd() - .5) * 16, 3, N - 4), y = clamp(sp.y - Math.sin(h) * 6 + (this.rnd() - .5) * 16, 3, N - 4);
@@ -9695,7 +9714,8 @@ const Direct = {
     FL.d.setFromEuler(FL.e.set(this.rr * dt, -pr * dt, yawCmd * auth * dt, 'XYZ')); q.multiply(FL.d).normalize(); axes();
     // forces: thrust along the nose, lift along body-up (peaks at the stall AoA), side-slip damping, drag, gravity
     const CL = Math.sign(al) * (ca < aS ? ca / aS : Math.max(.25, 1 - (ca - aS) * 2.5)), lift = LM * qd * CL;
-    const tgt = vc * (.45 + 1.1 * this.throttle), cd = .35 / vc, thrust = cd * tgt * tgt * (1 - clamp(p.z / 70, 0, 1) * .25) * (1 - clamp(hurt - .4, 0, .6) * 1.1);
+    const hhS = UI.g && UI.g.sim.scen && UI.g.sim.scen.B.harbor ? 1 + .4 * (1 - clamp((p.z - ground) / 14, 0, 1)) * this.throttle : 1; // Harbor Havoc: hugging the waves is faster
+    const tgt = vc * hhS * (.45 + 1.1 * this.throttle), cd = .35 / vc, thrust = cd * tgt * tgt * (1 - clamp(p.z / 70, 0, 1) * .25) * (1 - clamp(hurt - .4, 0, .6) * 1.1);
     const dragK = cd * sp + (.04 * Math.abs(lift) + sp * Math.max(0, ca - aS) * 1.5) / sp;
     FL.a.set(0, 0, -G).addScaledVector(F, thrust).addScaledVector(U, lift).addScaledVector(L, -V.dot(L) * 2.5 * (.3 + qd)).addScaledVector(V, -dragK);
     V.addScaledVector(FL.a, dt); if (V.length() > vc * 1.9) V.setLength(vc * 1.9);
@@ -11542,6 +11562,7 @@ const UI = {
     const arc = kind === 'arc', P = $('batP'); P.dataset.fps = P.dataset.fps || P.innerHTML;
     $('batH').textContent = arc ? 'Air & Tank Battles' : 'FPS Battles';
     P.innerHTML = arc ? 'Arcade battles, 12 against 12 with endless respawns. <b>Air</b>: shoot down planes and destroy the enemy columns and bases; land on your airfield to rearm. <b>Tanks</b>: hold the capture points A, B and C and kill their armour. Each side has tickets: the first to run out loses.' : P.dataset.fps;
+    const sf = $('batFoe'); if (!sf.options.length) sf.innerHTML = '<option value="-1">Default for this battle</option>' + NATIONS.map((n, i) => `<option value="${i}">${n.name}</option>`).join('');
     const sel = $('batNat'); if (!sel.options.length) sel.innerHTML = NATIONS.map((n, i) => `<option value="${i}">${n.name}</option>`).join('');
     $('batList').innerHTML = BATTLES.map((B, i) => !B.arc !== !arc ? '' : `<button class="camplv" data-i="${i}"><b>${B.n}</b><span>${B.blurb}</span><span class="small">${B.arc ? (B.team + 1) + ' vs ' + (B.team + 1) + (B.arc === 'air' ? ' planes' : ' vehicles') + ' · ' + B.tix + ' tickets' : B.tdm ? (B.team + 1) + ' vs ' + (B.team + 1) + ' · first to ' + B.tdm + ' kills' : B.obj.length + ' objectives · ' + B.tickets + ' reinforcements'} · enemy: ${NATIONS.find(n => n.key === B.foe).name}</span></button>`).join('');
     $('batList').querySelectorAll('button').forEach(b => b.onclick = () => this.batLaunch(+b.dataset.i));
@@ -11549,6 +11570,7 @@ const UI = {
   batLaunch(i) {
     Sfx.init();
     const B = BATTLES[i]; let me = +$('batNat').value, foe = NATIONS.findIndex(n => n.key === B.foe);
+    if ($('batFoe') && +$('batFoe').value >= 0) foe = +$('batFoe').value;
     if (foe === me) foe = (me + 1) % NATIONS.length;
     $('batScr').classList.add('hidden');
     this.launch({mode: 'host', size: B.size, seed: B.map * 1e7 + B.seed, players: [{nation: me, name: 'You'}, {nation: foe, name: NATIONS[foe].name}], me: 0, link: null, tut: false, quick: false, scen: B});
@@ -11558,7 +11580,7 @@ const UI = {
     this.scen.cls = batClasses(B)[0];
     if (B.arc) setTimeout(() => { if (this.scen && !Direct.on) this.showScenSpawn(true); }, 300); // air/tank battles: pick what you start in
     else this.g.issue({c: 'scenSpawn', u: this.scen.cls});
-    this.addAlert(B.arc === 'air' ? 'Air battle! Shoot down planes and hit their ground targets.' : B.arc ? 'Tank battle! Capture A, B and C.' : B.tdm ? 'Team deathmatch: first to ' + B.tdm + ' kills!' : 'Landing craft inbound. Get ready!', 'gold');
+    this.addAlert(B.harbor ? 'Harbor Havoc! Fly low for speed, sink their fleet and destroy the enemy harbor core.' : B.arc === 'air' ? 'Air battle! Shoot down planes and hit their ground targets.' : B.arc ? 'Tank battle! Capture A, B and C.' : B.tdm ? 'Team deathmatch: first to ' + B.tdm + ' kills!' : 'Landing craft inbound. Get ready!', 'gold');
   },
   showScenSpawn(show) {
     const el = $('scenSpawn');
@@ -12985,6 +13007,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'New mode: Harbor Havoc (Air & Tank Battles). Pick both nations, speed-fly low over the sea, sink the enemy fleet and destroy their harbor core, or take a patrol boat or destroyer yourself.',
       'Upgraded the 3D engine (Three.js) to a much newer version. The game looks the same for now, but this makes room for better graphics next.',
       'Planes: the camera field of view now matches War Thunder (about 80° across in chase view, 85° in the cockpit) instead of a fish-eye wide view, and the speed effect is subtler.',
       'Real roads: paved asphalt with edge lines and a centre line, levelled into the ground. Where a road crosses a river, strait or ravine it now runs over a proper bridge with railings and piers, and boats can sail underneath. Workers can build bridges across rivers (8 steel per section).',
