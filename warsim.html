@@ -405,6 +405,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
         <label>Graphics <select id="optQ"><option value="auto" selected>Auto (adapts to your computer)</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
         <label title="Every unit from every nation, free, from the Deploy screen. Applies to human players only.">All units unlocked and free <input type="checkbox" id="optAll"></label>
         <label title="Easy: +60% steel and fuel, a bigger start and auto economy on. Hard: 20% less. Only affects human players.">Difficulty (your economy) <select id="optEco"><option value="easy">Easy: lots of resources, auto economy</option><option value="normal" selected>Normal</option><option value="hard">Hard: scarce resources</option></select></label>
+        <label title="Two or three friendly healers wander the map and heal everyone, on every side">The Xaviers (neutral healers) <input type="checkbox" id="optXav"></label>
         <label title="A short checklist of goals in the corner. For the full guided tutorial use Tutorial on the main menu.">Objectives checklist <input type="checkbox" id="optTut"></label>
         <div id="lStatus" class="msg"></div>
         <button class="big primary" id="bStart">Start War</button>
@@ -1962,7 +1963,7 @@ function Sim(opts) {
   });
   for (const p of this.players) if (p.ecoK > 1) { p.steel += 700; p.fuel += 250; } else if (p.ecoK < 1) { p.steel -= 150; }
   if (opts.battle) this.setupBattle(opts.battle); else if (opts.scen) this.setupScen(opts.scen); else for (const p of this.players) this.setupPlayer(p);
-  this.addXaviers();
+  if (opts.xav && !opts.battle && !opts.scen) this.addXaviers(); // optional, Play vs bots only
 }
 // Campaign battle: no bases. Find the stretch of land between the two spawns with the most ground, mark the two deploy zones and place the enemy army.
 Sim.prototype.landOk = function (x, y) {
@@ -2621,7 +2622,12 @@ Sim.prototype.hurt = function (t, dmg, by) {
   t.hurtT = this.t;
   if (t.hp <= 0) return;
   if (t.b && t.hard >= 1) dmg *= .35;                       // hardened: rebuilt underground in reinforced concrete
-  t.hp -= dmg; t.hurtT = this.t;
+  const hp0 = t.hp; t.hp -= dmg; t.hurtT = this.t;
+  // damage report for human players (bombs, shells, drones, bullets...): summed and sent a few times a second
+  if (by !== null && by !== undefined && by !== t.o && this.players[by] && !this.players[by].bot && !t.gt) {
+    const L = (this.hitLog = this.hitLog || {})[by] = this.hitLog[by] || new Map(), r = L.get(t.id) || {k: t.k, b: t.b ? 1 : 0, dmg: 0, base: t.base ? 1 : 0};
+    r.dmg += Math.min(hp0, dmg); r.hp = Math.max(0, t.hp) / (t.hpm || 1); r.kill = t.hp <= 0 ? 1 : 0; L.set(t.id, r);
+  }
   if (t.d.cat === 'veh' && !t.b && t.hp > 0 && dmg >= 25 && this.scen && this.scen.arc === 'ground' && this.rnd() < .35) this.knockModule(t, by);
   if (t.pilot && dmg > .5) this.ev({k: 'ouch', id: t.id, x: t.srcX === undefined ? t.x : t.srcX, y: t.srcY === undefined ? t.y : t.srcY, dmg: Math.round(dmg)});
   t.srcX = undefined;
@@ -2976,6 +2982,7 @@ Sim.prototype.step = function () {
   if (this.battle && this.tick % 10 === 0) this.battleCheck();
   if (this.scen && this.tick % 5 === 0) this.scenStep();
   if (this.strikes && this.strikes.length) this.stepStrikes();
+  if (this.hitLog && this.tick % 4 === 0) { for (const p in this.hitLog) { const L = this.hitLog[p]; if (L.size) this.ev({k: 'dmgrep', p: +p, list: [...L.values()].map(r => ({k: r.k, b: r.b, base: r.base, dmg: Math.round(r.dmg), hp: Math.round(r.hp * 100), kill: r.kill}))}); } this.hitLog = null; }
   this.t += DT; this.tick++;
   this.F.budget = this.N > 170 ? 3 : 5;
   this.rebuildGrid();
@@ -4363,9 +4370,13 @@ Sim.prototype.scenStep = function () {
 };
 Sim.prototype.setTier = function (e, t) { if (!(t > 1)) return; e.tier = Math.min(TIERS.length, t | 0); e.hp = e.hpm = e.hpm * TIERS[e.tier - 1].k; };
 Sim.prototype.scenSpawn = function (pi, k, tier) {
-  const S = this.scen; if (!S || this.over || !batClasses(S.B).includes(k)) return;
-  if (S.arc && k === 'a10' && S.arc === 'ground' && !(S.strike && S.strike[pi] > 0)) { this.notify(pi, 'Get 3 kills in one life to earn a strike plane', 'bad'); return; }
-  if (S.queue.some(q => q.you === pi) || (S.spawnT || 0) > this.t) return;
+  const S = this.scen; if (!S || this.over) return;
+  const strike = S.arc === 'ground' && k === 'a10'; // the earned strike plane is not in the vehicle list
+  if (!strike && !batClasses(S.B).includes(k)) return;
+  if (strike && !(S.strike && S.strike[pi] > 0)) { this.notify(pi, 'Get 3 kills in one life to earn a strike plane', 'bad'); return; }
+  const tr0 = S.arc === 'ground' && TANK_CLASSES.includes(k) ? clamp(tier | 0 || 1, 1, TIERS.length) : 1;
+  const mine = S.queue.find(q => q.you === pi); if (mine) { mine.k = k; mine.tier = tr0; return; } // changed your mind while waiting: swap the pick
+  if ((S.spawnT || 0) > this.t) { if (S.tdm || S.arc) S.queue.push({t: S.spawnT + 1.5, k, x: 0, y: 0, you: pi, tier: tr0}); return; }
   if (S.tickets <= 0) { this.notify(pi, 'No reinforcements left', 'bad'); return; }
   S.tickets--; S.spawnT = this.t + 1;
   const tr = S.arc === 'ground' && TANK_CLASSES.includes(k) ? clamp(tier | 0 || 1, 1, TIERS.length) : 1; if (S.arc === 'ground') S.youTier = Math.max(S.youTier || 1, tr);
@@ -8429,7 +8440,7 @@ function Game(cfg) {
     this.view = new Mirror(cfg);
     this.bots = [];
   } else {
-    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle, scen: cfg.scen});
+    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle, scen: cfg.scen, xav: cfg.xav});
     this.bots = cfg.players.map((p, i) => p.bot ? new Bot(this.sim, i, p.bot) : null).filter(Boolean);
   }
   this.view.me = this.me;
@@ -8834,6 +8845,7 @@ const Direct = {
 
   // ---------- per-frame ----------
   update(dt, g) {
+    if (this.mode === 'fpv') this.fpvT = performance.now();
     const e = g.view.ents.get(this.id);
     if (!e && this.cut) { // linger on the scene for a moment before cutting back
       const c = this.cut; if (!c.deadT) { c.deadT = performance.now(); this.ui.cutLine(c.wrong ? 'EXECUTED AS A SPY' : 'KILLED'); }
@@ -10782,7 +10794,7 @@ const UI = {
     const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked, eco: s.kind === 'bot' ? null : $('optEco').value}));
     this.playersIds = L.slots.map(s => s.id || null);
     if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id)}});
-    this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, tut: $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick});
+    this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, tut: $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick, xav: $('optXav').checked && this.net !== 'host'});
   },
   setSpeed(v) { // time control: host-side only, so a friend's game stays in sync with the host's clock
     if (!this.g || this.g.mode === 'client') { this.addAlert('Only the host can change game speed', 'bad'); return; }
@@ -10832,7 +10844,9 @@ const UI = {
     this.scen = {i, B, cls: 'rifle'}; document.body.classList.add('scen');
     const L = this.g.sim.scen.land[2] || this.g.sim.scen.land[0] || this.g.sim.scen.fwd;
     this.jump(L.x, L.y + 8);
-    this.scen.cls = batClasses(B)[0]; this.g.issue({c: 'scenSpawn', u: this.scen.cls});
+    this.scen.cls = batClasses(B)[0];
+    if (B.arc) setTimeout(() => { if (this.scen && !Direct.on) this.showScenSpawn(true); }, 300); // air/tank battles: pick what you start in
+    else this.g.issue({c: 'scenSpawn', u: this.scen.cls});
     this.addAlert(B.arc === 'air' ? 'Air battle! Shoot down planes and hit their ground targets.' : B.arc ? 'Tank battle! Capture A, B and C.' : B.tdm ? 'Team deathmatch: first to ' + B.tdm + ' kills!' : 'Landing craft inbound. Get ready!', 'gold');
   },
   showScenSpawn(show) {
@@ -10860,6 +10874,7 @@ const UI = {
   scenPick(k) {
     if (!this.scen) return;
     this.scen.cls = k; this.g.issue({c: 'scenSpawn', u: k, t: this.tierSel || 1}); Sfx.ui();
+    $('ssBtns').querySelectorAll('button[data-k]').forEach(b => b.classList.toggle('primary', b.dataset.k === k));
     $('ssInfo').textContent = (this.g.sim.scen && this.g.sim.scen.arc ? 'Spawning as ' : 'Coming ashore as ') + UNITS[k].n + (this.g.sim.scen && this.g.sim.scen.arc === 'ground' && TANK_CLASSES.includes(k) && this.tierSel > 1 ? ' ' + TIERS[this.tierSel - 1].n : '') + '...';
   },
   campRefresh() {
@@ -11050,6 +11065,20 @@ const UI = {
       case 'deployed': if (ev.p === me) { const u = v.ents.get(ev.id); if (u && this.deployMode === 'army') { this.addAlert(u.d.n + ' deployed', 'good'); if (!$('deploy').classList.contains('hidden')) this.openDeploy(); } else if (u) { this.deployed = true; this.flown = true; this.closeDeploy(); Direct.enter(this, u); } } break;
       case 'nukekill': this.nukes = this.nukes.filter(n => n.id !== ev.id); break;
       case 'dead': if (ev.id === Direct.id && Direct.on && window.Tension) window.Tension.killedBy = ev.by; if (ev.air && ev.by === me && ev.o !== me && !Direct.on && !ev.quiet) { this.addAlert('Enemy ' + (UNITS[ev.kk] ? UNITS[ev.kk].n : 'aircraft') + ' shot down', 'good', ev.x, ev.y); Sfx.good(); } break;
+      case 'dmgrep': if (ev.p === me) {
+        // what you just did: buildings always (when you are fighting in person), and everything after a drone hit
+        const drone = Direct.on ? Direct.mode === 'fpv' : performance.now() - (Direct.fpvT || 0) < 4000;
+        if (!Direct.on && !drone) break;
+        const nm = r => { const D = r.b ? BUILDINGS[r.k] : UNITS[r.k]; return r.base && !D ? 'enemy base' : D ? D.n : r.k; };
+        const bl = ev.list.filter(r => r.b && r.dmg >= 1), ul = drone ? ev.list.filter(r => !r.b && r.dmg >= 1) : [];
+        const parts = bl.map(r => r.kill ? 'DESTROYED ' + nm(r) : nm(r) + ' -' + r.dmg + ' (' + r.hp + '% left)');
+        if (ul.length) { const kills = {}, dam = {}; for (const r of ul) { const o = r.kill ? kills : dam; o[nm(r)] = (o[nm(r)] || 0) + 1; }
+          const ls = (o) => Object.entries(o).map(([n, c]) => (c > 1 ? c + ' ' : '') + n).join(', ');
+          if (Object.keys(kills).length) parts.push('killed ' + ls(kills)); if (Object.keys(dam).length) parts.push('hit ' + ls(dam)); }
+        if (!parts.length) break;
+        const txt = (drone ? 'DRONE: ' : 'HIT: ') + parts.join(' · ');
+        if (Direct.on && !drone) { Direct.msg(txt, 1.6); Sfx.hitTick(bl.some(r => r.kill)); } else { this.addAlert(txt, 'good'); Sfx.good(); }
+      } break;
       case 'hitm': if (Direct.on && ev.p === me) { const x = $('xhair'); x.style.borderColor = '#ff5a4a'; setTimeout(() => x.style.borderColor = '', 120); } break;
     }
   },
@@ -12167,7 +12196,12 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   };
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
-    {d: '6 Nov 2026 (newest)', items: [
+    {d: '6 Nov 2026 (latest)', items: [
+      'Air & tank battles: you now choose your plane or tank before you spawn. Changing your pick while waiting to spawn works now too.',
+      'Fixed: you could not pick the A-10 strike plane after earning it with a kill streak.',
+      'Hit reports: when you bomb, shoot or shell a building you see the damage and how much is left. After a drone strike you get a report of what it killed and hit.',
+      'The Xaviers only appear in Play vs bots now, and only if you turn them on in the setup screen (off by default).']},
+    {d: '6 Nov 2026 (later)', items: [
       'Tank battles: bots now spread out across all three lanes. Some push the point, some flank round the side and some snipe from high ground, so fights happen all over the map.',
       'On foot you can now climb mountains and cliffs (slower up steep ground) and stand on top.',
       'Low flying fixed: you can hug the ground without the plane bouncing up, and the camera no longer snaps around near the ground.',
@@ -12209,7 +12243,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
     {d: '5 Nov 2026', items: [
       'Playing the Charlies now shows the game with simulated red-green colourblindness (deuteranopia).',
       'New nation: the Charlies. Air-tech specialists: every jet in the game, aircraft +20% damage and health and 15% cheaper, faster research, Autopilot Surge power. But they are colourblind, so they have no pilot licence and cannot fly planes themselves.',
-      'The Xaviers: two or three friendly healers wander every war. They cannot attack or be attacked and heal everyone nearby on any side.',
+      'The Xaviers: two or three friendly healers wander the map (optional in Play vs bots). They cannot attack or be attacked and heal everyone nearby on any side.',
       'Toms only: new end-of-tree research "Directed Energy" (Armour tier 4) unlocks the Directed Energy Tank, a laser beam tank that burns armour, aircraft and infantry.',
       'Campaign: a "Next level" button on the victory screen; the victory screen now scrolls and its buttons sit above the stats.',
       'Stats screen hides economy columns and the steel graph in campaign battles (there is no economy there).',
