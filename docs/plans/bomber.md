@@ -150,3 +150,8 @@ Estimate: about 8 to 12 focused sessions. Steps 1 and 2 carry most of the risk.
 ## Build status
 - **Done (2026-11-06):** step 1 started. A detailed bomber interior (glass nose and cockpit, radio and navigation, engineer's bay, bomb bay with the bomb, tail gunner) with windows to the outside, shown in first person over the real world with wings and engines outside. Shared crew presence over the relay: everyone sees the others walk around, with name tags. Menu tile "Operation Red Star (preview)" starts it. The bomber flies a scripted circle for now.
 - **Next:** station seats and claiming, then the flight model and route, systems, threats, bomb run and cutscene. Gameplay questions for Finn are listed in the chat after this step.
+
+## More decisions (2026-11-06)
+- **Mission settings in the lobby** (host picks, remembered in the browser): flying feel (heavy/demanding), failure rule (retry a phase once / one life / unlimited checkpoints), bomb cutscene (bomb's-eye then wide / from the bomber / both), ending (ends on the flash / escape flight home), difficulty (training/standard/brutal). Passed to the game as `rso`. Not yet acted on by gameplay: the options are stored and shown at launch.
+- **Clean mode:** no nation abilities (including the colourblind filter), no battle popups (only mission messages), no health/ammo/radar/crosshair ring, no weapon or view keys, no leaving to the command view. Only walking, looking and the free cursor.
+- **Look:** procedural riveted metal, grime and glowing lamps and dials on a physically lit material, dusty fog and dim warm lights. No external model files yet: they would need to be embedded in the single html file and checked for licence, so only add them with Finn's go-ahead.

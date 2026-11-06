@@ -430,6 +430,13 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
           </details>
           </details>
         </div>
+        <div id="rsOpts" style="display:none"><h3>Operation Red Star: mission settings</h3>
+          <label title="How the bomber handles for the pilot">Flying <select id="rsFly"><option value="heavy">Heavy but forgiving</option><option value="hard">Demanding</option></select></label>
+          <label title="What happens when a phase goes badly">If it goes wrong <select id="rsFail"><option value="retry">Retry the phase once</option><option value="one">One life</option><option value="check">Unlimited checkpoints</option></select></label>
+          <label title="How the bomb drop is shown">Bomb cutscene <select id="rsCut"><option value="bomb">Bomb's-eye, then wide</option><option value="bomber">From the bomber</option><option value="both">Both</option></select></label>
+          <label title="What happens after the bomb drops">After the bomb <select id="rsEnd"><option value="flash">Ends on the flash</option><option value="escape">Escape flight home</option></select></label>
+          <label title="Scales fighters, flak and events. Crews of 2 or 3 get a lighter load on top of this.">Difficulty <select id="rsDiff"><option value="train">Training</option><option value="std" selected>Standard</option><option value="brutal">Brutal</option></select></label>
+        </div>
         <h3>Battlefield</h3>
         <label title="Every map has highways linking the capitals and a rich plateau, the Crown, in the middle">Map <select id="optMap"><option value="r">Random</option><option value="0" selected>Island</option><option value="1">Continent</option><option value="2">Archipelago (lots of sea)</option><option value="3">Highlands (mountain passes)</option><option value="6">Middle East Desert</option><option value="7">Strait of Hormuz</option><option value="8">Stalingrad (ruined city, winter)</option><option value="9">Pacific War (huge island chain)</option><option value="11">Twin Rivers (hand-built)</option><option value="12">Mountain Kingdoms (hand-built)</option><option value="13">Iron Bay (hand-built)</option></select></label>
         <label>Map size <select id="optSize"><option value="96">Small</option><option value="128">Medium</option><option value="160" selected>Large</option><option value="192">Huge</option><option value="240">Massive</option></select></label>
@@ -9230,7 +9237,7 @@ function Game(cfg) {
     this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle, scen: cfg.scen, xav: cfg.xav, peace: cfg.peace, sandbox: cfg.sandbox, redstar: cfg.redstar});
     this.bots = cfg.players.map((p, i) => p.bot ? new Bot(this.sim, i, p.bot) : null).filter(Boolean);
   }
-  this.view.me = this.me; this.redstar = !!cfg.redstar;
+  this.view.me = this.me; this.redstar = !!cfg.redstar; this.view.rso = this.rso = cfg.rso || null;
   this.R.reset();
   this.R.loadWorld(this.view);
   this.R.me = this.me;
@@ -9445,7 +9452,7 @@ const Direct = {
     Settings.view = Settings.view === 'fp' ? 'tp' : 'fp'; Settings.save(); this.applyView();
     this.msg(Settings.view === 'fp' ? 'First person' : 'Third person', 1.2);
   },
-  msg(t, dur) { this.msgT = dur || 2; this.msgText = t; },
+  msg(t, dur) { if (this.mode === 'crew') return; this.msgT = dur || 2; this.msgText = t; },
 
   // ---------- look: pointer lock, free cursor, cursor-offset fallback ----------
   requestLock(why) {
@@ -9527,6 +9534,7 @@ const Direct = {
     this.keys[c] = down;
     if (!down) return true;
     if (e.repeat) return true;
+    if (this.mode === 'crew') return true; // Operation Red Star: no abilities, weapons, view toggles or chooser
     if (c === B.exit) { this.ui.deployed = false; this.exit(); return true; }
     if (c === B.walk && this.mode === 'ship') { this.toggleAboard(); return true; }
     if (c === 'KeyU' && this.e && this.e.d.carry) { this.ui.g.issue({c: 'unload', b: this.id}); this.msg('Unloading troops', 1.2); return true; }
@@ -10503,7 +10511,15 @@ const Direct = {
   },
 
   // ---------- heads-up display on the 2D overlay ----------
+  drawCrewHud(c, w, h) { // Operation Red Star: no health, ammo, abilities, radar, key hints or crosshair ring
+    const A = this.aboard, I = this.interior(); c.save(); c.textAlign = 'center'; c.fillStyle = '#fff'; c.shadowColor = '#000'; c.shadowBlur = 4;
+    c.font = '800 16px system-ui'; c.fillText(I.roomAt(A.x, A.z), w / 2, 62);
+    for (const tg of this.crewTags || []) { c.font = '700 14px system-ui'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.75)'; c.strokeText(tg.n, (tg.x * .5 + .5) * w, (.5 - tg.y * .5) * h); c.fillText(tg.n, (tg.x * .5 + .5) * w, (.5 - tg.y * .5) * h); }
+    if (this.look !== 'locked' && this.look !== 'touch') { c.font = '600 13px system-ui'; c.fillStyle = 'rgba(255,255,255,.75)'; c.fillText(this.look === 'free' ? 'Cursor free: press Alt or click to look again' : 'Click to lock the mouse for looking', w / 2, h - 90); }
+    c.fillStyle = 'rgba(255,255,255,.8)'; c.fillRect(w / 2 - 1.5, h / 2 - 1.5, 3, 3); c.restore();
+  },
   drawHud(c, w, h) {
+    if (this.mode === 'crew') { this.drawCrewHud(c, w, h); return; }
     const cx = w / 2, cy = h / 2, W = this.W[this.slot] && this.W[this.slot].w, S = this.W[this.slot], g = this.ui.g, dt = 1 / 60;
     c.save();
     const fp = this.firstPerson();
@@ -11325,6 +11341,26 @@ const Interior = {
       crew: [[-.6, -.8, 0], [2.4, .7, 3.14], [-4.4, -1, 1.57]]};
   },
   get(k, nat) { const key = k + '|' + nat; return this.cache[key] || (this.cache[key] = this.build(k, nat)); },
+  // Standard (physically lit) material with procedural panel seams, rivets and grime from the shape's own position, so no texture files are needed
+  metalMat() {
+    const m = new THREE.MeshStandardMaterial({vertexColors: true, roughness: .62, metalness: .22});
+    m.onBeforeCompile = sh => {
+      sh.vertexShader = 'varying vec3 vOP; varying vec3 vON;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vOP = position; vON = normal;');
+      sh.fragmentShader = 'varying vec3 vOP; varying vec3 vON;\n' +
+        'float hsh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\n' +
+        'float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(hsh(i), hsh(i + vec2(1., 0.)), f.x), mix(hsh(i + vec2(0., 1.)), hsh(i + vec2(1., 1.)), f.x), f.y); }\n' +
+        sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n' +
+          ' vec3 an = abs(normalize(vON)); vec2 uv = an.x > an.y && an.x > an.z ? vOP.zy : (an.y > an.z ? vOP.xz : vOP.xy);\n' +
+          ' vec2 gg = uv / vec2(.75, .5); vec2 ff = fract(gg); vec2 dd = min(ff, 1. - ff) * vec2(.75, .5); float sd = min(dd.x, dd.y);\n' +
+          ' float seam = 1. - smoothstep(.0, .012, sd); float near = 1. - smoothstep(.02, .035, sd); vec2 rc = fract(uv / .125) - .5; float riv = (1. - smoothstep(.08, .14, length(rc))) * near;\n' +
+          ' float gr = vn(uv * 3.) * .6 + vn(uv * 11.) * .4; float mxc = max(max(diffuseColor.r, diffuseColor.g), diffuseColor.b), mnc = min(min(diffuseColor.r, diffuseColor.g), diffuseColor.b);\n' +
+          ' bool glow = mxc > .78 && (mxc - mnc > .45 || mnc > .8);\n' +
+          ' if (!glow) { diffuseColor.rgb *= mix(.7, 1.06, gr) * (1. - seam * .5); diffuseColor.rgb += riv * .07; }\n') +
+        '';
+      sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n { float mx2 = max(max(vColor.r, vColor.g), vColor.b), mn2 = min(min(vColor.r, vColor.g), vColor.b); if (mx2 > .78 && (mx2 - mn2 > .45 || mn2 > .8)) totalEmissiveRadiance += vColor.rgb * .95; }');
+    };
+    return m;
+  },
   furnishRedStar(b, P, H, screen) {
     const ST = 0x3a3f44, DK = 0x1c1f22, MT = 0x9aa3a8, OL = 0x56604a, BR = 0xb08a3a, RD = 0xc23030, AM = 0xffb040, GL = 0x7fd8ff, PAD = 0x4a3a2c, SK = 0x8b9482, GRN = 0x46ff9a, CY = 0x5ad0ff, SEAT = 0x7a2020;
     const sec = [[8, 15.5, 1.7], [4, 8, 1.6], [-2, 4, 1.6], [-9, -2, 1.3], [-13, -9, .6], [-16, -13, .9]];
@@ -11333,6 +11369,7 @@ const Interior = {
       for (let x = x0 + .75; x < x1; x += 1.5) { b.box(.05, .07, w * 2, x, H - .03, 0, DK); b.box(.05, H, .05, x, H / 2, w - .03, DK); b.box(.05, H, .05, x, H / 2, -w + .03, DK); }
       for (const z of [-w * .5, w * .5]) b.box(x1 - x0 - .2, .012, .03, (x0 + x1) / 2, .006, z, DK);
     }
+    for (let x = -13; x <= 14; x += 3.4) b.box(.5, .02, .12, x, H - .045, 0, 0xfff6dc); // ceiling lamps
     // flag and star on the flight-deck bulkhead
     b.box(.02, .4, .6, 8.06, .75, -1.2, RD); b.add(GEO.sph, 0xe8c040, 8.08, .78, -1.2, .04, .04, .02);
     // ---- flight deck: pilot (the chair), co-pilot, throttles, instrument panel, overhead switches, navigator table, bomb sight
@@ -11491,7 +11528,8 @@ const Interior = {
       if (k === 'nukesub') [-10.2, -9, -7.8].forEach(x => [-1, 1].forEach(s => { b.cyl(.2, H, x, H / 2, s * .75, 0xc8ccd0); b.box(.42, .02, .42, x, 1.02, s * .75, 0xc23030); }));
     }
     const geo = b.geo(), scene = new THREE.Scene();
-    scene.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({vertexColors: true})));
+    scene.add(new THREE.Mesh(geo, rs ? this.metalMat() : new THREE.MeshLambertMaterial({vertexColors: true})));
+    if (rs) scene.fog = new THREE.FogExp2(0x1f231c, .045); // dusty, dim air
     scene.add(new THREE.HemisphereLight(rs ? 0xffe2c0 : sub ? 0xffd9c8 : 0xffffff, 0x50504a, (rs ? .6 : sub ? .85 : 1) * Math.PI));
     if (rs) [[11, 1, 0, 0xcfe6ff, 5], [6, 1, 0, 0xffc890, 5], [1, 1, 0, 0xffb070, 6], [-6, 1, 0, 0xff6040, 6], [-14, 1, 0, 0xffc890, 4]].forEach(([x, y, z, c, i]) => { const pl = new THREE.PointLight(c, i, 9, 1.6); pl.position.set(x, y, z); scene.add(pl); }); // dim, warm, tense
     const li = new THREE.DirectionalLight(sub ? 0xffb090 : 0xffffff, .55 * Math.PI); li.position.set(.4, 1, .3); scene.add(li);
@@ -11804,14 +11842,17 @@ const UI = {
       if (hide || c.id === 'enemyRow' || (c.tagName === 'P' && /Pick each enemy/.test(c.textContent))) c.style.display = tr ? 'none' : '';
     }
     side.querySelector('h3').textContent = tr ? 'Players in this room' : 'Your enemies';
+    $('rsOpts').style.display = this.redstar && this.net !== 'client' ? '' : 'none';
     if (tr) $('lTitle').textContent = 'Test room';
   },
+  rsOpts() { return this.redstar ? {fly: $('rsFly').value, fail: $('rsFail').value, cut: $('rsCut').value, end: $('rsEnd').value, diff: $('rsDiff').value} : null; },
   openLobby(type) {
     this.renderNations();
     $('menu').classList.add('hidden'); $('lobby').classList.remove('hidden');
     this.redstar = type === 'redstar'; this.testRoom = type === 'test' || this.redstar; if (this.testRoom) type = 'host';
     this.lobby = {slots: [{kind: 'human', name: Profile.name() || 'Host', nation: 3, team: 0, id: 'host'}, {kind: 'bot', level: 'normal', nation: 4, team: 1}]};
     if (this.testRoom) { this.lobby.test = 1; this.lobby.slots.pop(); $('optAll').checked = true; $('optTut').checked = false; } // test room: no bots, every unit free
+    if (this.redstar) try { const sv = JSON.parse(localStorage.getItem('jjf_rs') || '{}'); for (const k of ['Fly', 'Fail', 'Cut', 'End', 'Diff']) if (sv[k.toLowerCase()]) $('rs' + k).value = sv[k.toLowerCase()]; } catch (e) {}
     this.mySlot = 0;
     $('addBot').classList.remove('hidden'); $('bStart').classList.remove('hidden');
     if (type === 'host') {
@@ -12042,7 +12083,7 @@ const UI = {
       this.lobby = m.lobby; this.mySlot = m.you; this.lobbyView(!!m.lobby.test); this.drawLobby();
       if (!this._nameSent && this.link && this.link.send) { this._nameSent = 1; const un = Profile.ask(); if (un) this.link.send({lobbySet: {name: un}}); }
     } else if (m.start) {
-      this.launch({mode: 'client', size: m.start.size, seed: m.start.seed, players: m.start.players, me: m.start.you, link: this.link, tut: false, sandbox: !!m.start.sandbox, redstar: !!m.start.redstar});
+      this.launch({mode: 'client', size: m.start.size, seed: m.start.seed, players: m.start.players, me: m.start.you, link: this.link, tut: false, sandbox: !!m.start.sandbox, redstar: !!m.start.redstar, rso: m.start.rso});
     } else if (m.g && this.g && this.g.mode === 'client') this.g.onSnap(m.g);
   },
   startGame() {
@@ -12055,10 +12096,10 @@ const UI = {
     const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked, eco: s.kind === 'bot' ? null : $('optEco').value}));
     this.playersIds = L.slots.map(s => s.id || null);
     if (sb) for (const p of players) { p.team = 0; p.open = true; }
-    if (this.redstar) for (const p of players) p.nation = players[0].nation; // one crew, one nation
+    if (this.redstar) { for (const p of players) p.nation = players[0].nation; try { localStorage.setItem('jjf_rs', JSON.stringify(this.rsOpts())); } catch (e) {} } // one crew, one nation; remember the mission settings
     if (this.link && this.link.setMeta) this.link.setMeta({open: false});
-    if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id), sandbox: sb && !this.redstar ? 1 : 0, redstar: this.redstar ? 1 : 0}});
-    this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, sandbox: sb && !this.redstar, redstar: !!this.redstar, tut: !sb && $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick, xav: $('optXav').checked && this.net !== 'host', peace: !$('optRaid').checked && this.net !== 'host' && !this.quick});
+    if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id), sandbox: sb && !this.redstar ? 1 : 0, redstar: this.redstar ? 1 : 0, rso: this.rsOpts()}});
+    this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, sandbox: sb && !this.redstar, redstar: !!this.redstar, rso: this.rsOpts(), tut: !sb && $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick, xav: $('optXav').checked && this.net !== 'host', peace: !$('optRaid').checked && this.net !== 'host' && !this.quick});
   },
   setSpeed(v) { // time control: host-side only, so a friend's game stays in sync with the host's clock
     if (!this.g || this.g.mode === 'client') { this.addAlert('Only the host can change game speed', 'bad'); return; }
@@ -12219,7 +12260,8 @@ const UI = {
     if (this.quick) { this.quick = false; setTimeout(() => { this.deployed = true; this.openDeploy(); }, 300); }
     window.__ws = this;
     if (o.redstar) { // Operation Red Star: everyone starts inside the bomber
-      this.addAlert('Operation Red Star: walk the aircraft with WASD and mouse. The rest of the crew is in here with you.', 'gold');
+      this.addAlert('Operation Red Star: walk the aircraft with WASD and mouse. The rest of the crew is in here with you.', 'rs');
+      if (o.rso) { const N = {heavy: 'heavy flying', hard: 'demanding flying', retry: 'retry a phase once', one: 'one life', check: 'unlimited checkpoints', bomb: "bomb's-eye cutscene", bomber: 'cutscene from the bomber', both: 'full cutscene', flash: 'ends on the flash', escape: 'escape flight home', train: 'Training', std: 'Standard', brutal: 'Brutal'}; this.addAlert('Mission: ' + [o.rso.diff, o.rso.fly, o.rso.fail, o.rso.cut, o.rso.end].map(k => N[k] || k).join(' · '), 'rs'); }
       let tries = 0; const go = () => { const g = this.g; if (!g || g !== this.g) return; const b = [...g.view.ents.values()].find(e => e.k === 'bomber'); if (b && !Direct.on) { Direct.enter(this, b); return; } if (!b && ++tries < 40) setTimeout(go, 250); }; setTimeout(go, 400);
     } else if (o.sandbox) { // test room: drop straight into first person as your soldier
       this.addAlert('Test room: walk around with WASD and mouse. Your friends are in here too.', 'gold');
@@ -12316,7 +12358,8 @@ const UI = {
 
   // ---------- events ----------
   addAlert(text, kind, x, y) {
-    const d = document.createElement('div'); d.className = 'al ' + (kind || ''); d.textContent = text;
+    if (this.g && this.g.redstar && kind !== 'rs') return; // Operation Red Star: only mission messages, no battle popups
+    const d = document.createElement('div'); d.className = 'al ' + (kind === 'rs' ? 'gold' : kind || ''); d.textContent = text;
     if (x !== undefined && kind === 'bad') { d.textContent += '  · click or Space: go there'; d.style.cursor = 'pointer'; d.style.pointerEvents = 'auto'; d.onclick = () => { if (Direct.on) Direct.exit(); this.jump(x, y); }; }
     $('alerts').appendChild(d);
     if ($('alerts').children.length > 6) $('alerts').firstChild.remove();
@@ -13414,10 +13457,10 @@ const UI = {
       ship: `${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} steer · mouse aims · ${K('fire')} fire${w2 ? ' · ' + K('alt') + ' ' + w2 : ''} · ${K('walk')} leave the chair and walk`,
       plane: `mouse or arrows steer · ${K('fwd')}${K('back')} throttle · ${K('left')}${K('right')} roll · ${K('fire')} guns · ${K('alt')} ${w2} · ${D.W[2] ? K('reload') + ' ' + D.W[2].w.n + ' · ' : ''}${D.W[3] ? K('w4') + ' ' + D.W[3].w.n + ' · ' : ''}${K('chaff')} chaff · ${K('cycle')} next target · ${K('vlock')} lock view · ${K('spot')} spot${D.W.some(s => s.w.t === 'bomb') ? ' · ' + K('ads') + ' bombsight' : ''} · on the ground: W throttle, look up to take off`,
       heli: `${K('fwd')}${K('left')}${K('back')}${K('right')} fly · ${K('up')} up · ${K('down')} down · mouse aims · ${K('fire')} guns · ${K('alt')} ${w2}`,
-      crew: `${K('fwd')}${K('left')}${K('back')}${K('right')} walk the aircraft · mouse looks · crew stations are coming next`,
+      crew: `${K('fwd')}${K('left')}${K('back')}${K('right')} walk the aircraft · mouse looks`,
       fpv: `mouse steers · ${K('fwd')} boost · ${K('back')} brake · ${K('up')}${K('down')} climb/sink · dive into the target · ${K('fire')} detonate`,
     };
-    $('dhelp').innerHTML = help[D.mode] + ` · ${K('view')} view · <b>Alt</b> free cursor · ${K('chooser')} chooser · ${K('exit')} command`;
+    $('dhelp').innerHTML = D.mode === 'crew' ? help.crew + ' · <b>Alt</b> free cursor' : help[D.mode] + ` · ${K('view')} view · <b>Alt</b> free cursor · ${K('chooser')} chooser · ${K('exit')} command`;
     $('dinfo').classList.add('hidden');
     $('dhelp').classList.remove('mini'); clearTimeout(this.helpT);
     this.helpT = setTimeout(() => $('dhelp').classList.add('mini'), 14000);
@@ -13439,7 +13482,7 @@ const UI = {
       $('fpvOsd').classList.toggle('jam', jam);
       $('fpvTxt').textContent = `${e.d.n.toUpperCase()}\nALT ${Math.max(0, D.pose.z - Math.max(g, 0)).toFixed(1)}m  SPD ${(D.speed * 6).toFixed(0)}km/h\nBATT ${bat}%  LINK ${jam ? 'JAMMED' : 'OK'}\nWARHEAD ARMED`;
       if (D.batt <= 0) { this.g.issue({c: 'pfire', id: D.id, w: 'det', yaw: 0, pitch: 0}); }
-    } else {
+    } else if (D.mode !== 'crew') {
       $('dinfo').innerHTML = `<b>${e.d.n}${e.hero ? ' "' + e.hero + '"' : ''}</b><div class="hpbar"><i style="width:${e.hp / e.hpm * 100}%"></i></div>Kills ${e.kills || 0}` + (D.mode === 'plane' ? ` · Speed ${(D.speed * 40) | 0}` : '') + (e.d.nukeT ? ` · ICBM ${e.nukeReady ? 'READY (right click)' : Math.ceil(e.nukeCD || 0) + 's'}` : '');
     }
   },
@@ -13448,7 +13491,7 @@ const UI = {
   frame(now) {
     requestAnimationFrame(t => this.frame(t));
     { // the Charlies are red-green colourblind: the whole screen is shown the way they see it
-      const g = this.g, q = g && !this.demo && g.view && g.view.players[g.me], on = !!(q && q.nat.key === 'charlies');
+      const g = this.g, q = g && !this.demo && g.view && g.view.players[g.me], on = !!(q && q.nat.key === 'charlies' && !g.redstar);
       if (on !== !!this.cbOn) { this.cbOn = on; document.body.classList.toggle('cbDeut', on); } if (this.R) this.R.cb = on;
     }
     this.harborNear();
