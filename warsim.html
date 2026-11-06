@@ -2221,6 +2221,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'cancel': { const b = this.ents.get(c.b); if (b && b.o === pi && b.q[c.i]) this.cancelQ(b, p, c.i); break; }
     case 'rally': { const b = this.ents.get(c.b); if (b && b.o === pi) b.rally = {x: c.x, y: c.y}; break; }
     case 'jump': { const u = this.ents.get(c.id); if (!u || u.o !== pi || !u.inside) break; const T = this.ents.get(u.inside); if (!T || !T.air) break; T.cargo = (T.cargo || []).filter(i => i !== u.id); u.inside = 0; u.x = T.x; u.y = T.y; u.z = T.z - .6; u.chute = 0; break; }
+    case 'steal': this.spySteal(c, pi); break;
     case 'answer': { const e = this.ents.get(c.id); if (e && e.o === pi && e.inter) this.answerSpy(e, !!c.ok); break; }
     case 'autotrain': { const b = this.ents.get(c.b); if (b && b.o === pi && b.d.trains) { b.auto = !!c.on; if (c.u && b.d.trains.includes(c.u)) b.autoK = c.u; } break; }
     case 'research': { const b = this.ents.get(c.b); if (b && b.o === pi && b.d.research) this.cmdResearch(b, p, c.u); break; }
@@ -2644,6 +2645,7 @@ Sim.prototype.hurt = function (t, dmg, by) {
 };
 
 Sim.prototype.kill = function (t, by) {
+  if (t.b) for (const q of this.players) if (q.spyMap && q.spyMap[t.id]) delete q.spyMap[t.id];
   if (this.scen && this.scen.arc && (!t.b || t.base) && t.hp > -1e8) this.arcLoss(t, by);
   t.hp = 0;
   const p = this.players[t.o];
@@ -4134,16 +4136,16 @@ const SPY_WORDS = ['Pineapple', 'Thunderbird', 'Marmalade', 'Bluebell', 'Cobra',
 // Each nation's guards question in their own way: a character, a greeting, and questions about their own culture
 const SPY_GUARDS = {
   licases: {who: 'Corporal Spokes', hi: "Oi, hold up. Haven't seen you on the morning ride.", ok: 'Alright. Pedal on.', no: 'Not one of us! SPY!',
-    q: [['What do we ride into battle?', 'Road bikes', ['Horses', 'Scooters', 'Skateboards', 'Unicycles']], ['How many wheels on a proper war bike?', 'Two', ['Three', 'Four', 'One']], ['What colour is our camo?', 'Green', ['Desert tan', 'Navy blue', 'Orange']]]},
+    q: [['What do we ride into battle?', 'Road bikes', ['Horses', 'Scooters', 'Skateboards', 'Unicycles']], ['How many wheels on a proper war bike?', 'Two', ['Three', 'Four', 'One']]]},
   dhruvs: {who: 'Analyst Rao', hi: 'Halt. Your face does not match our records. Verify.', ok: 'Probability you are a spy: low. Proceed.', no: 'As calculated. A spy.',
     q: [() => { const a = 6 + Math.floor(Math.random() * 7), b = 6 + Math.floor(Math.random() * 7), r = a * b; return ['Quick: what is ' + a + ' times ' + b + '?', '' + r, ['' + (r + a), '' + (r - b), '' + (r + 2), '' + (r - 1)]]; },
         () => { const a = 13 + Math.floor(Math.random() * 20), b = 14 + Math.floor(Math.random() * 30), r = a + b; return ['Fast: ' + a + ' plus ' + b + '?', '' + r, ['' + (r + 10), '' + (r - 1), '' + (r + 1), '' + (r - 10)]]; }]},
   valentinos: {who: 'Sergente Rossi', hi: 'Ehi! Who are you? I never saw you at dinner.', ok: 'Bene, bene. Go, eat something.', no: 'Mamma mia... a SPY!',
-    q: [['What goes in a real carbonara?', 'Guanciale, egg and pecorino', ['Cream and ham', 'Ketchup and cheddar', 'Peas and bacon']], ['Where do we eat before a battle?', 'The Trattoria', ['The Mess Hall', 'The Canteen', 'The Drive-thru']], ['Pineapple on pizza?', 'Never', ['Always', 'Only on Sundays', 'With extra cheese']]]},
+    q: [['What goes in a real carbonara?', 'Guanciale, egg and pecorino', ['Cream and ham', 'Ketchup and cheddar', 'Peas and bacon']], ['Pineapple on pizza?', 'Never', ['Always', 'Only on Sundays', 'With extra cheese']]]},
   jethroes: {who: 'Sgt. Buck', hi: 'Hold it right there, partner.', ok: 'Alright, move along.', no: 'We got ourselves a SPY! Awooo!',
     q: [['What do we turn into when it counts?', 'Alpha wolves', ['Grizzly bears', 'Eagles', 'Bats']], ['What do we do at the moon?', 'Howl', ['Salute', 'Sing', 'Wave']]]},
   toms: {who: "Big Tom's bodyguard", hi: "Oi. Take off those shades... no, wait, put 'em back on. Who are you?", ok: 'Nice shades. Carry on.', no: 'Shame about your cover. SPY!',
-    q: [['What does every Tom wear, day and night?', 'Sunnies', ['Glasses', 'A top hat', 'A scarf']], ['What is the size of a Tom\'s arms?', 'Huge', ['Average', 'Small', 'Noodly']], ['Where do Toms like to fight?', 'The desert', ['The snow', 'The jungle', 'Underwater']]]},
+    q: [['What does every Tom wear, day and night?', 'Sunnies', ['Glasses', 'A top hat', 'A scarf']], ['What is the size of a Tom\'s arms?', 'Huge', ['Average', 'Small', 'Noodly']]]},
   charlies: {who: 'Engineer Byte', hi: 'Scanning... identity unconfirmed. Answer the challenge.', ok: 'Identity confirmed. Proceed.', no: 'Intruder detected. SPY.',
     q: [['What colour is our flag?', "We can't tell, we're colourblind", ['Red and green', 'Blue', 'Gold']], ['Why do we not fly our own jets?', 'No pilot licence', ['Afraid of heights', 'Too expensive', 'Planes are boring']]]},
 };
@@ -4176,7 +4178,7 @@ Sim.prototype.stepSpy = function (e) {
   for (const t of this.ents.values()) {
     if (t.o !== foe) continue;
     const dd = Math.hypot(t.x - e.x, t.y - e.y);
-    if (dd < R) t.revealed = Math.max(t.revealed || 0, this.t + 1.6);
+    if (dd < R) { t.revealed = Math.max(t.revealed || 0, this.t + 1.6); if (t.b) (p.spyMap = p.spyMap || {})[t.id] = {k: t.k, x: Math.round(t.x), y: Math.round(t.y), o: foe, s: t.d.s, t: Math.round(this.t)}; } // mapped for later
     if (t.b && dd < 24) base = true;
     if (!t.b && t.d.cat === 'inf' && !t.pilot && dd < 4.5 && (!near || dd < near.dd)) near = {t, dd};
   }
@@ -4196,6 +4198,32 @@ Sim.prototype.stepSpy = function (e) {
     e.susp = (e.susp || 0) + 1; e.interCd = this.t + Math.max(25, 70 - e.susp * 15); // every questioning makes them more suspicious
     if (e.pilot) { const g = near.t; this.clearOrders(g); g.h = Math.atan2(e.y - g.y, e.x - g.x); g.guardT = this.t + 30; e.inter = {by: g.id, t: this.t}; this.ev({k: 'interrogate', id: e.id, by: g.id, p: e.o, foe, n: e.susp >= 2 ? 2 : 1}); }
     else if (this.rnd() < .45) { e.inter = {by: near.t.id, t: this.t}; this.answerSpy(e, false); }
+  }
+};
+// A disguised spy (played in person) can lift steel and fuel from an enemy building, drive off in a parked vehicle, or take a plane from their airfield.
+Sim.prototype.spySteal = function (c, pi) {
+  const a = this.ents.get(c.id), t = this.ents.get(c.t);
+  if (!a || a.o !== pi || !a.d.spy || a.disg === null || a.disg === undefined || a.inter || a.exec || !t || t.o !== a.disg || t.hp <= 0) return;
+  if ((a.stealT || 0) > this.t) { this.notify(pi, 'Lie low for ' + Math.ceil(a.stealT - this.t) + 's before stealing again', 'bad'); return; }
+  const dd = Math.hypot(t.x - a.x, t.y - a.y), q = this.players[t.o], me = this.players[pi];
+  const caught = () => { if (this.rnd() < .25) { a.susp = (a.susp || 0) + 1; a.interCd = Math.min(a.interCd || 0, this.t + 4); a.spyT = this.t - 12; this.notify(t.o, 'Something was stolen from the ' + t.d.n + '! There may be a spy about', 'bad', t.x, t.y); } };
+  if (t.b && t.k === 'airfield' && dd < t.d.s / 2 + 4) { // take a plane off their flight line
+    if (me.nat.key === 'charlies') { this.notify(pi, 'Charlies cannot fly planes. Steal a ground vehicle instead', 'bad'); return; }
+    const k = ['f16', 'fighter', 'typhoon'].find(u => UNITS[u]) || 'fighter', ang = this.rnd() * 6.28;
+    const e = this.addUnit(k, pi, clamp(t.x + Math.cos(ang) * 3, 2, this.N - 3), clamp(t.y + Math.sin(ang) * 3, 2, this.N - 3)); e.h = ang; e.z = hAt(this.M, e.x, e.y) + .3; e.sp = e.d.spd * .6;
+    this.ents.delete(a.id); me.pop -= a.d.pop;
+    this.ev({k: 'stolen', p: pi, id: e.id, kind: 'plane', n: e.d.n}); this.notify(t.o, 'An enemy spy stole a ' + e.d.n + ' from our airfield!', 'bad', t.x, t.y); return;
+  }
+  if (t.b && dd < t.d.s / 2 + 3.5) { // the cash box: steel and fuel
+    const st = Math.min(t.k === 'hq' ? 400 : 220, Math.floor(q.steel * .2)), fu = Math.min(t.k === 'hq' ? 100 : 50, Math.floor(q.fuel * .15));
+    q.steel -= st; q.fuel -= fu; me.steel += st; me.fuel += fu; a.stealT = this.t + 40; caught();
+    this.notify(pi, st || fu ? `Stole ${st} steel and ${fu} fuel from their ${t.d.n}` : 'Their coffers were empty', st || fu ? 'gold' : 'bad', t.x, t.y); this.ev({k: 'stolen', p: pi, kind: 'cash', st, fu}); return;
+  }
+  if (!t.b && !t.pilot && !t.inside && (t.d.cat === 'veh' || ((t.d.cat === 'air' || t.d.cat === 'heli') && (t.z || 0) - Math.max(0, hAt(this.M, t.x, t.y)) < 1.5)) && dd < 4.5) { // hot-wire a parked vehicle
+    if (me.nat.key === 'charlies' && t.d.cat !== 'veh') { this.notify(pi, 'Charlies cannot fly planes', 'bad'); return; }
+    q.pop -= t.d.pop; me.pop += t.d.pop; t.o = pi; this.clearOrders(t); t.tid = 0; t.force = 0; t.goal = null;
+    this.ents.delete(a.id); me.pop -= a.d.pop;
+    this.ev({k: 'convert', id: t.id, o: pi}); this.ev({k: 'stolen', p: pi, id: t.id, kind: 'veh', n: t.d.n}); this.notify(q.i, 'An enemy spy stole one of our ' + t.d.n + 's!', 'bad', t.x, t.y);
   }
 };
 Sim.prototype.answerSpy = function (e, ok) {
@@ -4900,7 +4928,7 @@ function encodeSnap(sim, sendSlow) {
   }
   const msg = {snap: 1, t: sim.t, buf: out.buffer, meta};
   if (sendSlow) {
-    msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, techAll: p.techAll || 0, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, autoRecon: p.autoRecon, autoEco: p.autoEco, autoHouse: p.autoHouse, ecoK: p.ecoK}));
+    msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, techAll: p.techAll || 0, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, spyMap: p.spyMap, autoRecon: p.autoRecon, autoEco: p.autoEco, autoHouse: p.autoHouse, ecoK: p.ecoK}));
     msg.bs = [];
     for (const e of sim.ents.values()) if (e.b) msg.bs.push({id: e.id, bp: e.bp, q: e.q, prog: e.prog, rally: e.rally, au: e.auto ? 1 : 0, ak: e.autoK || null, cdn: e.nukeCD, g: e.garrison ? e.garrison.length : 0, hd: e.hard || 0});
     msg.nodes = sim.M.nodes.map(n => [n.amt | 0, n.taken || 0]);
@@ -8571,7 +8599,7 @@ const Direct = {
     this.vcurOff();
     this.pullUp = false; this.warnT = 0; if (window.Tension) window.Tension.clear();
     if (!this.on) return;
-    this.jump = null; this.endCut(); this.spyNat = undefined; if (this.ui && this.ui.spyCard) this.ui.spyCard(null); this.on = false; this.aboard = null; this.knifeEnd = 0; this.savedW = null; VM.knife = false; this.shovel = false; VM.shovel = false;
+    this.jump = null; this.endCut(); this.endHeist(); this.heistT = null; this.spyNat = undefined; if (this.ui && this.ui.spyCard) this.ui.spyCard(null); this.on = false; this.aboard = null; this.knifeEnd = 0; this.savedW = null; VM.knife = false; this.shovel = false; VM.shovel = false;
     const ui = this.ui, R = ui.g.R, e = ui.g.view.ents.get(this.id);
     if (e) ui.g.issue({c: 'pilot', ids: [this.id], on: 0});
     R.fpId = 0; R.fpPose = null; R.hideId = 0; R.post = null;
@@ -8804,7 +8832,48 @@ const Direct = {
     this.cut = null; this.cutCam = null;
     if (this.ui && this.ui.g) { this.ui.g.R.hideId = this.cutHide || 0; this.ui.cutShow(null); this.applyView && this.applyView(); }
   },
+  // ---------- spy heists: steal steel, a parked vehicle or a plane, with a short cutscene ----------
+  spyTarget(e, g) {
+    const now = performance.now(); if (now < (this.stT || 0)) return; this.stT = now + 250;
+    const dg = e.disg; this.heistT = null; if (dg === undefined || dg === null) return;
+    let best = null, bp = -1;
+    for (const t of g.view.ents.values()) {
+      if (t.o !== dg || t.hp <= 0 || t.inside) continue;
+      const d = Math.hypot(t.x - e.x, t.y - e.y);
+      if (t.b) { if (d > t.d.s / 2 + (t.k === 'airfield' ? 4 : 3.5)) continue; const pr = t.k === 'airfield' ? 3 : 1; if (pr > bp) { bp = pr; best = {t, kind: t.k === 'airfield' ? 'plane' : 'cash'}; } }
+      else if (!t.pilot && d < 4.5 && (t.d.cat === 'veh' || ((t.d.cat === 'air' || t.d.cat === 'heli') && (t.z || 0) - Math.max(0, hAt(g.view.M, t.x, t.y)) < 1.5))) { if (2 > bp) { bp = 2; best = {t, kind: 'veh'}; } }
+    }
+    this.heistT = best;
+    if (best && (!this.stMsg || performance.now() - this.stMsg > 2500)) { this.stMsg = performance.now(); const K = Settings.keyName(Settings.binds.special);
+      this.msg(best.kind === 'plane' ? K + ': steal a plane from their Airfield' : best.kind === 'veh' ? K + ': steal their ' + best.t.d.n : K + ': steal steel and fuel from the ' + best.t.d.n, 2.2); }
+  },
+  startHeist() {
+    const H = this.heistT, g = this.ui.g; if (!H) return false;
+    const L = {cash: ['You slip into the ' + H.t.d.n + '...', 'Quietly, you crack the cash box...', "Pockets full. Walk, don't run."],
+      veh: ['You stroll up to the ' + H.t.d.n + ' like you own it...', 'Hot-wiring it...', 'Floor it!'],
+      plane: ['You walk out onto their flight line...', 'Pulling the chocks, climbing into the cockpit...', 'Throttle up!']}[H.kind];
+    this.heist = {t: 0, kind: H.kind, tid: H.t.id, tx: H.t.x, ty: H.t.y, L, li: -1, sent: false, at: performance.now()};
+    this.keys = {}; this.mouseDown = false; this.ads = false; this.heistHide = g.R.hideId; g.R.hideId = 0;
+    if (document.pointerLockElement) document.exitPointerLock();
+    return true;
+  },
+  heistStep(dt, g, e) {
+    const H = this.heist, R = g.R, cam = R.cam, p = this.pose, v = g.view; H.t = (performance.now() - H.at) / 1000; // wall-clock, so it plays the same at any frame rate
+    const li = Math.min(2, Math.floor(H.t / .9)); if (li !== H.li) { H.li = li; this.ui.cutShow({phase: 'heist'}); this.ui.cutLine(H.L[li]); }
+    if (!H.sent && H.t > 1.4) { H.sent = true; g.issue({c: 'steal', id: this.id, t: H.tid}); }
+    const a = Math.atan2(H.ty - p.y, H.tx - p.x) + 2.2 + H.t * .35, r = 5.5, sz = p.z || hAt(v.M, p.x, p.y);
+    const cx = p.x + Math.cos(a) * r, cy = p.y + Math.sin(a) * r, cz = Math.max(sz + 2.2, hAt(v.M, cx, cy) + .5);
+    cam.position.set(cx, cz, cy); cam.up.set(0, 1, 0); cam.lookAt((p.x + H.tx) / 2, sz + .8, (p.y + H.ty) / 2); cam.fov = 50; cam.updateProjectionMatrix();
+    if (H.t > 2.8 && H.kind === 'cash') this.endHeist('Got away with it. Click to aim again');
+    else if (H.t > 5) this.endHeist('It did not work out. Click to aim again');
+  },
+  endHeist(m) {
+    if (!this.heist) return; this.heist = null;
+    if (this.ui && this.ui.g) { this.ui.g.R.hideId = this.heistHide || 0; this.ui.cutShow(null); this.applyView && this.applyView(); }
+    if (m) this.msg(m, 2.2);
+  },
   special() {
+    if (this.e && this.e.d.spy && !this.cut && !this.heist && this.heistT) { this.startHeist(); return; }
     const g = this.ui.g, p = g.view.players[g.me], S = PSPECIAL[p.nat.key];
     if (!S) return;
     if ((p.specT || 0) > g.view.t) { this.msg(S.n + ' ready in ' + Math.ceil(p.specT - g.view.t) + 's', 1); Sfx.bad(); return; }
@@ -8847,6 +8916,7 @@ const Direct = {
   update(dt, g) {
     if (this.mode === 'fpv') this.fpvT = performance.now();
     const e = g.view.ents.get(this.id);
+    if (!e && this.heist) { if (performance.now() - this.heist.at < 4000) return; this.heist = null; this.ui.cutShow(null); } // the spy climbed in: the new ride is on its way
     if (!e && this.cut) { // linger on the scene for a moment before cutting back
       const c = this.cut; if (!c.deadT) { c.deadT = performance.now(); this.ui.cutLine(c.wrong ? 'EXECUTED AS A SPY' : 'KILLED'); }
       if (performance.now() - c.deadT < 3000) return;
@@ -8855,8 +8925,9 @@ const Direct = {
     if (window.Tension) window.Tension.tick(this, e, dt);
     if (e.k !== this.e.k) { this.W = pwpnOf(e).map(w => ({w, ammo: w.mag || 1, rl: 0, cd: 0})); this.slot = 0; VM.build(e, g.view.players[e.o].nation, 0); this.msg(e.k === 'wolf' ? 'ALPHA WOLF! ' + Settings.keyName(Settings.binds.fire) + ' bites, ' + Settings.keyName(Settings.binds.alt) + ' pounces' : 'Back to blob form', 2); }
     this.e = e; this.g = g;
-    if (e.d.spy) this.spyHud(e, g);
+    if (e.d.spy) { this.spyHud(e, g); if (!this.cut && !this.heist) this.spyTarget(e, g); }
     if (this.cut) { this.cutStep(dt, g, e); return; }
+    if (this.heist) { this.heistStep(dt, g, e); return; }
     { const S = g.sim && g.sim.scen; if (S && S.arc === 'ground' && this.mode === 'vehicle') { // arcade tanks: artillery support on a cooldown, field repair when you stop
       if (!this.strikeBank && performance.now() > (this.artT || 0)) { this.strikeBank = 1; this.msg('ARTILLERY READY: aim at the ground and press J', 3); }
       if (e.repairing && g.view.t - e.repairing < 1 && e.hp < e.hpm) { this.repT = (this.repT || 0) - dt; if (this.repT <= 0) { this.repT = .8; this.msg('REPAIRING ' + Math.round(e.hp / e.hpm * 100) + '%  (stay still)', .9); } }
@@ -11065,6 +11136,10 @@ const UI = {
       case 'deployed': if (ev.p === me) { const u = v.ents.get(ev.id); if (u && this.deployMode === 'army') { this.addAlert(u.d.n + ' deployed', 'good'); if (!$('deploy').classList.contains('hidden')) this.openDeploy(); } else if (u) { this.deployed = true; this.flown = true; this.closeDeploy(); Direct.enter(this, u); } } break;
       case 'nukekill': this.nukes = this.nukes.filter(n => n.id !== ev.id); break;
       case 'dead': if (ev.id === Direct.id && Direct.on && window.Tension) window.Tension.killedBy = ev.by; if (ev.air && ev.by === me && ev.o !== me && !Direct.on && !ev.quiet) { this.addAlert('Enemy ' + (UNITS[ev.kk] ? UNITS[ev.kk].n : 'aircraft') + ' shot down', 'good', ev.x, ev.y); Sfx.good(); } break;
+      case 'stolen': if (ev.p === me) {
+        if (ev.kind === 'cash') { Sfx.good(); break; }
+        const u = v.ents.get(ev.id); if (u && Direct.on) { Direct.heist = null; Direct.exit(); this.cutShow(null); Direct.enter(this, u); Direct.msg((ev.kind === 'plane' ? 'Stolen ' + ev.n + '! Get it off the ground' : 'Stolen ' + ev.n + '! Drive!') + ' (they will be after you)', 3); Sfx.good(); }
+      } break;
       case 'dmgrep': if (ev.p === me) {
         // what you just did: buildings always (when you are fighting in person), and everything after a drone hit
         const drone = Direct.on ? Direct.mode === 'fpv' : performance.now() - (Direct.fpvT || 0) < 4000;
@@ -11918,6 +11993,7 @@ const UI = {
       if (e.b) { const s = Math.max(3, e.d.s * sc); c.fillRect(e.x * sc - s / 2, e.y * sc - s / 2, s, s); }
       else { c.fillRect(e.x * sc - 1, e.y * sc - 1, e.air ? 2 : 2.5, e.air ? 2 : 2.5); }
     }
+    { const SM = v.players[G.me].spyMap; if (SM) { c.setLineDash([2, 2]); c.lineWidth = 1.2; for (const id in SM) { const q = SM[id], live = v.ents.get(+id); if (live && live.seenByMe) continue; const s = Math.max(4, (q.s || 3) * sc); c.strokeStyle = v.players[q.o] ? v.players[q.o].nat.color : '#f44'; c.globalAlpha = .9; c.strokeRect(q.x * sc - s / 2, q.y * sc - s / 2, s, s); if (this.bigMap) { c.fillStyle = '#fff'; c.font = '600 10px system-ui'; c.textAlign = 'center'; c.fillText((BUILDINGS[q.k] ? BUILDINGS[q.k].n : q.k) + ' (spy)', q.x * sc, q.y * sc - s / 2 - 2); } } c.setLineDash([]); c.globalAlpha = 1; } } // buildings your spies mapped
     { // last known positions of enemy troops that slipped back into the fog, and gunfire heard out there
       const gh = this.ghosts || (this.ghosts = new Map()), now = v.t;
       for (const e of (R.visEnts || [])) if (!e.b && !v.friendly(e.o, G.me)) gh.set(e.id, {x: e.x, y: e.y, t: now, o: e.o, air: e.air});
@@ -12013,7 +12089,8 @@ const UI = {
     if (C.phase === 'ask') {
       say.innerHTML = `<b>${C.who} · ${C.nat}</b>${C.follow ? '' : `<p class="hi">"${C.hi}"</p>`}<p>"${C.follow ? 'And another thing. ' : ''}${C.q}"</p><div class="opts">${C.opts.map((o, i) => `<button data-i="${i}"><kbd>${i + 1}</kbd> ${o}</button>`).join('')}</div><div class="tm"><i></i></div>`;
       say.querySelectorAll('button').forEach(b => b.onclick = () => Direct.cutAnswer(+b.dataset.i));
-    } else if (C.phase === 'pass') say.innerHTML = `<b>${C.who} · ${C.nat}</b><p>"${C.okLine}"</p>`;
+    } else if (C.phase === 'heist') say.innerHTML = '';
+    else if (C.phase === 'pass') say.innerHTML = `<b>${C.who} · ${C.nat}</b><p>"${C.okLine}"</p>`;
     else say.innerHTML = `<b>${C.who} · ${C.nat}</b><p>"${C.noLine}"</p>`;
     if (C.phase === 'exec') { setTimeout(() => this.cutLine('"Up against the wall."'), 1400); setTimeout(() => this.cutLine('"Ready... aim..."'), 2600); }
   },
@@ -12197,6 +12274,9 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '6 Nov 2026 (latest)', items: [
+      'Spies (played in person): press G near an enemy building to steal steel and fuel, next to a parked enemy vehicle to hot-wire it and drive off, or at their Airfield to steal a jet. Each one has a short cutscene. There is a 25% chance the theft is noticed and the guards get suspicious.',
+      'Spies map every enemy building they see: they stay on your minimap and big map (dashed outlines) until destroyed.',
+      'Spy questions: every nation now has exactly two questions of its own.',
       'The game is now called jjfanwars.',
       'Air & tank battles: you now choose your plane or tank before you spawn. Changing your pick while waiting to spawn works now too.',
       'Fixed: you could not pick the A-10 strike plane after earning it with a kill streak.',
