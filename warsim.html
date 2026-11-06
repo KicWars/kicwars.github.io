@@ -405,6 +405,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
         <label>Graphics <select id="optQ"><option value="auto" selected>Auto (adapts to your computer)</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
         <label title="Every unit from every nation, free, from the Deploy screen. Applies to human players only.">All units unlocked and free <input type="checkbox" id="optAll"></label>
         <label title="Easy: +60% steel and fuel, a bigger start and auto economy on. Hard: 20% less. Only affects human players.">Difficulty (your economy) <select id="optEco"><option value="easy">Easy: lots of resources, auto economy</option><option value="normal" selected>Normal</option><option value="hard">Hard: scarce resources</option></select></label>
+        <label title="Off: the bots build up like you but never attack until you press Declare war (or shoot at them first)">Random attacks (bots attack whenever they like) <input type="checkbox" id="optRaid" checked></label>
         <label title="Two or three friendly healers wander the map and heal everyone, on every side">The Xaviers (neutral healers) <input type="checkbox" id="optXav"></label>
         <label title="A short checklist of goals in the corner. For the full guided tutorial use Tutorial on the main menu.">Objectives checklist <input type="checkbox" id="optTut"></label>
         <div id="lStatus" class="msg"></div>
@@ -440,6 +441,9 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
     <button data-g="ground" title="Select all ground troops and vehicles [F2]">⚔ Ground <b>0</b><kbd>F2</kbd></button>
     <button data-g="air" title="Select all aircraft and drones [F3]">✈ Air <b>0</b><kbd>F3</kbd></button>
     <button data-g="sea" title="Select all ships and submarines [F4]">⚓ Naval <b>0</b><kbd>F4</kbd></button>
+    <button id="bManDef" title="Send free infantry into every bunker, pillbox and watchtower, then line your trenches and sandbags">🛡 Man defences</button>
+    <button id="bRepAll" title="Workers repair every damaged building, then go back to mining">🔧 Repair all</button>
+    <button id="bWar" class="hidden" title="Peace time: the bots are building up. Start the war when you are ready" style="background:#7a1f1a;color:#fff">⚔ Declare war</button>
     <button id="bDiplo" title="Negotiate ceasefires, alliances and trades [F6]">🤝 Diplomacy<kbd>F6</kbd></button>
     <button id="bTech" title="Research tree: unlock units and upgrade your army [F8]">🔬 Research<kbd>F8</kbd></button>
     <button id="bStats" title="Kills, losses, economy and army size over time [F7]">📊 Stats<kbd>F7</kbd></button>
@@ -932,7 +936,7 @@ const BUILDINGS = {
   yard:     {n: 'Naval Yard', hp: 1100, s: 6, vis: 12, coast: 1, trains: ['destroyer', 'attacksub', 'nukesub', 'lcboat', 'patrolboat', 'hover'], req: 'barracks', cost: [280, 60], t: 24, hk: 'K', desc: 'Must touch the sea. Builds warships and submarines.'},
   lab:      {n: 'Research Lab', hp: 500, s: 4, vis: 7, research: 1, req: 'barracks', cost: [160, 60], t: 18, hk: 'V', desc: 'Upgrades weapons, armour and logistics.'},
   hospital: {n: 'Field Hospital', hp: 450, s: 4, vis: 7, aura: 9, cost: [120, 20], t: 14, hk: 'B', desc: 'Heals friendly infantry nearby.'},
-  tower:    {n: 'Watchtower', hp: 420, s: 2, vis: 17, dmg: 16, rng: 11, cd: .8, shot: 'bullet', aa: 1, cost: [90, 0], t: 10, hk: 'N', desc: 'Long vision and a machine gun.'},
+  tower:    {n: 'Watchtower', hp: 420, s: 2, vis: 17, dmg: 16, rng: 11, cd: .8, shot: 'bullet', aa: 1, garrison: 2, cost: [90, 0], t: 10, hk: 'N', desc: 'Long vision and a machine gun. Garrison 2 infantry.'},
   bunker:   {n: 'Bunker', hp: 1200, s: 3, vis: 10, dmg: 24, rng: 10, cd: .8, shot: 'cannon', garrison: 6, cost: [170, 20], t: 16, hk: 'M', desc: 'Tough gun emplacement. Garrison 6 infantry for more firepower.'},
   aa:       {n: 'AA Gun', hp: 420, s: 2, vis: 16, dmg: 28, rng: 16, cd: .5, shot: 'cannon', aa: 1, noGround: 1, cost: [140, 40], t: 12, hk: 'R', page: 2, desc: 'Flak against aircraft and drones.'},
   ewmast:   {n: 'EW Jammer', hp: 300, s: 2, vis: 10, jam: 11, req: 'dronebay', cost: [130, 60], t: 12, hk: 'T', page: 2, desc: 'Jams enemy drones inside its radius until they crash.'},
@@ -1975,6 +1979,7 @@ function Sim(opts) {
   for (const p of this.players) if (p.ecoK > 1) { p.steel += 700; p.fuel += 250; } else if (p.ecoK < 1) { p.steel -= 150; }
   if (opts.battle) this.setupBattle(opts.battle); else if (opts.scen) this.setupScen(opts.scen); else for (const p of this.players) this.setupPlayer(p);
   if (opts.xav && !opts.battle && !opts.scen) this.addXaviers(); // optional, Play vs bots only
+  if (opts.peace && !opts.battle && !opts.scen) { this.peace = true; this.peaceOpt = true; } // no random attacks: bots build up until a human declares war
 }
 // Campaign battle: no bases. Find the stretch of land between the two spawns with the most ground, mark the two deploy zones and place the enemy army.
 Sim.prototype.landOk = function (x, y) {
@@ -2211,7 +2216,7 @@ Sim.prototype.issue = function (c, pi) {
     case 'zone': for (const e of mine) if (!e.b && PATROL_CATS[e.d.cat] && e.k !== 'worker') { this.clearOrders(e); e.zone = {x: clamp(c.x + (this.rnd() - .5) * 3, 2, this.N - 3), y: clamp(c.y + (this.rnd() - .5) * 3, 2, this.N - 3), r: clamp(c.r || PATROL_R, 3, 20)}; e.zoneT = 0; } break;
     case 'stance': for (const e of mine) e.stance = c.s; break;
     case 'gather': { const n = this.M.nodes[c.n]; if (n) for (const e of mine) if (e.k === 'worker') { this.clearOrders(e); e.task = {type: 'gather', node: n.id}; } break; }
-    case 'build': this.cmdBuild(mine, p, c.b, c.x, c.y, !!c.q); break;
+    case 'build': this.cmdBuild(mine, p, c.b, c.x, c.y, !!c.q, +c.rot || 0); break;
     case 'harden': this.cmdHarden(p, c.id); break;
     case 'pdig': { const a = this.ents.get(c.id); if (!a || a.o !== pi || a.pilot !== pi + 1 || a.d.cat !== 'inf' || (a.digT || 0) > this.t) break; if (Math.hypot(c.x - a.x, c.y - a.y) > 4.2) break; a.digT = this.t + .22; this.digAt(+c.x, +c.y, pi, .2, {x: +c.dx || 0, y: +c.dy || 0}); break; }
     case 'digline': { // workers dig a trench or tunnel along a line, a few strikes per cell, in order
@@ -2244,6 +2249,9 @@ Sim.prototype.issue = function (c, pi) {
     case 'recon': this.sendRecon(p, Math.min(4, c.n || 1), false, c.x === undefined ? undefined : clamp(+c.x, 4, this.N - 5), c.y === undefined ? undefined : clamp(+c.y, 4, this.N - 5)); break;
     case 'autorecon': p.autoRecon = !!c.on; this.notify(pi, p.autoRecon ? 'Scouts will patrol and report automatically' : 'Automatic scouting off', 'info'); if (p.autoRecon) this.sendRecon(p, 1, true); break;
     case 'nuke': { const e = this.ents.get(c.id); if (e && e.o === pi && e.nukeReady) this.launchNuke(e, c.x, c.y); break; }
+    case 'war': if (this.peace && this.peaceOpt && !p.bot) this.declareWar(pi); break;
+    case 'mandef': this.manDef(pi, c.all ? null : mine, c.b || 0); break;
+    case 'repair': this.cmdRepair(pi, c.b || 0); break;
     case 'garrison': { const b = this.ents.get(c.t); if (b && b.o === pi && b.d.garrison) for (const e of mine) if (e.d.cat === 'inf') { this.clearOrders(e); e.task = {type: 'garrison', id: b.id}; } break; }
     case 'unload': { const b = this.ents.get(c.b); if (b && b.o === pi) { if (b.b) this.unload(b); else this.unloadT(b); } break; }
     case 'board': { const t = this.ents.get(c.t); if (t && t.o === pi && t.d.carry) for (const e of mine) if (e.d.cat === 'inf' && !e.pilot) { this.clearOrders(e); e.task = {type: 'board', id: t.id}; } break; }
@@ -2324,7 +2332,7 @@ Sim.prototype.cmdMove = function (es, x, y, atk, queue) {
   });
 };
 
-Sim.prototype.cmdBuild = function (ws, p, k, x, y, q) {
+Sim.prototype.cmdBuild = function (ws, p, k, x, y, q, rot) {
   const d = BUILDINGS[k];
   if (!d || k === 'hq' || (d.only && !d.only.includes(p.nat.key))) return;
   if (d.req && !this.has(p.i, d.req)) { this.notify(p.i, 'Requires ' + BUILDINGS[d.req].n, 'bad'); return; }
@@ -2336,7 +2344,7 @@ Sim.prototype.cmdBuild = function (ws, p, k, x, y, q) {
   if (!wk.length) wk = this.autoWorkers(p.i, x, y, d.s >= 6 ? 3 : 2);
   if (!wk.length) { this.notify(p.i, 'No workers to build it: train some at your capital', 'bad'); return; }
   p.steel -= c[0]; p.fuel -= c[1];
-  const b = this.addBuilding(k, p.i, x, y, false);
+  const b = this.addBuilding(k, p.i, x, y, false); if (b && rot) b.rot = rot;
   for (const w of wk) {
     // a worker already on an unfinished site keeps going and does this one next, in the order you placed them
     const cur = w.task && w.task.type === 'build' ? this.ents.get(w.task.id) : null;
@@ -2423,6 +2431,55 @@ Sim.prototype.unloadT = function (t) {
   });
   t.cargo = [];
   this.ev({k: 'msg', p: t.o, text: C.length + ' troops ' + (para ? 'jumped' : 'unloaded'), kind: 'good', x: px, y: py});
+};
+
+Sim.prototype.declareWar = function (pi) {
+  if (!this.peace) return;
+  this.peace = false;
+  for (const q of this.players) if (q.alive && !q.bot) this.notify(q.i, this.players[pi].name + ' declared war! The bots will now attack', 'bad');
+  this.ev({k: 'war', p: pi});
+};
+
+// Man the defences: fill bunkers, pillboxes and towers with the nearest infantry, then line the trenches and sandbags.
+// es: the infantry to use (null: every free rifleman-type unit you have).
+Sim.prototype.manDef = function (pi, es, only) {
+  const ok = e => e && !e.b && e.o === pi && e.d.cat === 'inf' && e.k !== 'worker' && e.k !== 'scout' && !e.d.spy && !e.inside && !e.pilot && e.hp > 0;
+  const free = (es ? es : [...this.ents.values()]).filter(e => ok(e) && !(e.task && e.task.type === 'garrison'));
+  if (!free.length) { this.notify(pi, es ? 'Select infantry to man the defences' : 'No free infantry to man the defences', 'bad'); return; }
+  const coming = {}; for (const e of this.ents.values()) if (e.o === pi && e.task && e.task.type === 'garrison') coming[e.task.id] = (coming[e.task.id] || 0) + 1;
+  const slots = [];
+  for (const b of this.ents.values()) {
+    if (!b.b || b.o !== pi || b.bp < 1 || (only && b.id !== only)) continue;
+    if (b.d.garrison) { const n = b.d.garrison - b.garrison.length - (coming[b.id] || 0); for (let i = 0; i < n; i++) slots.push({b, x: b.x, y: b.y, pri: 0}); }
+    else if (b.k === 'trench' || b.k === 'sandbags') {
+      const n = b.k === 'trench' ? 4 : 2, held = []; this.near(b.x, b.y, b.d.s / 2 + 1, u => { if (u.o === pi && u.d.cat === 'inf' && !u.b) held.push(u); });
+      for (let i = held.length; i < n; i++) { const a = i / n * 6.283 + b.id, r = b.k === 'trench' ? .9 : b.d.s / 2 + .6; slots.push({x: b.x + Math.cos(a) * r, y: b.y + Math.sin(a) * r, pri: 1}); }
+    }
+  }
+  if (!slots.length) { this.notify(pi, 'No defences with room: build Bunkers, Pillboxes, Watchtowers or Trenches', 'bad'); return; }
+  slots.sort((a, b) => a.pri - b.pri);
+  const used = new Set(); let g = 0, tr = 0;
+  for (const sl of slots) {
+    let best = null, bd = 1e9; for (const e of free) { if (used.has(e)) continue; const d = Math.hypot(e.x - sl.x, e.y - sl.y); if (d < bd) { bd = d; best = e; } }
+    if (!best) break; used.add(best); this.clearOrders(best);
+    if (sl.b) { best.task = {type: 'garrison', id: sl.b.id}; g++; }
+    else { const x = clamp(sl.x, 1, this.N - 2), y = clamp(sl.y, 1, this.N - 2); this.go(best, x, y); best.zone = {x, y, r: 0}; tr++; }
+  }
+  this.notify(pi, 'Manning the defences: ' + g + ' to bunkers and towers, ' + tr + ' to trenches and sandbags' + (used.size < slots.length ? ' (' + (slots.length - used.size) + ' spots still empty)' : ''), 'good');
+};
+
+// Repair: workers patch up a damaged building (bid) or every damaged building (bid 0). They go back to mining afterwards.
+Sim.prototype.cmdRepair = function (pi, bid) {
+  const hurt = [...this.ents.values()].filter(b => b.b && b.o === pi && b.bp >= 1 && b.hp < b.hpm * .995 && (!bid || b.id === bid) && b.k !== 'mine');
+  if (!hurt.length) { this.notify(pi, bid ? 'Not damaged' : 'Nothing needs repairing', 'info'); return; }
+  const W = [...this.ents.values()].filter(e => e.o === pi && e.k === 'worker' && !e.inside && !(e.task && e.task.type === 'build')), used = new Set();
+  if (!W.length) { this.notify(pi, 'No free workers to repair with: train some at your capital', 'bad'); return; }
+  const per = bid ? 3 : 1; let n = 0;
+  for (const b of hurt) for (let i = 0; i < per; i++) {
+    let best = null, bd = 1e9; for (const w of W) { if (used.has(w)) continue; const d = dist(w, b); if (d < bd) { bd = d; best = w; } }
+    if (!best) break; used.add(best); this.clearOrders(best); best.task = {type: 'build', id: b.id}; n++;
+  }
+  this.notify(pi, n + ' worker' + (n > 1 ? 's' : '') + ' repairing ' + (bid ? hurt[0].d.n : hurt.length + ' building' + (hurt.length > 1 ? 's' : '')), 'good');
 };
 
 Sim.prototype.unload = function (b) {
@@ -2636,6 +2693,7 @@ Sim.prototype.hurt = function (t, dmg, by) {
   t.hurtT = this.t;
   if (t.hp <= 0) return;
   if (t.b && t.hard >= 1) dmg *= .35;                       // hardened: rebuilt underground in reinforced concrete
+  if (this.peaceOpt && this.peace && by >= 0 && this.players[by] && !this.players[by].bot && t.o >= 0 && this.players[t.o] && this.players[t.o].bot) this.declareWar(by); // shooting first starts the war
   const hp0 = t.hp; t.hp -= dmg; t.hurtT = this.t;
   // damage report for human players (bombs, shells, drones, bullets...): summed and sent a few times a second
   if (by !== null && by !== undefined && by !== t.o && this.players[by] && !this.players[by].bot && !t.gt) {
@@ -4948,7 +5006,7 @@ function encodeSnap(sim, sendSlow) {
   if (sendSlow) {
     msg.pl = sim.players.map(p => ({specT: p.specT || 0, freeT: p.freeT || 0, steel: p.steel | 0, fuel: p.fuel | 0, pop: p.pop, popCap: p.popCap, ups: p.ups, techAll: p.techAll || 0, cds: p.cds, alive: p.alive, trat: p.trat || 0, st: p.st, hist: p.hist, kills: p.kills, losses: p.losses, built: p.built, reveal: p.reveal, buffs: p.buffs, rel: p.rel, relT: p.relT, offers: p.offers, str: p.str || 0, mood: p.mood, intel: p.intel, spyMap: p.spyMap, autoRecon: p.autoRecon, autoEco: p.autoEco, autoHouse: p.autoHouse, ecoK: p.ecoK}));
     msg.bs = [];
-    for (const e of sim.ents.values()) if (e.b) msg.bs.push({id: e.id, bp: e.bp, q: e.q, prog: e.prog, rally: e.rally, au: e.auto ? 1 : 0, ak: e.autoK || null, cdn: e.nukeCD, g: e.garrison ? e.garrison.length : 0, hd: e.hard || 0});
+    for (const e of sim.ents.values()) if (e.b) msg.bs.push({id: e.id, bp: e.bp, q: e.q, prog: e.prog, rally: e.rally, au: e.auto ? 1 : 0, ak: e.autoK || null, cdn: e.nukeCD, g: e.garrison ? e.garrison.length : 0, hd: e.hard || 0, rot: e.rot || 0});
     msg.nodes = sim.M.nodes.map(n => [n.amt | 0, n.taken || 0]);
     msg.smokes = sim.smokes;
     msg.over = sim.over;
@@ -5001,7 +5059,7 @@ Mirror.prototype.apply = function (m) {
   }
   for (const id of this.ents.keys()) if (!seen.has(id)) this.ents.delete(id);
   if (m.pl) m.pl.forEach((q, i) => Object.assign(this.players[i], q));
-  if (m.bs) for (const b of m.bs) { const e = this.ents.get(b.id); if (e) { e.bp = b.bp; e.q = b.q; e.prog = b.prog; e.rally = b.rally; e.auto = !!b.au; e.autoK = b.ak; e.nukeCD = b.cdn; e.g = b.g; e.garrison = new Array(b.g); e.hard = b.hd; } }
+  if (m.bs) for (const b of m.bs) { const e = this.ents.get(b.id); if (e) { e.bp = b.bp; e.q = b.q; e.prog = b.prog; e.rally = b.rally; e.auto = !!b.au; e.autoK = b.ak; e.nukeCD = b.cdn; e.g = b.g; e.garrison = new Array(b.g); e.hard = b.hd; e.rot = b.rot || 0; } }
   if (m.nodes) m.nodes.forEach((n, i) => { this.M.nodes[i].amt = n[0]; this.M.nodes[i].taken = n[1]; });
   if (m.smokes) this.smokes = m.smokes;
   if (m.over) this.over = m.over;
@@ -7707,7 +7765,7 @@ Renderer.prototype.buildingMesh = function (e) {
   this._bg = this._bg || {};
   const g = this._bg[key] || (this._bg[key] = BLD[e.k](palette(nat)).geo());
   const m = new THREE.Mesh(g, this.matV);
-  m.position.set(e.x, e.z, e.y); m.castShadow = true; m.receiveShadow = true;
+  m.position.set(e.x, e.z, e.y); m.rotation.y = e.rot || 0; m.castShadow = true; m.receiveShadow = true;
   const base = new THREE.Group(); base.add(m);
   // construction scaffold
   const s = e.d.s, b = new Batch();
@@ -8512,7 +8570,7 @@ function Game(cfg) {
     this.view = new Mirror(cfg);
     this.bots = [];
   } else {
-    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle, scen: cfg.scen, xav: cfg.xav});
+    this.view = this.sim = new Sim({size: cfg.size, seed: cfg.seed, players: cfg.players, quick: cfg.quick, battle: cfg.battle, scen: cfg.scen, xav: cfg.xav, peace: cfg.peace});
     this.bots = cfg.players.map((p, i) => p.bot ? new Bot(this.sim, i, p.bot) : null).filter(Boolean);
   }
   this.view.me = this.me;
@@ -8635,7 +8693,7 @@ const Direct = {
     this.applyView();
     { const T = e.inside && ui.g.view.ents.get(e.inside); this.jump = T && T.air && this.mode === 'soldier' ? 'plane' : null; if (this.jump) this.msg('Riding to the drop zone. ' + Settings.keyName(Settings.binds.jump) + ' or ' + Settings.keyName(Settings.binds.fire) + ' to JUMP', 4); }
     ui.g.issue({c: 'pilot', ids: [e.id], on: 1});
-    this.requestLock('enter');
+    this.ux = this.uy = null; this.requestLock('enter');
     ui.enterDirect(this);
     this.showTouch();
     VM.build(e, ui.g.view.players[e.o].nation);
@@ -8742,13 +8800,13 @@ const Direct = {
     this.lockTries = (this.lockTries || 0) + 1;
     if (this.lockTries <= 2) { this.look = 'pending'; this.msg('Locking the mouse...', 1.2); clearTimeout(this.relockT); this.relockT = setTimeout(() => { if (this.on && this.look === 'pending') this.requestLock('retry'); }, 1150); return; }
     this.look = 'offset'; this.lockTries = 0;
-    this.msg('Mouse lock unavailable: move the cursor from the centre to steer. Alt or click: try again', 4);
+    this.msg('Mouse lock unavailable: just move the mouse to look (push to the screen edge to keep turning)', 4);
   },
   onLockChange() {
     if (!this.on) return;
-    if (document.pointerLockElement) { if (!this.vcur) this.look = 'locked'; this.lockTries = 0; clearTimeout(this.lockWait); clearTimeout(this.relockT); return; }
+    if (document.pointerLockElement) { this.ux = this.uy = null; if (!this.vcur) this.look = 'locked'; this.lockTries = 0; clearTimeout(this.lockWait); clearTimeout(this.relockT); return; }
     if (this.vcur) { this.vcur = false; this.vcurShow(false); this.look = 'free'; this.msg('Cursor free. Alt or click the view to aim again', 3); return; } // Esc while the drawn cursor was up
-    if (this.look === 'locked') { this.look = 'free'; this.keys = {}; this.mouseDown = false; this.msg('Cursor free. Alt or click the view to aim again', 3); }
+    if (this.look === 'locked') { this.look = 'offset'; this.triedClickLock = false; this.msg('Mouse unlocked: just move the mouse to look. Click to lock it again, Alt for a free cursor', 3); }
   },
   // Alt frees the cursor WITHOUT leaving pointer lock: browsers will not re-lock the mouse from a modifier key, so a real unlock could only be
   // undone with a click. Instead we keep the lock and move a drawn cursor; clicks go to whatever is under it. Alt again: straight back to aiming.
@@ -8764,11 +8822,14 @@ const Direct = {
     if (this.look === 'free' || this.look === 'offset') { this.lockTries = 0; this.requestLock('alt'); }
     else { this.look = 'free'; if (document.pointerLockElement) document.exitPointerLock(); this.msg('Cursor free. Press Alt again to aim', 2.5); }
   },
-  onBlur() { this.keys = {}; this.mouseDown = false; if (this.on && this.look !== 'off') { if (this.look === 'locked' || this.look === 'pending') this.look = 'free'; } },
+  onBlur() { this.keys = {}; this.mouseDown = false; if (this.on && this.look !== 'off') { if (this.look === 'locked' || this.look === 'pending') { this.look = 'offset'; this.triedClickLock = false; } } },
   onMouseMove(e) {
     if (this.vcur) { this.vcx = clamp(this.vcx + (e.movementX || 0), 0, innerWidth - 2); this.vcy = clamp(this.vcy + (e.movementY || 0), 0, innerHeight - 2); this.mouseX = this.vcx; this.mouseY = this.vcy; this.vcurShow(true); return; }
-    this.mouseX = e.clientX; this.mouseY = e.clientY;
+    // unlocked (lock pending, refused or lost): mouse movement still turns the view, no click needed
+    const ul = this.look === 'offset' || this.look === 'pending';
     if (this.look === 'locked') { this.mx += e.movementX || 0; this.my += e.movementY || 0; }
+    else if (ul && (e.movementX == null || e.movementX || e.movementY)) { const dx = e.movementX != null ? e.movementX : this.ux != null ? e.clientX - this.ux : 0, dy = e.movementY != null ? e.movementY : this.uy != null ? e.clientY - this.uy : 0; this.mx += dx * 1.4; this.my += dy * 1.4; this.ux = e.clientX; this.uy = e.clientY; }
+    this.mouseX = e.clientX; this.mouseY = e.clientY;
   },
   onMouseDown(e) {
     if (this.vcur) { // click whatever is under the drawn cursor; clicking the 3D view goes back to aiming
@@ -8999,10 +9060,9 @@ const Direct = {
     const k = this.keys, B = Settings.binds, M = g.view.M;
     // look input: mouse (locked), cursor offset (fallback), arrow keys (keyboard and trackpad friendly)
     let lx = this.mx, ly = this.my; this.mx = this.my = 0;
-    if (this.look === 'offset') {
-      const cx = innerWidth / 2, cy = innerHeight / 2, ox = (this.mouseX - cx) / cx, oy = (this.mouseY - cy) / cy, dz = .1;
-      const f = v => Math.abs(v) < dz ? 0 : Math.sign(v) * Math.pow((Math.abs(v) - dz) / (1 - dz), 1.5);
-      lx += f(ox) * 1100 * dt; ly += f(oy) * 800 * dt;
+    if ((this.look === 'offset' || this.look === 'pending') && this.ux != null) { // the cursor stops at the screen edge: holding it there keeps turning
+      const ex = this.ux / innerWidth, ey = this.uy / innerHeight, E = .07, f = v => v < E ? -(E - v) / E : v > 1 - E ? (v - 1 + E) / E : 0;
+      lx += f(ex) * 1300 * dt; ly += f(ey) * 700 * dt;
     }
     lx += ((k.ArrowRight ? 1 : 0) - (k.ArrowLeft ? 1 : 0)) * dt * 700; ly += ((k.ArrowDown ? 1 : 0) - (k.ArrowUp ? 1 : 0)) * dt * 500;
     const zoom = this.curZoom ? this.curZoom : 1, S = .0021 * Settings.sens * (.35 + .65 * zoom);
@@ -9887,9 +9947,9 @@ const Direct = {
     if (!this.helpSeen) { this.helpSeen = 1; }
     c.textAlign = 'left'; c.font = '600 11px system-ui'; c.fillStyle = 'rgba(255,255,255,.55)'; if (!this.isTouch()) c.fillText('H: controls' + (this.mode === 'soldier' ? '  ·  Y: shovel' + (this.shovel ? ' (ON)' : '') : ''), 24, h - 74);
     // state of the mouse
-    const st = this.look === 'locked' || this.look === 'touch' ? '' : this.look === 'free' ? 'CURSOR FREE: press Alt or click the view to aim' : this.look === 'offset' ? 'Steer with the cursor offset · Alt: free cursor' : 'Locking the mouse...';
+    const st = this.look === 'locked' || this.look === 'touch' ? '' : this.look === 'free' ? 'CURSOR FREE: press Alt or click the view to aim' : this.look === 'offset' ? 'Mouse looks (unlocked) · click to lock · Alt: free cursor' : 'Locking the mouse...';
     if (st) { c.textAlign = 'center'; c.font = '700 14px system-ui'; c.fillStyle = 'rgba(0,0,0,.55)'; const tw = c.measureText(st).width; c.fillRect(cx - tw / 2 - 12, 18, tw + 24, 26); c.fillStyle = this.look === 'free' ? '#ffd23a' : '#fff'; c.fillText(st, cx, 36); }
-    if (this.look === 'offset') { c.strokeStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.arc(cx, cy, Math.min(w, h) * .05, 0, 6.2832); c.stroke(); c.beginPath(); c.moveTo(cx, cy); c.lineTo(this.mouseX, this.mouseY); c.stroke(); }
+
     if (this.msgT > 0) { c.textAlign = 'center'; c.font = '800 18px system-ui'; c.fillStyle = `rgba(255,255,255,${Math.min(1, this.msgT * 2)})`; c.shadowColor = '#000'; c.shadowBlur = 6; c.fillText(this.msgText, cx, h * .3); c.shadowBlur = 0; }
     if (this.dmgNums && this.dmgNums.length) { // floating damage numbers
       const now = performance.now(); c.textAlign = 'center';
@@ -10797,8 +10857,11 @@ const UI = {
     $('bQuit').onclick = () => this.quit();
     $('bMenu').onclick = () => $('pause').classList.remove('hidden');
     $('bDeploy').onclick = () => this.openDeploy();
-    document.querySelectorAll('#selBar button[data-g]').forEach(b => b.onclick = () => this.selGroup(b.dataset.g));
+    document.querySelectorAll('#selBar button[data-g]').forEach(b => b.onclick = () => this.selCat(b.dataset.g));
     $('bDiplo').onclick = () => this.openDiplo();
+    $('bManDef').onclick = () => { this.g.issue({c: 'mandef', all: 1}); Sfx.ack(); };
+    $('bRepAll').onclick = () => { this.g.issue({c: 'repair'}); Sfx.ack(); };
+    $('bWar').onclick = () => { if (confirm('Declare war? The bots will start attacking.')) this.g.issue({c: 'war'}); };
     $('bStats').onclick = () => this.toggleStats();
     $('bTech').onclick = () => this.toggleTech(); $('techClose').onclick = () => this.toggleTech(false); $('statsClose').onclick = () => this.toggleStats(false);
     $('tutNext').onclick = () => this.tutAdvance(true); $('tutSkip').onclick = () => this.tutEnd();
@@ -11041,7 +11104,7 @@ const UI = {
     const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked, eco: s.kind === 'bot' ? null : $('optEco').value}));
     this.playersIds = L.slots.map(s => s.id || null);
     if (this.net === 'host') for (const id of this.link.peers.keys()) this.link.send(id, {start: {seed, size, players, you: this.playersIds.indexOf(id)}});
-    this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, tut: $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick, xav: $('optXav').checked && this.net !== 'host'});
+    this.launch({mode: 'host', size, seed, players, me: this.mySlot, link: this.net === 'host' ? this.link : null, tut: $('optTut').checked && this.net !== 'host' && !this.quick, quick: this.quick, xav: $('optXav').checked && this.net !== 'host', peace: !$('optRaid').checked && this.net !== 'host' && !this.quick});
   },
   setSpeed(v) { // time control: host-side only, so a friend's game stays in sync with the host's clock
     if (!this.g || this.g.mode === 'client') { this.addAlert('Only the host can change game speed', 'bad'); return; }
@@ -11186,6 +11249,7 @@ const UI = {
     ] : null;
     $('objectives').classList.toggle('hidden', !this.objs);
     this.addAlert(WAR_CRIES[me.nat.key], 'gold');
+    if (this.g.sim && this.g.sim.peaceOpt) this.addAlert('Peace time: the bots will not attack until you press ⚔ Declare war (bottom bar)', 'gold');
     this.selectAll(e => e.k === 'worker' && e.o === o.me);
     this.refreshHud(true);
     if (this.quick) { this.quick = false; setTimeout(() => { this.deployed = true; this.openDeploy(); }, 300); }
@@ -11203,7 +11267,7 @@ const UI = {
     this.startDemo();
   },
   count(f) { let n = 0; for (const e of this.g.view.ents.values()) if (e.o === this.g.me && f(e)) n++; return n; },
-  selGroup(g) {
+  selCat(g) {
     const me = this.g.me, f = SEL_GROUPS[g];
     this.selectAll(e => e.o === me && !e.b && f(e));
     const n = this.sel.size;
@@ -11272,6 +11336,7 @@ const UI = {
   },
   updateSelBar() {
     this.updateSqBar();
+    { const w = $('bWar'), on = !!(this.g.sim && this.g.sim.peaceOpt && this.g.sim.peace); if (w.classList.contains('hidden') === on) w.classList.toggle('hidden', !on); }
     const v = this.g.view, me = this.g.me, cnt = {workers: 0, ground: 0, air: 0, sea: 0};
     for (const e of v.ents.values()) if (e.o === me && !e.b) for (const k in SEL_GROUPS) if (SEL_GROUPS[k](e)) cnt[k]++;
     for (const b of document.querySelectorAll('#selBar button[data-g]')) { const n = cnt[b.dataset.g], el = b.querySelector('b'); if (el.textContent != n) el.textContent = n; b.style.opacity = n ? 1 : .5; }
@@ -11438,7 +11503,7 @@ const UI = {
     let rifles0 = cnt('rifle');
     this.tut = {i: 0, steps: [
       {h: 'Welcome, Commander', p: 'This tutorial walks you through a real game against a training bot that will not attack until you are ready. Read each card, do what it says, and it moves on by itself. Press <b>Next</b> on cards that only explain something.'},
-      {h: 'Move the camera', p: 'Pan with <b>W A S D</b> (or push the mouse to the screen edge), zoom with the <b>mouse wheel</b>, rotate with <b>Q</b> and <b>E</b>. Look around your capital.', f: () => Math.hypot(C.tx - start.x, C.tz - start.z) > 3 || Math.abs(C.tdist - start.d) > 4 || Math.abs(C.tyaw - start.y) > .3},
+      {h: 'Move the camera', p: 'Pan with <b>W A S D</b> (or push the mouse to the screen edge), zoom with the <b>mouse wheel</b>, rotate with <b>Q</b> and <b>E</b> (or middle-drag). Look around your capital.', f: () => Math.hypot(C.tx - start.x, C.tz - start.z) > 3 || Math.abs(C.tdist - start.d) > 4 || Math.abs(C.tyaw - start.y) > .3},
       {h: 'Your army and your capital', p: 'The walled city is your <b>Capital</b>: lose it and you lose. Around it are 5 <b>workers</b> (already mining steel), 4 riflemen and a scout. Top left shows <b>Steel</b>, <b>Fuel</b> and <b>Population</b>.', hl: '#top'},
       {h: 'Select and move', p: '<b>Left click</b> a soldier to select him, or <b>drag a box</b> around several. Then <b>right click</b> the ground to send them there.', f: () => [...this.sel].some(id => { const e = v.ents.get(id); return e && !e.b && e.k !== 'worker' && e.goal; })},
       {h: 'Select groups in one click', p: 'These buttons select every worker, ground unit, aircraft or ship at once (<b>F1</b>-<b>F4</b>). Press <b>⚔ Ground</b> now.', hl: '#selBar', f: () => [...this.sel].filter(id => { const e = v.ents.get(id); return e && !e.b && e.k !== 'worker'; }).length >= 4},
@@ -11543,7 +11608,7 @@ const UI = {
       C.tx = clamp(C.tx, -4, N + 4); C.tz = clamp(C.tz, -4, N + 4); C.tdist = clamp(C.tdist, 11, 125);
       const a = 1 - Math.exp(-dt * 11);
       C.x += (C.tx - C.x) * a; C.z += (C.tz - C.z) * a; C.dist += (C.tdist - C.dist) * a; C.yaw += (C.tyaw - C.yaw) * a;
-      C.pitch += (clamp(.62 + C.dist / 125 * .55, .5, 1.2) - C.pitch) * a;
+      C.pitch += (clamp(.62 + C.dist / 125 * .55 + (C.pOff || 0), .3, 1.4) - C.pitch) * a;
     }
     const h = Math.max(0, hAt(this.g.view.M, C.x, C.z)), cam = R.cam;
     const cp = Math.cos(C.pitch), sp2 = Math.sin(C.pitch);
@@ -11607,6 +11672,8 @@ const UI = {
     addEventListener('mousemove', e => {
       this.mouse.x = e.clientX; this.mouse.y = e.clientY; this.edgeOk = true;
       if (Direct.on) { Direct.onMouseMove(e); return; }
+      if (this.orbit) { const C = this.cam, dx = e.clientX - this.orbit.x, dy = e.clientY - this.orbit.y; this.orbit.x = e.clientX; this.orbit.y = e.clientY; if (Math.abs(dx) + Math.abs(dy) > 0) this.orbit.moved = true; C.tyaw += dx * .006; C.pOff = clamp((C.pOff || 0) + dy * .004, -.45, .45); return; }
+      if (this.rdrag && !this.sel.size && Math.hypot(e.clientX - this.rdrag.sx, e.clientY - this.rdrag.sy) > 6) { this.orbit = {x: e.clientX, y: e.clientY, moved: true, rb: 1}; this.rdrag = null; return; } // right-drag with nothing selected orbits too
       if (this.mouse.down && !this.mode && Math.hypot(e.clientX - this.mouse.sx, e.clientY - this.mouse.sy) > 6) this.mouse.box = true;
     });
     gl.addEventListener('mousedown', e => {
@@ -11615,11 +11682,13 @@ const UI = {
       if (!this.g || this.demo) return;
       if (this.camp && !this.campLive()) { if (e.button === 0) this.campPlace(e.clientX, e.clientY); else if (e.button === 2) this.campRemove(e.clientX, e.clientY); return; }
       if (e.button === 0) { this.mouse.down = true; this.mouse.sx = e.clientX; this.mouse.sy = e.clientY; this.mouse.box = false; }
+      else if (e.button === 1) { e.preventDefault(); this.orbit = {x: e.clientX, y: e.clientY}; } // middle-drag orbits the camera
       else if (e.button === 2) { if (this.mode) this.cancelMode(); else this.rdrag = {sx: e.clientX, sy: e.clientY, shift: e.shiftKey}; } // order on release: a drag lays out a formation line
       if (e.button === 0 && e.altKey && !this.mode) { this.mouse.down = false; this.rightClick(e.clientX, e.clientY, e.shiftKey); }
     });
     addEventListener('mouseup', e => {
       if (Direct.on) { Direct.onMouseUp(e); return; }
+      if (this.orbit && (e.button === 1 || (e.button === 2 && this.orbit.rb))) { this.orbit = null; return; }
       if (e.button === 2 && this.rdrag && this.g && !this.demo) { const D = this.rdrag; this.rdrag = null;
         if (Math.hypot(e.clientX - D.sx, e.clientY - D.sy) > 24 && this.formation(D.sx, D.sy, e.clientX, e.clientY, D.shift)) return;
         this.rightClick(D.sx, D.sy, D.shift); return; }
@@ -11704,6 +11773,9 @@ const UI = {
     this.keys[e.code] = true;
     if (e.repeat) return;
     const c = e.code;
+    if (c === 'KeyR' && this.mode && this.mode.t === 'place' && !e.repeat) { // rotate the building being placed by 45 degrees (Shift: the other way)
+      const m = this.mode; m.rot = ((m.rot || 0) + (e.shiftKey ? -1 : 1) * Math.PI / 4 + Math.PI * 2) % (Math.PI * 2); (this.placeRot = this.placeRot || {})[m.b] = m.rot;
+      if (this.R.ghost) this.R.ghost.rotation.y = m.rot; Sfx.ui && Sfx.ui(); return; }
     if (c === 'Escape') { if (this.bigMap) this.toggleBigMap(); else if (this.mode) this.cancelMode(); else if (this.sel.size) { this.sel.clear(); this.refreshHud(true); } else $('pause').classList.toggle('hidden'); return; }
     if (c === 'Tab') e.preventDefault();
     if (this.scen && c.startsWith('Digit') && !$('scenSpawn').classList.contains('hidden')) { const S = this.g.sim.scen, k = batClasses(S && S.B).concat(S && S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ['a10'] : [])[+c.slice(5) - 1]; if (k) this.scenPick(k); return; }
@@ -11724,7 +11796,7 @@ const UI = {
     if (c === 'Minus' || c === 'NumpadSubtract') { this.cam.tdist *= 1.18; return; }
     if (c === Settings.binds.chooser) { this.openDeploy(); return; }
     if (c === Settings.binds.exit) { e.preventDefault(); this.tryDirect(); return; }
-    if (c === 'F1' || c === 'F2' || c === 'F3' || c === 'F4') { e.preventDefault(); this.selGroup(['workers', 'ground', 'air', 'sea'][+c[1] - 1]); return; }
+    if (c === 'F1' || c === 'F2' || c === 'F3' || c === 'F4') { e.preventDefault(); this.selCat(['workers', 'ground', 'air', 'sea'][+c[1] - 1]); return; }
     if (c === 'F6') { e.preventDefault(); this.openDiplo(); return; }
     if (c === 'F7') { e.preventDefault(); this.toggleStats(); return; }
     if (c === 'F8') { e.preventDefault(); this.toggleTech(); return; }
@@ -11849,8 +11921,8 @@ const UI = {
   clearGhost() { if (this.R.ghost) { this.R.world.remove(this.R.ghost); this.R.ghost = null; } if (this.R.roadLine) { this.R.world.remove(this.R.roadLine); this.R.roadLine = null; } },
   startPlace(k) {
     const P = palette(this.g.view.players[this.g.me].nation), mat = new THREE.MeshBasicMaterial({color: 0x6dff9a, transparent: true, opacity: .55, depthWrite: false, fog: false});
-    this.setMode({t: 'place', b: k, mat}, 'Place ' + BUILDINGS[k].n);
-    const m = new THREE.Mesh(BLD[k](P).geo(), mat); m.renderOrder = 7; this.R.world.add(m); this.R.ghost = m;
+    this.setMode({t: 'place', b: k, mat, rot: this.placeRot && this.placeRot[k] || 0}, 'Place ' + BUILDINGS[k].n + '  ·  R rotates');
+    const m = new THREE.Mesh(BLD[k](P).geo(), mat); m.rotation.y = this.mode.rot; m.renderOrder = 7; this.R.world.add(m); this.R.ghost = m;
   },
   startNuke(e) { this.setMode({t: 'target', kind: 'nuke', id: e.id, r: 16}, 'Choose ICBM target'); if (Direct.on) Direct.exit(); },
   updateMode() {
@@ -11884,7 +11956,7 @@ const UI = {
     if (m.t === 'place') {
       if (!m.ok) { this.addAlert('Cannot build there', 'bad'); Sfx.bad(); return; }
       const ids = this.ids();
-      this.g.issue({c: 'build', ids, b: m.b, x: m.x, y: m.y});
+      this.g.issue({c: 'build', ids, b: m.b, x: m.x, y: m.y, rot: m.rot || 0});
       Sfx.ack();
       if (!shift) this.cancelMode();
     } else if (m.t === 'dig') {
@@ -11945,6 +12017,7 @@ const UI = {
       const hold = first.stance === 'hold';
       S.push({hk: 'Y', name: 'Hold ground', gl: '⛨', desc: 'Never chase: only fire at enemies already in range.', act: () => { G.issue({c: 'stance', ids, s: hold ? 'aggr' : 'hold'}); for (const e of units) e.stance = hold ? 'aggr' : 'hold'; this.refreshHud(true); }, active: hold});
       S.push({hk: 'U', name: 'Patrol area', gl: '⟲', desc: 'Your troops patrol on their own around wherever you last sent them. Pick a new area for them to guard. Stop (T) makes them stand still.', act: () => this.setMode({t: 'target', kind: 'zone'}, 'Patrol around where?')});
+      if (units.some(e => e.d.cat === 'inf' && e.k !== 'scout')) S.push({hk: 'H', name: 'Man defences', gl: '🛡', desc: 'These infantry fill your nearest bunkers, pillboxes and watchtowers, then line trenches and sandbags. Or right click one of those buildings to garrison it.', act: () => G.issue({c: 'mandef', ids})});
       S.push({hk: 'G', name: 'Take control', gl: '◉', desc: 'Fight in person (F). FPV drones fly first person, planes get a chase camera.', act: () => this.tryDirect()});
       const arm = units.filter(e => e.o === G.me && (e.d.cat === 'veh' || e.d.cat === 'heli') && !e.d.carry);
       if (arm.length) {
@@ -11987,7 +12060,12 @@ const UI = {
       if (have || (q.only && !q.only.includes(p.nat.key))) continue;
       S.push({hk: q.hk, name: q.n, gl: '⚙', cost: c, desc: q.desc, off: busy || lock || p.steel < c[0] || p.fuel < c[1], why: busy ? 'Researching' : lock ? 'Requires ' + UPGRADES[q.req].n : '', act: () => G.issue({c: 'research', b: b.id, u})});
     }
-    if (d.garrison) S.push({hk: 'B', name: 'Unload', gl: '⇱', desc: 'Send garrisoned infantry back outside.', act: () => G.issue({c: 'unload', b: b.id})});
+    if (d.garrison && b.o === G.me) {
+      const gn = b.g !== undefined ? b.g : (b.garrison || []).length;
+      S.push({hk: 'G', name: 'Fill (' + gn + '/' + d.garrison + ')', gl: '⇲', desc: 'The nearest free infantry walk over and get inside. Or select infantry and right click this building.', off: gn >= d.garrison, why: 'Full', act: () => G.issue({c: 'mandef', all: 1, b: b.id})});
+      S.push({hk: 'B', name: 'Unload', gl: '⇱', desc: 'Send garrisoned infantry back outside.', off: !gn, why: 'Empty', act: () => G.issue({c: 'unload', b: b.id})});
+    }
+    if (b.o === G.me && b.hp < b.hpm * .995 && !d.mine) S.push({hk: 'Q', name: 'Repair ' + Math.round(b.hp / b.hpm * 100) + '%', gl: '🔧', desc: 'Up to 3 nearby workers repair it for free, then go back to mining. (Or select workers and right click it.)', act: () => G.issue({c: 'repair', b: b.id})});
     if (d.nukeT) S.push({hk: 'N', name: 'Launch ICBM', gl: '☢', desc: b.nukeReady ? 'Launch at any point on the map. Everyone is warned.' : 'Charging: ' + Math.ceil(b.nukeCD || 0) + 's', off: !b.nukeReady, why: b.nukeReady ? '' : 'Still charging', act: () => this.startNuke(b)});
     if (b.o === G.me && b.bp >= 1 && !d.mine && !d.walk) {
       const hc = v.hardCost(b), hd = b.hard || 0;
@@ -12502,6 +12580,13 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'First person: moving the mouse always turns the view, even when the browser has not locked the mouse. No click needed. Hold the cursor at the screen edge to keep turning.',
+      'Defences: Man defences (bottom bar, or H with infantry selected) fills every bunker, pillbox and watchtower with the nearest infantry, then lines your trenches and sandbags. Bunkers, pillboxes and watchtowers have a Fill button too.',
+      'Repair: damaged buildings have a Repair button, and Repair all is on the bottom bar. Workers fix them for free, then go back to mining.',
+      'Command view: middle-drag (or right-drag with nothing selected) rotates and tilts the camera.',
+      'Press R while placing a building to rotate it (Shift+R the other way). Sandbag walls can face any way now.',
+      'Play vs bots: untick Random attacks to build up in peace. Bots will not attack until you press Declare war (or shoot them first).',
+      'Fixed: the F1-F4 select buttons (workers, ground, air, naval) work again.',
       'Planes, War Thunder arcade style: every enemy plane has a marker with its range (m / km), with arrows at the screen edge for ones off screen.',
       'Target lock (L or right click): the camera locks onto the enemy nearest your aim and holds it in the middle, in cockpit view too. Your plane flies at the lead circle so your guns hit. Press again to release.',
       'Takeoff and landing: in Air Battles you can start on the runway (or in the air, your choice on the spawn screen). W throttles up, A/D steer, look up to take off. Throttle back near your airfield to land: the gear comes down, touch down gently and stop there to repair and rearm.',
