@@ -7433,7 +7433,7 @@ Renderer.prototype.updateFog = function (dt) {
   const v = this.view, N = v.N, R = this.fogR, vis = this.vis, F = this.visF, me = this.me, p = v.players[me], M = v.M;
   this.fogTick -= dt;
   if (this.fogTick <= 0) {
-    this.fogTick = .12;
+    this.fogTick = .12 / Math.max(1, Math.min(4, (typeof UI !== 'undefined' && UI.g && UI.g.speed) || 1)); // keep up with fast-forward
     F.fill(0);
     const sc = R / N, tr = p && p.nat ? p.nat.tr : {}, boost = 1.3 * (tr.vision || 1) * (p && p.ups && p.ups.inf3 ? 1.2 : 1); // everything sees a good way out, so you need few watchtowers
     const all = (p && p.reveal > v.t) || !p || !p.alive || this.spectate;
@@ -8145,7 +8145,8 @@ Renderer.prototype.drawEntities = function (dt, v) {
     const mine = v.friendly(e.o, me);
     let seen = mine || myAll;
     if (!seen) {
-      const inV = this.isVisible(e.x, e.y);
+      let inV = this.isVisible(e.x, e.y);
+      if (!inV && e.b) { const q = (e.d.s || 2) * .45; inV = this.isVisible(e.x - q, e.y - q) || this.isVisible(e.x + q, e.y - q) || this.isVisible(e.x - q, e.y + q) || this.isVisible(e.x + q, e.y + q) || this.isVisible(e.x, e.y - q) || this.isVisible(e.x, e.y + q) || this.isVisible(e.x - q, e.y) || this.isVisible(e.x + q, e.y); } // any part of a big base in sight shows it
       if (e.b) { if (e.d.mine) seen = false; else { if (inV) e.seenBy = true; seen = e.seenBy; } }
       else {
         seen = inV;
@@ -12274,6 +12275,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '6 Nov 2026 (latest)', items: [
+      'Fog fix: enemy bases now show as soon as any part of them is in sight (before, big bases could stay hidden while your troops were attacking their edge). Fog also keeps up at fast game speeds.',
       'Spies (played in person): press G near an enemy building to steal steel and fuel, next to a parked enemy vehicle to hot-wire it and drive off, or at their Airfield to steal a jet. Each one has a short cutscene. There is a 25% chance the theft is noticed and the guards get suspicious.',
       'Spies map every enemy building they see: they stay on your minimap and big map (dashed outlines) until destroyed.',
       'Spy questions: every nation now has exactly two questions of its own.',
