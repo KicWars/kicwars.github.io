@@ -432,9 +432,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
         </div>
         <div id="rsOpts" style="display:none"><h3>Operation Red Star: mission settings</h3>
           <label title="How the bomber handles for the pilot">Flying <select id="rsFly"><option value="heavy">Heavy but forgiving</option><option value="hard">Demanding</option></select></label>
-          <label title="What happens when a phase goes badly">If it goes wrong <select id="rsFail"><option value="retry">Retry the phase once</option><option value="one">One life</option><option value="check">Unlimited checkpoints</option></select></label>
-          <label title="How the bomb drop is shown">Bomb cutscene <select id="rsCut"><option value="bomb">Bomb's-eye, then wide</option><option value="bomber">From the bomber</option><option value="both">Both</option></select></label>
-          <label title="What happens after the bomb drops">After the bomb <select id="rsEnd"><option value="flash">Ends on the flash</option><option value="escape">Escape flight home</option></select></label>
+          <label title="Whether a downed crew member comes back">Respawns <select id="rsFail"><option value="retry">One respawn per phase</option><option value="one">None: one life</option><option value="check">Unlimited</option></select></label>
           <label title="Scales fighters, flak and events. Crews of 2 or 3 get a lighter load on top of this.">Difficulty <select id="rsDiff"><option value="train">Training</option><option value="std" selected>Standard</option><option value="brutal">Brutal</option></select></label>
         </div>
         <h3>Battlefield</h3>
@@ -1493,6 +1491,54 @@ function genBattleMap(N, seed, BT) {
   for (const R2 of ruins) R2.z = h[Math.round(R2.y) * N + Math.round(R2.x)];
   return {N, seed, h, bio, tree, water, block, road, occ, spawns, nodes: [], ruins};
 }
+// ---------- Operation Red Star map: a Siberian airfield, Arctic ice, the Atlantic, and New York ----------
+// A big low-detail air map (M.lite). Deterministic from the seed so the host and every guest build the same one. M.rsRoute is the flight plan, M.rsTarget the aim point.
+function redstarMap(N, seed, np) {
+  const A = N * N, h = new Float32Array(A), bio = new Uint8Array(A), tree = new Uint8Array(A), water = new Uint8Array(A), block = new Uint8Array(A), road = new Uint8Array(A), occ = new Int32Array(A), ruins = [];
+  const rnd = mulberry(seed + 5);
+  const hs = (i, j) => { let n = (Math.imul(i, 374761393) + Math.imul(j, 668265263) + Math.imul(seed | 0, 144665)) | 0; n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967295; };
+  const vn = (x, y) => { const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy), a = hs(i, j), b = hs(i + 1, j), c = hs(i, j + 1), d = hs(i + 1, j + 1); return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy; };
+  const fbm = (x, y) => vn(x / 40, y / 40) * .55 + vn(x / 18, y / 18) * .3 + vn(x / 7, y / 7) * .15;
+  const isl = [[.4, .28, .07, 3.2], [.55, .68, .045, 2.2], [.3, .72, .035, 1.8], [.62, .24, .03, 1.5]];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x, u = x / N, v = y / N, wc = .15 + (fbm(x + 500, y) - .5) * .12, ec = .79 + (fbm(x, y + 900) - .5) * .1;
+    let land = -1.6 - fbm(x + 40, y + 40) * .8;
+    if (u < wc) land = .8 + fbm(x, y) * 3.2 * Math.min(1, (wc - u) * 12);
+    else if (u > ec) land = .8 + fbm(x + 77, y) * 2.2 * Math.min(1, (u - ec) * 12);
+    for (const [iu, iv, r, ht] of isl) { const d = Math.hypot(u - iu, v - iv); if (d < r) land = Math.max(land, ht * (1 - d / r) * (.7 + .6 * fbm(x, y)) + .3); }
+    if (land < 0 && v < .5 && u > .17 && u < .6 && fbm(x * 1.7 + 300, y * 1.7) > .62) land = .25; // ice floes
+    h[i] = land;
+    bio[i] = u < .2 || (v < .55 && u < .62) ? BIO.SNOW : land > 3 ? BIO.ROCK : BIO.GRASS;
+  }
+  // New York: Manhattan between the Hudson and the East River, the harbour to the south, the mainland around it
+  const cx = Math.round(N * .9), cy = Math.round(N * .5);
+  for (let y = cy - 44; y <= cy + 44; y++) for (let x = cx - 40; x <= cx + 20; x++) {
+    if (x < 1 || y < 1 || x >= N - 1 || y >= N - 1) continue; const i = y * N + x; let land = 1.3;
+    if (x >= cx - 11 && x <= cx - 7) land = -1.4;                // the Hudson
+    else if (x >= cx + 7 && x <= cx + 10) land = -1.4;           // the East River
+    else if (y > cy + 36 && x > cx - 14 && x < cx + 14) land = -1.5; // the harbour
+    h[i] = land; bio[i] = BIO.GRASS;
+  }
+  const t2 = new Float32Array(h); for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) { const i = y * N + x; h[i] = (t2[i] * 2 + t2[i - 1] + t2[i + 1] + t2[i - N] + t2[i + N]) / 6; }
+  for (let i = 0; i < A; i++) { if (h[i] < 0) water[i] = 1; else if (bio[i] === BIO.GRASS && h[i] > .7 && h[i] < 2.8 && rnd() < .1) tree[i] = 1; else if (bio[i] === BIO.SNOW && h[i] > 1 && rnd() < .05) tree[i] = 1; }
+  // the city: a grid of towers, tallest around midtown, one spire in the middle to aim at
+  const mid = cy - 6;
+  for (let yy = cy - 34; yy <= cy + 34; yy += 2.7) for (let xx = cx - 5; xx <= cx + 5; xx += 2.7) {
+    const dm = Math.abs(yy - mid) / 34, hh = 1.6 + (1 - dm) * 5.5 * (.4 + rnd() * .8) + (rnd() < .08 ? 2 : 0);
+    ruins.push({x: xx + (rnd() - .5) * .4, y: yy + (rnd() - .5) * .4, w: 1.6 + rnd() * .9, d: 1.6 + rnd() * .9, h: hh, kind: 'sky'});
+  }
+  ruins.push({x: cx, y: mid, w: 2.4, d: 2.4, h: 11, kind: 'sky'});
+  for (const R2 of ruins) R2.z = h[Math.round(R2.y) * N + Math.round(R2.x)];
+  // the Siberian airfield: a level strip with a runway
+  const ax = Math.round(N * .06), ay = Math.round(N * .5);
+  for (let y = ay - 8; y <= ay + 8; y++) for (let x = ax - 6; x <= ax + 22; x++) { const i = y * N + x; h[i] = 1.4; water[i] = 0; tree[i] = 0; bio[i] = BIO.SNOW; }
+  for (let x = ax; x <= ax + 18; x++) for (let y = ay - 1; y <= ay + 1; y++) road[y * N + x] = 1;
+  const P = n => [Math.round(N * n[0]), Math.round(N * n[1])];
+  const M = {N, seed, h, bio, tree, water, block, road, occ, spawns: Array.from({length: np}, () => ({x: ax + 4, y: ay})), nodes: [], ruins, lite: true};
+  M.rsRoute = [[.07, .5], [.24, .43], [.42, .38], [.58, .47], [.72, .54], [.82, .52], [.885, .492]].map(P); M.rsTarget = {x: cx, y: mid};
+  finishRoads(M);
+  return M;
+}
 // ---------- Arcade maps ----------
 // 14 Grand Theatre: a huge air map (4x the area of Massive). Built cheap on purpose: smooth hills, a mountain range, a coast with islands,
 //    sparse forests and a few towns, and the renderer draws it with a coarser mesh and no rocks (M.lite), so it stays smooth.
@@ -2180,7 +2226,7 @@ function chaffLeft(e, t) { if (e.chaff === undefined) { e.chaff = CHAFF_N; e.cha
 function Sim(opts) {
   this.N = opts.size || 128;
   this.seed = opts.seed || 1;
-  this.M = genMap(this.N, this.seed, opts.players.length); if (opts.sandbox) sandboxRoom(this.M);
+  this.M = opts.redstar ? redstarMap(this.N, this.seed, opts.players.length) : genMap(this.N, this.seed, opts.players.length); if (opts.sandbox) sandboxRoom(this.M);
   this.F = new Fields(this.M);
   this.rnd = mulberry(this.seed * 31 + 7);
   this.t = 0; this.tick = 0; this.nextId = 1;
@@ -2295,12 +2341,14 @@ Sim.prototype.setupSandbox = function () {
 };
 // Operation Red Star (work in progress): one Soviet bomber that flies a slow circle while the crew walk around inside it.
 Sim.prototype.setupRedstar = function () {
-  this.redstar = 1; this.rsA = 0; const c = this.N / 2, b = this.addUnit('bomber', 0, c, c); b.z = 16; b.rs = 1;
+  this.redstar = 1; this.rsS = 0; const R0 = this.M.rsRoute[0], b = this.addUnit('bomber', 0, R0[0], R0[1]); b.z = 16; b.rs = 1; b.h = 0;
 };
-Sim.prototype.redstarStep = function () {
-  const b = [...this.ents.values()].find(e => e.rs); if (!b) return;
-  this.rsA += .012; const c = this.N / 2;
-  b.x = c + Math.cos(this.rsA) * 34; b.y = c + Math.sin(this.rsA) * 34; b.h = this.rsA + Math.PI / 2; b.z = 16; b.moving = true; b.hp = b.hpm;
+Sim.prototype.redstarStep = function () { // follows the flight plan at a steady crawl, then circles New York
+  const b = [...this.ents.values()].find(e => e.rs), RT = this.M.rsRoute; if (!b || !RT) return;
+  this.rsS = (this.rsS || 0) + .12; let s = this.rsS, x, y, hd;
+  for (let i = 0; i < RT.length - 1; i++) { const dx = RT[i + 1][0] - RT[i][0], dy = RT[i + 1][1] - RT[i][1], L = Math.hypot(dx, dy); if (s <= L) { x = RT[i][0] + dx / L * s; y = RT[i][1] + dy / L * s; hd = Math.atan2(dy, dx); break; } s -= L; }
+  if (x === undefined) { const T = this.M.rsTarget, a = (s / 16) + 2.2; x = T.x + Math.cos(a) * 16; y = T.y + Math.sin(a) * 16; hd = a + Math.PI / 2; }
+  this.rsH = (this.rsH === undefined ? hd : this.rsH) + angDiff(this.rsH === undefined ? hd : this.rsH, hd) * .06; b.x = x; b.y = y; b.h = this.rsH; b.z = 16; b.moving = true; b.hp = b.hpm;
 };
 Sim.prototype.setupPlayer = function (p) {
   const s = p.spawn;
@@ -5363,7 +5411,7 @@ function encodeSnap(sim, sendSlow) {
 // ---------- mirror (client) ----------
 function Mirror(o) {
   this.N = o.size; this.seed = o.seed;
-  this.M = genMap(this.N, this.seed, o.players.length); if (o.sandbox) sandboxRoom(this.M); this.redstar = !!o.redstar; this.crew = {};
+  this.M = o.redstar ? redstarMap(this.N, this.seed, o.players.length) : genMap(this.N, this.seed, o.players.length); if (o.sandbox) sandboxRoom(this.M); this.redstar = !!o.redstar; this.crew = {};
   this.t = 0; this.ents = new Map(); this.smokes = []; this.over = null; this.nukes = [];
   this.players = o.players.map((p, i) => {
     const nat = NATIONS[p.nation];
@@ -7846,6 +7894,12 @@ Renderer.prototype.buildRuins = function (M) {
   for (const R of M.ruins) {
     const z = Math.max(0, R.z || 0), col = cols[(r() * cols.length) | 0];
     if (R.kind === 'rubble') { for (let i = 0; i < 9; i++) b.box(.5 + r() * 1.3, .2 + r() * .5, .5 + r() * 1.3, R.x - 2 + r() * 4, z + .15, R.y - 2 + r() * 4, cols[(r() * 5) | 0], r() * 3, r() * .4, r() * .4); continue; }
+    if (R.kind === 'sky') { // a solid tower: stepped body, window bands, a lit crown
+      const W = R.w, D = R.d, H = R.h, tone = [0x8a8f96, 0x7d838b, 0x9a9488, 0x6f757d][(r() * 4) | 0];
+      b.box(W, H, D, R.x, z + H / 2, R.y, tone); b.box(W * .7, H * .25, D * .7, R.x, z + H * 1.125, R.y, tone); b.box(W * .35, H * .2, D * .35, R.x, z + H * 1.35, R.y, 0x6a6f76);
+      for (let fl = .4; fl < H; fl += .55) b.box(W + .03, .14, D + .03, R.x, z + fl, R.y, 0x23272c);
+      if (H > 8) b.box(.08, 1.6, .08, R.x, z + H * 1.45 + .8, R.y, 0xc23030);
+      continue; }
     if (R.kind === 'elevator') { for (let i = 0; i < 4; i++) b.cyl(.9, R.h, R.x - 1 + (i % 2) * 2, z + R.h / 2, R.y - 1 + (i >> 1) * 2, 0xb5ad9f); b.box(4.2, 1.6, 1.2, R.x, z + R.h + .6, R.y, 0xa39b8d); continue; }
     // four walls, each a row of columns with random heights: the jagged tops of a shelled building
     const t = .35, W = R.w, D = R.d;
@@ -11275,7 +11329,7 @@ const Interior = {
   layout(k) {
     if (k === 'redstar') return {sub: false, chair: [10.5, -.7], worldUp: 1.1, // the Soviet atomic bomber: nose and cockpit, radio/nav, engineer's bay, bomb bay, tail gunner
       rooms: [
-        {n: 'Cockpit and glass nose', x0: 8, x1: 15.5, z0: -1.7, z1: 1.7, win: [['x', 15.5, -1.5, 1.5], ['z', -1.7, 9, 14.8], ['z', 1.7, 9, 14.8]]},
+        {n: 'Cockpit and glass nose', x0: 8, x1: 15.5, z0: -1.7, z1: 1.7, win: [['x', 15.5, -1.5, 1.5, .1, 1.12], ['z', -1.7, 9, 11.8], ['z', 1.7, 9, 11.8], ['z', -1.7, 12.4, 14.8, .12, 1.1], ['z', 1.7, 12.4, 14.8, .12, 1.1]]},
         {n: 'Radio and navigation', x0: 4, x1: 8, z0: -1.6, z1: 1.6, win: [['z', -1.6, 6.2, 7.8], ['z', 1.6, 6.2, 7.8]]},
         {n: "Engineer's bay", x0: -2, x1: 4, z0: -1.6, z1: 1.6, win: [['z', -1.6, 3, 3.7], ['z', 1.6, 3, 3.7]]},
         {n: 'Bomb bay', x0: -9, x1: -2, z0: -1.3, z1: 1.3},
@@ -11381,8 +11435,8 @@ const Interior = {
     b.box(.4, .22, .3, 10.5, .3, 0, ST); [0, 1, 2, 3].forEach(i => b.box(.03, .2, .03, 10.5, .5, -.12 + i * .08, [RD, AM, MT, MT][i]));
     b.box(1.1, .42, .6, 9, .21, 1.4, OL); b.box(1.1, .03, .6, 9, .43, 1.4, 0xe8dfc0); b.box(.5, .005, .02, 9, .447, 1.4, RD); b.cyl(.03, .14, 8.7, .5, 1.2, DK); b.add(GEO.sph, AM, 8.7, .6, 1.2, .045, .045, .045);
     b.box(.5, .45, .9, 14.9, .22, 0, ST); b.cylX(.07, .4, 14.6, .55, 0, DK); b.add(GEO.sph, GL, 14.4, .55, 0, .04, .04, .04); b.box(.7, .1, .6, 14.1, .08, 0, PAD); b.box(.3, .14, .2, 14.9, .5, .3, DK); b.add(GEO.sph, RD, 14.75, .58, -.3, .03, .03, .03);
-    b.box(.08, .06, 3.1, 15.5, .55, 0, DK); b.box(.08, .06, 3.1, 15.5, 1.02, 0, DK); [-1.5, -.5, .5, 1.5].forEach(z => b.box(.07, .55, .07, 15.5, .8, z, DK));   // glass nose frame
-    [-1.7, 1.7].forEach(z => [9, 11, 13, 14.8].forEach(x => b.box(.07, .55, .07, x, .8, z, DK)));
+    b.box(.08, .06, 3.1, 15.5, .1, 0, DK); b.box(.08, .06, 3.1, 15.5, 1.12, 0, DK); [-1.5, -.5, .5, 1.5].forEach(z => b.box(.07, 1.02, .07, 15.5, .61, z, DK));   // glass nose frame: low glass so the bombardier can see the ground
+    [-1.7, 1.7].forEach(z => { [9, 10.4, 11.8].forEach(x => b.box(.07, .55, .07, x, .8, z, DK)); [12.4, 13.2, 14, 14.8].forEach(x => b.box(.07, 1, .07, x, .61, z, DK)); b.box(2.4, .06, .08, 13.6, .12, z, DK); b.box(2.8, .06, .08, 10.4, .55, z, DK); });
     // ---- radio and navigation: the radio desk, set, key and headset, a map cabinet, oxygen bottles
     b.box(1.8, .45, .5, 5, .22, -1.35, ST); b.box(.5, .28, .3, 5, .6, -1.42, DK);
     [0, 1, 2].forEach(i => { b.cyl(.04, .02, 4.8 + i * .2, .64, -1.26, 0xd8d0a0, Math.PI / 2); b.box(.02, .06, .01, 4.8 + i * .2, .66, -1.25, RD); });
@@ -11488,13 +11542,13 @@ const Interior = {
     const edge = (room, axis, at, a, c) => {
       const top = room.open ? .45 : H, cuts = [];
       for (const d of L.doors) if (d[0] === axis && Math.abs(d[1] - at) < .01 && d[3] > a && d[2] < c) cuts.push([Math.max(a, d[2]), Math.min(c, d[3]), 'door']);
-      for (const w of room.win || []) if (w[0] === axis && Math.abs(w[1] - at) < .01) cuts.push([w[2], w[3], 'win']);
+      for (const w of room.win || []) if (w[0] === axis && Math.abs(w[1] - at) < .01) cuts.push([w[2], w[3], 'win', w[4] || .55, w[5] || 1.02]);
       cuts.sort((p, q) => p[0] - q[0]);
       const seg = (s, e, y0, y1) => { if (e - s < .001 || y1 <= y0) return; if (axis === 'x') b.box(T, y1 - y0, e - s, at, (y0 + y1) / 2, (s + e) / 2, wallC); else b.box(e - s, y1 - y0, T, (s + e) / 2, (y0 + y1) / 2, at, wallC); };
       let pos = a;
       for (const q of cuts) {
         seg(pos, q[0], 0, top);
-        if (!room.open) { if (q[2] === 'door') seg(q[0], q[1], 1.05, H); else { seg(q[0], q[1], 0, .55); seg(q[0], q[1], 1.02, H); } }
+        if (!room.open) { if (q[2] === 'door') seg(q[0], q[1], 1.05, H); else { seg(q[0], q[1], 0, q[3]); seg(q[0], q[1], q[4], H); } }
         pos = q[1];
       }
       seg(pos, c, 0, top);
@@ -11845,14 +11899,14 @@ const UI = {
     $('rsOpts').style.display = this.redstar && this.net !== 'client' ? '' : 'none';
     if (tr) $('lTitle').textContent = 'Test room';
   },
-  rsOpts() { return this.redstar ? {fly: $('rsFly').value, fail: $('rsFail').value, cut: $('rsCut').value, end: $('rsEnd').value, diff: $('rsDiff').value} : null; },
+  rsOpts() { return this.redstar ? {fly: $('rsFly').value, fail: $('rsFail').value, cut: 'both', end: 'flash', diff: $('rsDiff').value} : null; },
   openLobby(type) {
     this.renderNations();
     $('menu').classList.add('hidden'); $('lobby').classList.remove('hidden');
     this.redstar = type === 'redstar'; this.testRoom = type === 'test' || this.redstar; if (this.testRoom) type = 'host';
     this.lobby = {slots: [{kind: 'human', name: Profile.name() || 'Host', nation: 3, team: 0, id: 'host'}, {kind: 'bot', level: 'normal', nation: 4, team: 1}]};
     if (this.testRoom) { this.lobby.test = 1; this.lobby.slots.pop(); $('optAll').checked = true; $('optTut').checked = false; } // test room: no bots, every unit free
-    if (this.redstar) try { const sv = JSON.parse(localStorage.getItem('jjf_rs') || '{}'); for (const k of ['Fly', 'Fail', 'Cut', 'End', 'Diff']) if (sv[k.toLowerCase()]) $('rs' + k).value = sv[k.toLowerCase()]; } catch (e) {}
+    if (this.redstar) try { const sv = JSON.parse(localStorage.getItem('jjf_rs') || '{}'); for (const k of ['Fly', 'Fail', 'Diff']) if (sv[k.toLowerCase()]) $('rs' + k).value = sv[k.toLowerCase()]; } catch (e) {}
     this.mySlot = 0;
     $('addBot').classList.remove('hidden'); $('bStart').classList.remove('hidden');
     if (type === 'host') {
@@ -12092,7 +12146,7 @@ const UI = {
     Sfx.init();
     if (Direct.isTouch()) { try { const d = document.documentElement, r = d.requestFullscreen && d.requestFullscreen(); if (r && r.then) r.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); } catch (e) {} }
     const mv = $('optMap').value, mt = mv === 'r' ? MAP_KEYS[(Math.random() * MAP_KEYS.length) | 0] : +mv;
-    const L = this.lobby, sb = !!this.testRoom, seed = sb ? 4242 : ((Math.random() * 1e6) | 0) + mt * 1e7, size = sb ? 128 : Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : mt >= 11 ? 144 : 0);
+    const L = this.lobby, sb = !!this.testRoom, seed = sb ? 4242 : ((Math.random() * 1e6) | 0) + mt * 1e7, size = sb ? (this.redstar ? 384 : 128) : Math.max(+$('optSize').value, mt === 9 ? 224 : mt === 8 || mt === 7 ? 160 : mt >= 11 ? 144 : 0);
     const players = L.slots.map(s => ({nation: s.nation, team: s.team, name: s.kind === 'bot' ? NATIONS[s.nation].name + ' (bot)' : (s.name || 'Player'), bot: s.kind === 'bot' ? s.level : null, open: s.kind !== 'bot' && $('optAll').checked, eco: s.kind === 'bot' ? null : $('optEco').value}));
     this.playersIds = L.slots.map(s => s.id || null);
     if (sb) for (const p of players) { p.team = 0; p.open = true; }
@@ -12261,7 +12315,7 @@ const UI = {
     window.__ws = this;
     if (o.redstar) { // Operation Red Star: everyone starts inside the bomber
       this.addAlert('Operation Red Star: walk the aircraft with WASD and mouse. The rest of the crew is in here with you.', 'rs');
-      if (o.rso) { const N = {heavy: 'heavy flying', hard: 'demanding flying', retry: 'retry a phase once', one: 'one life', check: 'unlimited checkpoints', bomb: "bomb's-eye cutscene", bomber: 'cutscene from the bomber', both: 'full cutscene', flash: 'ends on the flash', escape: 'escape flight home', train: 'Training', std: 'Standard', brutal: 'Brutal'}; this.addAlert('Mission: ' + [o.rso.diff, o.rso.fly, o.rso.fail, o.rso.cut, o.rso.end].map(k => N[k] || k).join(' · '), 'rs'); }
+      if (o.rso) { const N = {heavy: 'heavy flying', hard: 'demanding flying', retry: 'one respawn per phase', one: 'no respawns', check: 'unlimited respawns', bomb: "bomb's-eye cutscene", bomber: 'cutscene from the bomber', both: 'full cutscene', flash: 'ends on the flash', escape: 'escape flight home', train: 'Training', std: 'Standard', brutal: 'Brutal'}; this.addAlert('Mission: ' + [o.rso.diff, o.rso.fly, o.rso.fail].map(k => N[k] || k).join(' · '), 'rs'); }
       let tries = 0; const go = () => { const g = this.g; if (!g || g !== this.g) return; const b = [...g.view.ents.values()].find(e => e.k === 'bomber'); if (b && !Direct.on) { Direct.enter(this, b); return; } if (!b && ++tries < 40) setTimeout(go, 250); }; setTimeout(go, 400);
     } else if (o.sandbox) { // test room: drop straight into first person as your soldier
       this.addAlert('Test room: walk around with WASD and mouse. Your friends are in here too.', 'gold');
