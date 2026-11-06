@@ -65,6 +65,7 @@ Browser war game in one file: `index.html` (Three.js r170, inlined: the ESM buil
   - Naval battles mode with aircraft carriers, more boats and subs that dive.
   - Kill cam.
   - Camos as rank unlocks.
+  - Co-op crew mode (after multiplayer works): you and friends crew one big bomber (or other large vehicle) together. Each person has a role and a job (pilot, gunners, bombardier, commander). You can walk around inside the aircraft, like the ship interiors, to get between stations and do tasks (man a gun, line up the bombsight, repair damage, reload). The crew has to complete mission objectives together (reach the target, drop the bombs, get home).
 - **Older backlog:**
   - Vehicle guns hit where aimed.
   - Digging system polish.

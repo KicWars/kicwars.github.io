@@ -1100,16 +1100,25 @@ const PWPN = {
             {n: 'Hydra Rockets', t: 'proj', dmg: 50, vs: 'rocket', spd: 38, g: .6, spl: 1.4, cd: .22, rng: 60, salvo: 1, snd: 'rocket'},
             {n: 'AIM-92 Stinger', t: 'msl', dmg: 100, vs: 'missile', spd: 36, spl: 1, cd: 3, rng: 55, air: 1, snd: 'missile'}],
   destroyer: [{n: '5-inch Gun', t: 'proj', dmg: 90, vs: 'shell', spd: 40, g: 5, spl: 1.6, mag: 1, rl: 1.6, sp: .3, ads: .1, kick: 1.5, rng: 80, zoom: .5, snd: 'tank'},
-            {n: 'Sea Sparrow', t: 'msl', dmg: 95, vs: 'missile', spd: 32, spl: 1, cd: 3, rng: 70, air: 1, snd: 'missile'}],
+            {n: 'Deck Machine Gun', t: 'hit', dmg: 9, vs: 'bullet', rpm: 700, mag: 400, rl: 3, sp: 1.2, ads: .8, kick: .1, rng: 45, crit: 1.3, auto: 1, aa: 1, snd: 'mg'},
+            {n: 'Sea Sparrow', t: 'msl', dmg: 95, vs: 'missile', spd: 32, spl: 1, cd: 1.2, rng: 70, air: 1, snd: 'missile'},
+            {n: 'Harpoon', t: 'msl', dmg: 150, vs: 'missile', spd: 30, spl: 1.6, cd: 1.5, rng: 90, snd: 'missile'}],
   seaplane: [{n: 'Twin MG', t: 'hit', dmg: 8, vs: 'cannon', rpm: 900, mag: 400, rl: 3, sp: 1, ads: .9, kick: .1, rng: 40, auto: 1, aa: 1, snd: 'mg'},
             {n: 'Aerial Torpedo', t: 'proj', dmg: 280, vs: 'torpedo', spd: 12, g: 0, spl: 1.4, mag: 2, rl: 6, sp: 0, rng: 70, sea: 1, snd: 'torpedo'}],
   attacksub: [{n: 'Torpedo', t: 'proj', dmg: 220, vs: 'torpedo', spd: 11, g: 0, spl: 1.2, mag: 1, rl: 4, sp: 0, rng: 60, sea: 1, snd: 'torpedo'}],
   nukesub: [{n: 'Torpedo', t: 'proj', dmg: 160, vs: 'torpedo', spd: 11, g: 0, spl: 1.2, mag: 1, rl: 5, sp: 0, rng: 60, sea: 1, snd: 'torpedo'},
             {n: 'Trident ICBM', t: 'icbm', cd: 2}],
   fpv:     [{n: 'Warhead', t: 'det'}],
-  truck: [], supply: [], lcboat: [], transport: [], awacs: [],
+  truck: [], supply: [], lcboat: [{n: 'Deck Machine Gun', t: 'hit', dmg: 9, vs: 'bullet', rpm: 700, mag: 400, rl: 3, sp: 1.2, ads: .8, kick: .1, rng: 45, crit: 1.3, auto: 1, aa: 1, snd: 'mg'}], transport: [], awacs: [],
   hover: [{n: 'M2 Browning', t: 'hit', dmg: 9, vs: 'bullet', rpm: 550, mag: 200, rl: 3, sp: 1.2, ads: .8, kick: .3, rng: 40, crit: 1.4, auto: 1, aa: 1, snd: 'mg'}],
-  patrolboat: [{n: 'Twin 20mm Cannon', t: 'hit', dmg: 11, vs: 'cannon', rpm: 600, mag: 300, rl: 3, sp: 1.1, ads: .8, kick: .25, rng: 45, crit: 1.4, auto: 1, aa: 1, snd: 'mg'}],
+  patrolboat: [{n: 'Twin 20mm Cannon', t: 'hit', dmg: 11, vs: 'cannon', rpm: 600, mag: 300, rl: 3, sp: 1.1, ads: .8, kick: .25, rng: 45, crit: 1.4, auto: 1, aa: 1, snd: 'mg'},
+            {n: '40mm Deck Gun', t: 'proj', dmg: 55, vs: 'shell', spd: 42, g: 4, spl: 1.1, mag: 1, rl: 1.1, sp: .3, ads: .1, kick: .8, rng: 70, zoom: .5, snd: 'tank'},
+            {n: 'Sea Sparrow', t: 'msl', dmg: 95, vs: 'missile', spd: 32, spl: 1, cd: 1.2, rng: 70, air: 1, snd: 'missile'},
+            {n: 'Harpoon', t: 'msl', dmg: 150, vs: 'missile', spd: 30, spl: 1.6, cd: 1.5, rng: 90, snd: 'missile'}],
+  carrier: [{n: '127mm Deck Gun', t: 'proj', dmg: 90, vs: 'shell', spd: 40, g: 5, spl: 1.6, mag: 1, rl: 1.6, sp: .3, ads: .1, kick: 1.5, rng: 80, zoom: .5, snd: 'tank'},
+            {n: 'Deck Machine Gun', t: 'hit', dmg: 9, vs: 'bullet', rpm: 700, mag: 400, rl: 3, sp: 1.2, ads: .8, kick: .1, rng: 45, crit: 1.3, auto: 1, aa: 1, snd: 'mg'},
+            {n: 'Sea Sparrow', t: 'msl', dmg: 95, vs: 'missile', spd: 32, spl: 1, cd: 1.2, rng: 70, air: 1, snd: 'missile'},
+            {n: 'Harpoon', t: 'msl', dmg: 150, vs: 'missile', spd: 30, spl: 1.6, cd: 1.5, rng: 90, snd: 'missile'}],
   chinook: [{n: 'Door Minigun', t: 'hit', dmg: 7, vs: 'bullet', rpm: 1800, mag: 600, rl: 4, sp: 1.6, ads: 1, kick: .1, rng: 40, crit: 1.3, auto: 1, aa: 1, snd: 'mg'}],
   hunter:  [{n: 'Warhead', t: 'det'}],
 };
@@ -1234,7 +1243,7 @@ BATTLES.push(
   {n: 'Tank Battle: Sandstone Gorge', arc: 'ground', team: 11, map: 17, seed: 53, size: 144, foe: 'jethroes', tickets: 1e9, tix: 2500, sea: [0, 1], obj: [], land: [], def: [], classes: TANK_CLASSES,
     comp: ['tank', 'ltank', 'htank', 'td', 'tank', 'ltank', 'tank', 'htank', 'td', 'ifv', 'sam'],
     blurb: 'Desert. B is a walled old town, A an oasis in the palms, and C lies at the bottom of a canyon you can only enter from the ends. Rock mesas break the long sightlines: perfect for ambushes.'});
-const HH_CLASSES = ['f16', 'fa18', 'seaplane', 'a10', 'bomber', 'fighter', 'patrolboat', 'destroyer'];
+const HH_CLASSES = ['f16', 'fa18', 'seaplane', 'a10', 'bomber', 'fighter', 'patrolboat', 'destroyer', 'carrier'];
 BATTLES.push({n: 'Harbor Havoc: Island Harbors', arc: 'air', harbor: 1, team: 7, map: 18, seed: 5, size: 240, foe: 'toms', tickets: 1e9, tix: 3000, sea: [0, 1], obj: [], land: [], def: [], classes: HH_CLASSES,
   comp: ['f16', 'bomber', 'seaplane', 'fa18', 'a10', 'fighter', 'bomber'],
   blurb: 'All ocean: two base islands and three small islands to capture, each with turrets, a runway and a naval yard once you hold it. Arcade flying (no stalls, no crashes): launch from your aircraft carrier, bomb the enemy harbor, sink their fleet and shoot down their jets, or take a patrol boat or destroyer out yourself. Take off from the deck or start airborne; to land, fly low over the deck and hold S until you drop onto it, then you repair and rearm. Destroy the enemy harbor core to win. Pick both nations.'},
@@ -1458,12 +1467,14 @@ function genAirMap(N, seed) {
 function genHarborMap(N, seed) {
   const rnd = mulberry(seed * 7919 + 71), nz = makeNoise(rnd), K = arcKit(N, rnd), M = K.M, h = M.h, j = () => (rnd() - .5) * .06;
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const i = y * N + x; h[i] = -1.7 + (nz(x * .03, y * .03, 3) - .5) * .6; M.bio[i] = BIO.DESERT; }
-  const isle = (u, v, r) => K.each(u, v, r, (i, d, x, y) => {
-    const e = Math.pow(1 - d, .5) * 3.4 - 1.1 + (nz(x * .15, y * .15, 2) - .5) * .5 * (1 - d); if (d < .45) { if (e < 1.5) h[i] = Math.max(h[i], 1.5); else h[i] = Math.max(h[i], e); } else if (e > h[i]) h[i] = e;
-    if (h[i] > .9) { M.bio[i] = BIO.GRASS; if (d > .45 && d < .85 && rnd() < .07) M.tree[i] = 1 + (rnd() * 2 | 0); }
+  const isle = (u, v, r, hill) => K.each(u, v, r, (i, d, x, y) => { // Harbor Havoc islands: a flat grassy top, a ring of sand sloping into shallows, palms
+    const rim = 1 - d, e = rim > .36 ? 1.9 + (hill || 0) * (rim - .36) + (nz(x * .12, y * .12, 2) - .5) * .25 : -1.1 + rim / .36 * 3.0;
+    if (e > h[i]) h[i] = e;
+    if (h[i] > .15) { M.bio[i] = rim > .5 && h[i] > 1.2 ? BIO.GRASS : BIO.DESERT; if (rim > .5 && rim < .92 && rnd() < .1) M.tree[i] = 1 + (rnd() * 2 | 0); else if (rim > .3 && rim <= .5 && rnd() < .05) M.tree[i] = 1; }
   });
   const B0 = [.14 + j(), .84 + j()], B1 = [.86 + j(), .16 + j()], I = [['A', .27 + j(), .38 + j()], ['B', .5 + j(), .5 + j()], ['C', .73 + j(), .62 + j()]];
-  isle(B0[0], B0[1], .11); isle(B1[0], B1[1], .11); for (const [, u, v] of I) isle(u, v, .055);
+  isle(B0[0], B0[1], .11, 1.2); isle(B1[0], B1[1], .11, 1.2); for (const [, u, v] of I) isle(u, v, .055, .5);
+  for (const [u, v, r] of [[.2, .56, .02], [.4, .8, .022], [.62, .22, .02], [.8, .42, .022], [.44, .26, .018], [.6, .78, .02], [.1, .4, .018], [.9, .7, .018]]) isle(u + j(), v + j(), r, 0); // sandbar islets
   const M2 = K.finish([B0, B1], .12, seed);
   return Object.assign(M2, {lite: 1, isles: I.map(([n, u, v]) => ({n, x: Math.round(u * N), y: Math.round(v * N)}))});
 }
@@ -3990,6 +4001,7 @@ Sim.prototype.pilotProj = function (c, pi) {
   const sp = W.t === 'bomb' ? 0 : W.spd, p = {i: ++this.pid || (this.pid = 1), o: a.o, src: a.id, x: ox, y: oy, z: oz, vx: dx * sp + (c.vx || 0), vy: dy * sp + (c.vy || 0), vz: dz * sp + (c.vz || 0),
     g: W.t === 'bomb' ? 9.8 : W.g || 0, W, w: c.w | 0, he: c.am === 1 && W.vs === 'shell' ? 1 : 0, life: W.fuse || (W.t === 'bomb' ? 12 : (W.rng || 40) / (W.spd || 20) * 1.6 + .5), home: c.tgt || 0, t0: this.t};
   if (W.t === 'bomb') { p.vx = c.vx || 0; p.vy = c.vy || 0; p.vz = (c.vz || 0) - 1; }
+  if (p.home && W.t === 'msl') { const t0 = this.ents.get(p.home); if (t0) { const tx = t0.x - ox, ty = t0.y - oy, tz = (t0.z || 0) + (t0.air ? 0 : .4) - oz, L2 = Math.hypot(tx, ty, tz) || 1; p.vx = tx / L2 * sp; p.vy = ty / L2 * sp; p.vz = tz / L2 * sp; } }
   (this.projs = this.projs || []).push(p);
   if (p.home) { const t = this.ents.get(p.home); if (t && t.air && !t.pilot && this.rnd() < .5) this.popChaff(t); }
   this.ev({k: 'pj', rk: W.rk ? 1 : 0, i: p.i, o: p.o, x: p.x, y: p.y, z: p.z, vx: p.vx, vy: p.vy, vz: p.vz, g: p.g, ty: W.vs, wt: W.t, home: p.home, fuse: W.fuse ? 1 : 0, a: a.id});
@@ -4004,11 +4016,12 @@ Sim.prototype.stepProjs = function () {
       p.life -= dt;
       if (p.home) { // homing: turn toward the target, limited turn rate
         const t0 = this.ents.get(p.home);
-        if (t0 && (t0.chaffT || 0) > this.t && !p.spoofRoll) { p.spoofRoll = 1; if (this.rnd() < .75) { p.home = 0; this.ev({k: 'msg', p: p.o, text: 'Your missile was spoofed by chaff', kind: 'bad'}); if (t0.pilot) this.notify(t0.o, 'Chaff spoofed the missile!', 'good'); } }
+        if (t0 && (t0.chaffT || 0) > this.t && !p.spoofRoll) { p.spoofRoll = 1; if (this.rnd() < .4) { p.home = 0; this.ev({k: 'msg', p: p.o, text: 'Your missile was spoofed by chaff', kind: 'bad'}); if (t0.pilot) this.notify(t0.o, 'Chaff spoofed the missile!', 'good'); } }
         const t = p.home ? t0 : null;
         if (t && t.hp > 0) {
           const sp = Math.hypot(p.vx, p.vy, p.vz), tx = t.x - p.x, ty = t.y - p.y, tz = (t.z || 0) + (t.air ? 0 : .4) - p.z, L = Math.hypot(tx, ty, tz) || 1, k = Math.min(1, dt * (p.W.air ? 3.2 : 2.4));
           p.vx += (tx / L * sp - p.vx) * k; p.vy += (ty / L * sp - p.vy) * k; p.vz += (tz / L * sp - p.vz) * k;
+          if (L < Math.max(2.4, sp * dt * 1.6) && this.t - p.t0 > .05) hit = t; // proximity fuse: a locked missile that gets this close connects
         }
       }
       p.vz -= p.g * dt;
@@ -4604,7 +4617,7 @@ Sim.prototype.setTier = function (e, t) { if (!(t > 1)) return; e.tier = Math.mi
 Sim.prototype.scenSpawn = function (pi, k, tier, rwy) {
   const S = this.scen; if (!S || this.over) return;
   const strike = S.arc === 'ground' && k === 'a10'; // the earned strike plane is not in the vehicle list
-  if (!strike && !batClasses(S.B).includes(k)) return;
+  if (!strike && !(S.B.harbor && k === 'rifle') && !batClasses(S.B).includes(k)) return;
   if (strike && !(S.strike && S.strike[pi] > 0)) { this.notify(pi, 'Get 3 kills in one life to earn a strike plane', 'bad'); return; }
   const tr0 = S.arc === 'ground' && TANK_CLASSES.includes(k) ? clamp(tier | 0 || 1, 1, TIERS.length) : 1;
   const mine = S.queue.find(q => q.you === pi); if (mine) { mine.k = k; mine.tier = tr0; mine.rwy = rwy ? 1 : 0; return; } // changed your mind while waiting: swap the pick
@@ -4634,6 +4647,7 @@ Sim.prototype.arcSetup = function (B) {
       const q0 = land(H[o].x, H[o].y), core = this.addBuilding('bunker', o, Math.round(q0.x), Math.round(q0.y), true); if (core) { core.base = 1; core.core = 1; core.hp = core.hpm = 6000; }
       for (const sd of [-2, -1, 1, 2]) { const q = land(q0.x + px * sd * 7, q0.y + py * sd * 7); const b = this.addBuilding(sd % 2 ? 'aa' : 'tower', o, Math.round(q.x), Math.round(q.y), true); if (b) { b.base = 1; b.hp = b.hpm = 1500; } }
       const rw = land(q0.x - ax / L * 12, q0.y - ay / L * 12), A = this.addBuilding('airfield', o, Math.round(rw.x), Math.round(rw.y), true); if (A) { A.hp = A.hpm = 1e6; S.isleF[o].push({x: A.x, y: A.y}); }
+      S.hq = S.hq || []; S.hq[o] = q0; const yq = land(q0.x + px * 10, q0.y + py * 10), YB = this.addBuilding('yard', o, Math.round(yq.x), Math.round(yq.y), true); if (YB) { YB.hp = YB.hpm = 2500; YB.base = 1; } // the boat spawner
       S.yard[o] = this.harborWater(q0.x, q0.y, 30);
       ['destroyer', 'destroyer', 'patrolboat', 'patrolboat', 'patrolboat'].forEach((k, i) => { const w = this.harborWater(q0.x + px * (i - 2) * 6, q0.y + py * (i - 2) * 6, 28 + i); if (w) { const e = this.addUnit(k, o, w.x, w.y); e.gt = 1; e.stance = 'hold'; } });
       const cw = this.harborWater(q0.x + ax / L * 10, q0.y + ay / L * 10, 32); // the carrier is your airfield: a low pass over the deck repairs and rearms
@@ -4684,6 +4698,7 @@ Sim.prototype.harborStep = function () {
   }
 };
 Sim.prototype.arcLoss = function (t, by) {
+  if (t.noLoss) return;
   const S = this.scen, o = t.o; if (o !== 0 && o !== 1) return;
   const air = S.arc === 'air', cost = t.core ? 0 : t.base ? (S.B.harbor ? 150 : 120) : air ? (t.gt ? 12 : t.air ? 30 : 8) : (t.air ? 12 : 16);
   if (t.base) this.ev({k: 'msg', p: 0, text: (o === 0 ? 'Our base was destroyed' : 'Enemy base destroyed') + ': −120 tickets', kind: o === 0 ? 'bad' : 'good', x: t.x, y: t.y});
@@ -4723,7 +4738,7 @@ Sim.prototype.arcStep = function () {
   const isFighter = e => !e.b && !e.gt && (air ? e.air : !e.air && e.d.cat === 'veh') && !e.inside;
   const n = [0, 0]; for (const e of this.ents.values()) if (isFighter(e) && !e.pilot && e.o < 2) n[e.o]++;
   for (const o of [0, 1]) {
-    const want = B.team + o;
+    const want = B.harbor ? Math.max(2, Math.ceil(B.team * .4)) : B.team + o;
     S.spT = S.spT || [0, 0];
     if (n[o] < want && this.t >= S.spT[o]) { S.spT[o] = this.t + 1.2;
       const kk = B.comp[(S.spawnI++) % B.comp.length], e = this.arcSpawn(o, kk); if (e) { n[o]++; if (!air && S.youTier > 1) this.setTier(e, 1 + Math.floor(this.rnd() * S.youTier)); } // bots are matched to your tier
@@ -4736,7 +4751,9 @@ Sim.prototype.arcStep = function () {
   }
   S.queue = S.queue.filter(q => {
     if (q.t > this.t) return true;
-    const e = this.arcSpawn(0, q.k, q.rwy); if (e && q.tier > 1) this.setTier(e, q.tier);
+    const sd = S.B.harbor ? this.harborSoldier(q.you) : null; this.harborAt = sd && q.k !== 'rifle' ? {x: sd.x, y: sd.y} : null;
+    const e = this.arcSpawn(0, q.k, q.rwy); this.harborAt = null; if (e && q.tier > 1) this.setTier(e, q.tier);
+    if (e && sd) { sd.noLoss = 1; sd.pilot = 0; this.ents.delete(sd.id); this.ev({k: 'gone', id: sd.id}); }
     if (e) { this.ev({k: 'scenYou', p: q.you, id: e.id}); if (q.k === 'a10' && !air) S.strike[q.you] = Math.max(0, (S.strike[q.you] || 0) - 1); }
     return false;
   });
@@ -4802,8 +4819,16 @@ Sim.prototype.armorHit = function (t, vx, vy, hz) {
   return {k: ric ? 0 : A.k, ric, face: A.face, tur: A.tur};
 };
 const PEN_TXT = {weak: 'WEAK SPOT HIT!', rear: 'REAR HIT!', side: 'SIDE PENETRATION', front: 'FRONT HIT'};
+Sim.prototype.harborSoldier = function (pi) { for (const e of this.ents.values()) if (!e.b && e.o === pi && e.pilot === pi + 1 && e.d.cat === 'inf') return e; return null; };
 Sim.prototype.arcSpawn = function (o, k, rwy) {
-  const H = this.M.spawns, sp = H[o], en = H[1 - o], d = UNITS[k], N = this.N, h = Math.atan2(en.y - sp.y, en.x - sp.x);
+  const H = this.M.spawns, sp = H[o], en = H[1 - o], d = UNITS[k], N = this.N, h = Math.atan2(en.y - sp.y, en.x - sp.x), at = this.harborAt;
+  if (d.cat === 'inf' && this.scen && this.scen.B.harbor) { // Harbor Havoc: you start as a soldier on your base island
+    const q0 = this.scen.hq && this.scen.hq[o] || sp;
+    for (let tr = 0; tr < 80; tr++) { const a = tr * 2.4, r = 3 + tr * .15, x = q0.x + Math.cos(a) * r, y = q0.y + Math.sin(a) * r; if (this.landOk(x, y)) { const e = this.addUnit(k, o, x, y); e.h = h; e.sq = 0; return e; } }
+    return null;
+  }
+  if (at && this.scen && this.scen.B.harbor && d.cat === 'sea') { const w = this.harborWater(at.x, at.y, 6); if (w) { const e = this.addUnit(k, o, w.x, w.y); e.h = h; e.sq = 0; return e; } }
+  if (at && this.scen && this.scen.B.harbor && d.cat === 'air' && k !== 'seaplane') { const e = this.addUnit(k, o, clamp(at.x, 3, N - 4), clamp(at.y, 3, N - 4)); e.h = h; e.z = Math.max(hAt(this.M, e.x, e.y), 0) + .35; e.sp = 0; e.sq = 0; e.rwy = 1; return e; }
   const F = this.scen && this.scen.field && this.scen.field[o];
   if (rwy && F && d.cat === 'air' && !(this.scen && this.scen.B.harbor)) { // a player who chose the runway: parked on the airfield, pointing at the enemy
     const e = this.addUnit(k, o, clamp(F.x + Math.cos(h) * 2, 3, N - 4), clamp(F.y + Math.sin(h) * 2, 3, N - 4)); e.h = h; e.z = Math.max(hAt(this.M, e.x, e.y), 0) + .35; e.sp = 0; e.sq = 0; e.rwy = 1; return e;
@@ -9956,7 +9981,7 @@ const Direct = {
   },
 
   // ---------- camera ----------
-  hFov(h, asp) { return clamp(2 * Math.atan(Math.tan(h * Math.PI / 360) / (asp || 1.78)) * 180 / Math.PI, 38, 72); }, // vertical FOV for a horizontal one
+  hFov(h, asp) { return clamp(2 * Math.atan(Math.tan(h * Math.PI / 360) / (asp || 1.78)) * 180 / Math.PI, 38, 100); }, // vertical FOV for a horizontal one
   eye() { // where shots start and the first-person camera sits
     const p = this.pose, e = this.e, d = e.d;
     if (this.mode === 'soldier') {
@@ -10021,7 +10046,7 @@ const Direct = {
     else if (this.mode === 'plane') cam.rotateZ(-(p.r) * (fp ? 1 : .35));
     else if (this.mode === 'heli' && fp) cam.rotateZ(-p.r * .5);
     // field of view: aiming zooms; scopes zoom a lot; sprint widens a touch
-    const W = this.W[this.slot] && this.W[this.slot].w, base = this.mode === 'fpv' ? 92 : this.mode === 'plane' ? (this.bsight && !this.grounded ? 24 : this.hFov(fp ? 85 : 80, cam.aspect)) : 72; // planes: WT-style fixed horizontal FOV (≈80° chase, 85° cockpit), so the world is not fish-eyed and wide screens see more at the sides
+    const W = this.W[this.slot] && this.W[this.slot].w, base = this.mode === 'fpv' ? 92 : this.mode === 'plane' ? (this.bsight && !this.grounded ? 24 : this.hFov(fp ? 118 : 96, cam.aspect)) : 72; // planes: WT-style fixed horizontal FOV (≈80° chase, 85° cockpit), so the world is not fish-eyed and wide screens see more at the sides
     this.adsK += ((this.ads ? 1 : 0) - this.adsK) * Math.min(1, dt * 12);
     if (!this.ads) this.zoom2 = this.zoom2 || 1;
     const z = (W && W.zoom ? 1 + (W.zoom - 1) * this.adsK : 1) * (1 - (1 - (this.zoom2 || 1)) * this.adsK); // scoped: the wheel (or Z) zooms further
@@ -10129,9 +10154,11 @@ const Direct = {
       }
       return;
     }
-    if (pri) this.tryFire(this.slot, g);
+    const shipMsl = this.mode === 'ship' && this.W.some(s => s.w.t === 'msl');
+    if (pri) { if (shipMsl) this.W.forEach((s, i) => { if (s.w.t === 'hit' || s.w.t === 'proj' || s.w.t === 'pel') this.tryFire(i, g); }); else this.tryFire(this.slot, g); }
     const altEdge = this.altWas; this.altWas = sec;
-    if (sec && this.W.length > 1) { const s = this.slot === 0 ? 1 : 0; const W = this.W[s].w; if (this.mode === 'soldier' && W.mag && (s === 0 || W.mag > 1 && W.t === 'hit')) { if (!altEdge) { this.slot = s; VM.build(e, g.view.players[e.o].nation, s); } } else this.tryFire(s, g, true); }
+    if (sec && shipMsl) { const lk = this.lockK >= 1 && g.view.ents.get(this.lockId); let pick = -1; this.W.forEach((s, i) => { if (pick < 0 && s.w.t === 'msl' && s.cd <= 0 && (!lk || (s.w.air ? lk.air : (!lk.air || lk.d.cat === 'heli')))) pick = i; }); if (pick < 0) pick = this.W.findIndex(s => s.w.t === 'msl'); this.tryFire(pick, g, true); }
+    else if (sec && this.W.length > 1) { const s = this.slot === 0 ? 1 : 0; const W = this.W[s].w; if (this.mode === 'soldier' && W.mag && (s === 0 || W.mag > 1 && W.t === 'hit')) { if (!altEdge) { this.slot = s; VM.build(e, g.view.players[e.o].nation, s); } } else this.tryFire(s, g, true); }
     if (this.salvo > 0) { this.salvoT -= dt; if (this.salvoT <= 0) { this.salvo--; const ss = this.salvoS || 1, SW = this.W[ss] && this.W[ss].w; this.salvoT = SW && SW.pods ? .06 : .09; if (SW) this.fireProj(SW, ss, g); } }
   },
   tryFire(s, g, secondary) {
@@ -10148,7 +10175,7 @@ const Direct = {
     }
     if (this.mode === 'vehicle' && modOut(this.e, 'tur', g.view.t)) { this.msg('TURRET KNOCKED OUT: repairing', 1); Sfx.empty(); S.cd = .5; return; }
     if (W.t === 'msl') { const sc = g.view.scen || (g.sim && g.sim.scen); // arcade air battles: a limited missile load, refilled at your airfield
-      if (sc && sc.arc === 'air') { if (S.msl === undefined) S.msl = MSL_LOAD; if (S.msl <= 0) { this.msg('OUT OF MISSILES: fly low over your airfield to rearm', 1.8); Sfx.empty(); S.cd = .6; return; } } }
+      if (sc && sc.arc === 'air' && this.mode !== 'ship') { if (S.msl === undefined) S.msl = MSL_LOAD; if (S.msl <= 0) { this.msg('OUT OF MISSILES: fly low over your airfield to rearm', 1.8); Sfx.empty(); S.cd = .6; return; } } }
     if (this.sprinting && this.mode === 'soldier') { this.sprinting = false; this.keys[Settings.binds.sprint] = false; }
     if (W.mag && S.ammo <= 0) { Sfx.empty(); this.reload(s); return; }
     if (W.mag) S.ammo--;
@@ -11079,6 +11106,36 @@ const Interior = {
   cache: {}, EYE: .62, H: 1.25,
   layout(k) {
     const sub = !!UNITS[k].sub, long = k === 'nukesub';
+    if (k === 'destroyer') return {sub, chair: [6.2, 0], worldUp: 1.2,
+      rooms: [
+        {n: 'Bridge', x0: 4, x1: 8, z0: -2, z1: 2, win: [['x', 8, -1.7, 1.7], ['z', -2, 5, 7.5], ['z', 2, 5, 7.5]]},
+        {n: 'Combat Information Centre', x0: 0, x1: 4, z0: -2, z1: 2},
+        {n: 'Passageway', x0: -8, x1: 0, z0: -.5, z1: .5},
+        {n: 'Mess', x0: -4, x1: 0, z0: .5, z1: 2.5},
+        {n: 'Galley', x0: -8, x1: -4, z0: .5, z1: 2.5},
+        {n: 'Crew quarters', x0: -4, x1: 0, z0: -2.5, z1: -.5},
+        {n: "Officers' cabins", x0: -8, x1: -4, z0: -2.5, z1: -.5},
+        {n: 'Engine room', x0: -14, x1: -8, z0: -2, z1: 2},
+        {n: 'Aft deck', x0: -18, x1: -14, z0: -2, z1: 2, open: 1},
+      ],
+      doors: [['x', 4, -.4, .4], ['x', 0, -.4, .4], ['z', .5, -2.6, -1.4], ['z', .5, -6.6, -5.4], ['z', -.5, -2.6, -1.4], ['z', -.5, -6.6, -5.4], ['x', -8, -.4, .4], ['x', -14, -.4, .4]],
+      blocks: [[6.95, 7.6, -1.4, 1.4], [4.6, 5.4, -1.8, -1.2], [.6, 1.4, -1.8, -1.2], [2.2, 3, -1.8, -1.2], [.6, 1.4, 1.2, 1.8], [2.2, 3, 1.2, 1.8], [1.4, 2.6, -.4, .4], [-3, -1, 1.3, 1.8], [-7.6, -4.4, 1.9, 2.4], [-3.6, -2.4, -2.4, -1.9], [-1.6, -.4, -2.4, -1.9], [-7.6, -6.4, -2.4, -1.9], [-5.6, -4.4, -2.4, -1.9], [-13, -9.5, -1.6, -.9], [-13, -9.5, .9, 1.6]],
+      crew: [[7, 1, 3.14], [3.4, .9, -1.57], [-12, 0, 1.57]]};
+    if (k === 'carrier') return {sub, chair: [8.2, 0], worldUp: 1.4,
+      rooms: [
+        {n: 'Bridge', x0: 6, x1: 10, z0: -3, z1: 3, win: [['x', 10, -2.6, 2.6], ['z', -3, 7, 9.5], ['z', 3, 7, 9.5]]},
+        {n: 'Air Operations', x0: 2, x1: 6, z0: -3, z1: 3, win: [['z', -3, 3, 5], ['z', 3, 3, 5]]},
+        {n: 'Main passageway', x0: -10, x1: 2, z0: -.6, z1: .6},
+        {n: 'Ready room', x0: -4, x1: 2, z0: .6, z1: 3.4},
+        {n: 'Briefing room', x0: -4, x1: 2, z0: -3.4, z1: -.6},
+        {n: 'Mess hall', x0: -10, x1: -4, z0: .6, z1: 3.4},
+        {n: 'Berthing', x0: -10, x1: -4, z0: -3.4, z1: -.6},
+        {n: 'Hangar bay', x0: -20, x1: -10, z0: -4, z1: 4},
+        {n: 'Flight deck', x0: -26, x1: -20, z0: -4, z1: 4, open: 1},
+      ],
+      doors: [['x', 6, -.5, .5], ['x', 2, -.5, .5], ['z', .6, -2.6, -1.4], ['z', -.6, -2.6, -1.4], ['z', .6, -7.6, -6.4], ['z', -.6, -7.6, -6.4], ['x', -10, -1, 1], ['x', -20, -1.5, 1.5]],
+      blocks: [[9.4, 10, -2.2, 2.2], [3.4, 4.6, -.8, .8], [2.6, 5.4, -2.8, -2.3], [2.6, 5.4, 2.3, 2.8], [-3.4, -1.2, 1, 1.4], [-.4, 1.4, 1, 1.4], [-3.4, -1.2, 1.9, 2.3], [-.4, 1.4, 1.9, 2.3], [-2.8, .2, -2.5, -1.5], [-9.4, -7.4, 1.3, 1.8], [-6.6, -4.6, 1.3, 1.8], [-9.4, -7.4, 2.5, 3], [-6.6, -4.6, 2.5, 3], [-9.6, -8.4, -3.3, -2.6], [-7.6, -6.4, -3.3, -2.6], [-5.6, -4.4, -3.3, -2.6], [-18, -12.5, 1.6, 3], [-18, -12.5, -3, -1.6], [-19.4, -18.4, 3.2, 3.9], [-19.4, -18.4, -3.9, -3.2], [-11.4, -10.6, 3, 3.6]],
+      crew: [[9, 1.6, 3.14], [4, -1.9, 1.57], [-14, 0, 1.57], [-7, 2.0, -1.57]]};
     if (!sub) return {sub, chair: [3.4, 0], worldUp: 1.1,
       rooms: [
         {n: 'Bridge', x0: 2, x1: 5, z0: -1.6, z1: 1.6, win: [['x', 5, -1.3, 1.3], ['z', -1.6, 2.4, 4.7], ['z', 1.6, 2.4, 4.7]]},
@@ -11104,6 +11161,70 @@ const Interior = {
       crew: [[-.6, -.8, 0], [2.4, .7, 3.14], [-4.4, -1, 1.57]]};
   },
   get(k, nat) { const key = k + '|' + nat; return this.cache[key] || (this.cache[key] = this.build(k, nat)); },
+  furnishDestroyer(b, P, H, screen) {
+    const ST = 0x3a3f44, DK = 0x1c1f22, WD = 0x7a5a3a, MT = 0x9aa3a8;
+    // bridge: helm and radar consoles across the front, ship's wheel, engine telegraphs, chart table
+    b.box(.5, .5, 2.6, 7.3, .25, 0, ST); screen(7.04, .62, -.7, .8, .22, 0x5ad0ff, Math.PI / 2); screen(7.04, .62, .7, .8, .22, 0x46ff9a, Math.PI / 2);
+    b.cyl(.04, .3, 6.7, .15, 0, DK); b.cyl(.15, .03, 6.7, .42, 0, 0x8a6a3a); [0, 1, 2, 3].forEach(i => b.box(.04, .03, .34, 6.7, .42, 0, 0x8a6a3a, i * Math.PI / 4));
+    b.box(.2, .35, .3, 6.8, .18, -1.1, DK); b.box(.2, .35, .3, 6.8, .18, 1.1, DK); b.cyl(.06, .05, 6.8, .38, -1.1, 0xd8a640); b.cyl(.06, .05, 6.8, .38, 1.1, 0xd8a640);
+    b.box(.8, .4, .6, 5, .2, -1.5, WD); b.box(.7, .02, .5, 5, .41, -1.5, 0xe8dfc0); b.box(.4, .01, .02, 5, .425, -1.5, 0xc23030);
+    // CIC: radar and sonar consoles in two rows, a lit plot table in the middle
+    [[1, -1.5], [2.6, -1.5], [1, 1.5], [2.6, 1.5]].forEach(([x, z], i) => { b.box(.7, .5, .4, x, .25, z, ST); screen(x, .62, z + (z > 0 ? -.2 : .2), .55, .22, i % 2 ? 0x46ff9a : 0x5ad0ff, 0); b.box(.3, .22, .3, x, .11, z + (z > 0 ? -.55 : .55), 0x2a2e32); });
+    b.box(1.2, .35, .8, 2, .18, 0, 0x1f3a4a); b.box(1.1, .02, .7, 2, .36, 0, 0x2a9aaa); [0, 1, 2].forEach(i => b.box(.06, .015, .06, 1.6 + i * .3, .375, -.1 + (i % 2) * .2, 0xff5a4a));
+    for (let i = 0; i < 3; i++) b.cylX(.04, 3.8, 2, H - .08, -1.5 + i * 1.5, 0x8a7a50);
+    // mess: long table with benches
+    b.box(1.6, .4, .5, -2, .2, 1.55, WD); b.box(1.5, .03, .55, -2, .41, 1.55, 0x9a7a4a); [-2.6, -1.4, -.8].forEach(x => { b.box(.22, .2, .18, x, .1, 1.1, DK); b.box(.22, .2, .18, x, .1, 2.0, DK); }); b.box(.9, .45, .04, -2, .7, 2.48, 0xb8a888);
+    // galley: stoves, counters, pots
+    b.box(2.6, .45, .4, -6, .22, 2.1, MT); b.box(.7, .5, .4, -4.6, .25, 1.0, ST); [-6.6, -6, -5.4].forEach(x => { b.cyl(.1, .12, x, .5, 2.1, 0x5a6266); b.cyl(.08, .02, x, .57, 2.1, 0x2a2e32); });
+    b.box(.4, .6, .3, -7.6, .3, 1.0, MT);
+    // crew quarters and cabins: stacked bunks, lockers, desks
+    [-3, -1].forEach(x => { b.box(1, .1, .55, x, .25, -2.15, ST); b.box(.95, .08, .5, x, .33, -2.15, P.main); b.box(1, .1, .55, x, .78, -2.15, ST); b.box(.95, .08, .5, x, .86, -2.15, 0xdad6c8); });
+    [-7, -5].forEach(x => { b.box(1, .1, .55, x, .25, -2.15, ST); b.box(.95, .08, .5, x, .33, -2.15, 0xdad6c8); b.box(.5, .3, .4, x + .4, .15, -.95, WD); b.box(.4, .02, .3, x + .4, .31, -.95, 0xe8dfc0); });
+    [-3.8, -.4].forEach(x => b.box(.3, 1, .3, x, .5, -1.0, MT));
+    // engine room: two gas turbines, pipework, gauges
+    [-1.25, 1.25].forEach(z => { b.box(3.5, .7, .7, -11.2, .35, z, 0x56605f); [-12.4, -11.2, -10].forEach(x => b.cyl(.14, .3, x, .85, z, 0xb07a30)); b.cylX(.1, 3.7, -11.2, .5, z + (z > 0 ? -.45 : .45), 0x8a8e92); });
+    for (let i = 0; i < 3; i++) b.cylX(.05, 5, -11, H - .1 - i * .06, -1.7 + i * .25, 0x8a7a50);
+    b.box(.4, .5, .2, -13.7, .5, 0, ST); screen(-13.58, .75, 0, .3, .2, 0xff9a3a, Math.PI / 2);
+    // aft deck: depth charge racks, rails, a bollard
+    [-1.5, 1.5].forEach(z => { for (let i = 0; i < 3; i++) b.cylX(.1, .3, -15.3 + i * .35, .14, z, 0x3c4a44); b.box(1.2, .03, .3, -15.1, .02, z, DK); });
+    for (let x = -17.5; x < -14; x += .9) { b.cyl(.015, .35, x, .17, -1.95, MT); b.cyl(.015, .35, x, .17, 1.95, MT); } b.cylX(.012, 3.6, -15.7, .34, -1.95, MT); b.cylX(.012, 3.6, -15.7, .34, 1.95, MT);
+    b.cyl(.08, .12, -17.2, .06, 0, ST);
+  },
+  furnishCarrier(b, P, H, screen) {
+    const ST = 0x3a3f44, DK = 0x1c1f22, WD = 0x7a5a3a, MT = 0x9aa3a8, YL = 0xe8c228, GR = 0x6a7a52;
+    // bridge: wide console, helm, radar, three screens
+    b.box(.5, .5, 4.4, 9.7, .25, 0, ST); [-1.5, 0, 1.5].forEach((z, i) => screen(9.44, .62, z, 1, .24, [0x5ad0ff, 0x46ff9a, 0xff9a3a][i], Math.PI / 2));
+    b.cyl(.04, .3, 9, .15, 0, DK); b.cyl(.17, .03, 9, .42, 0, 0x8a6a3a); [0, 1, 2, 3].forEach(i => b.box(.04, .03, .4, 9, .42, 0, 0x8a6a3a, i * Math.PI / 4));
+    [-2, 2].forEach(z => { b.box(.5, .4, .5, 8.2, .2, z, ST); screen(8.2, .6, z + (z > 0 ? -.26 : .26), .5, .2, 0x5ad0ff, 0); });
+    // air operations: plot table with plane markers, status consoles
+    b.box(1.2, .38, 1.6, 4, .19, 0, 0x1f3a4a); b.box(1.1, .02, 1.5, 4, .39, 0, 0x2a9aaa); [[-.4, -.5], [.2, .3], [-.1, .6], [.4, -.3]].forEach(([x, z]) => b.box(.07, .02, .05, 4 + x, .4, z, 0xff5a4a));
+    [-2.55, 2.55].forEach(z => { b.box(2.8, .5, .4, 4, .25, z, ST); [3.4, 4.4].forEach((x, i) => screen(x, .62, z + (z > 0 ? -.2 : .2), .7, .24, i ? 0x46ff9a : 0x5ad0ff, 0)); });
+    // ready room: rows of padded pilot seats facing a briefing screen
+    [[-2.3, 1.2], [.5, 1.2], [-2.3, 2.1], [.5, 2.1]].forEach(([x, z]) => { for (let i = 0; i < 3; i++) { b.box(.3, .3, .3, x + i * .5 - .25, .15, z, 0x7a2020); b.box(.3, .3, .06, x + i * .5 - .25, .45, z + .14, 0x7a2020); } });
+    b.box(.04, .6, 2, 1.95, .75, 2.0, DK); screen(1.93, .75, 2.0, 1.8, .55, 0x2a8aaa, Math.PI / 2);
+    // briefing room: long table, map, screen
+    b.box(3, .4, 1, -1.3, .2, -2, WD); b.box(2.9, .02, .9, -1.3, .41, -2, 0xd8d0a8); b.box(.5, .01, .3, -1.6, .42, -2.1, 0x4a8a5a); b.box(.12, .08, .1, -1.3, .45, -2, DK);
+    b.box(.04, .6, 2, -3.85, .75, -2.0, DK); screen(-3.83, .75, -2.0, 1.8, .55, 0x5ad0ff, Math.PI / 2);
+    // mess hall: four long tables with benches, serving counter
+    [[-8.4, 1.55], [-5.6, 1.55], [-8.4, 2.75], [-5.6, 2.75]].forEach(([x, z]) => { b.box(2, .4, .5, x, .2, z, WD); b.box(1.9, .03, .55, x, .41, z, 0x9a7a4a); [-.6, .6].forEach(dx => { b.box(.25, .2, .2, x + dx, .1, z - .38, DK); b.box(.25, .2, .2, x + dx, .1, z + .38, DK); }); });
+    b.box(.4, .5, 2.4, -9.7, .25, 2, MT); b.box(.5, .02, 2.2, -9.7, .51, 2, 0xdad6c8);
+    // berthing: three stacked bunk blocks, lockers
+    [-9, -7, -5].forEach(x => { for (let i = 0; i < 3; i++) { b.box(1, .09, .6, x, .12 + i * .38, -3.0, ST); b.box(.95, .07, .55, x, .18 + i * .38, -3.0, i % 2 ? P.main : 0xdad6c8); } b.box(.06, 1.1, .06, x - .5, .55, -2.7, ST); b.box(.06, 1.1, .06, x + .5, .55, -2.7, ST); });
+    [-9.7, -7.5, -5.3].forEach(x => b.box(.35, 1, .3, x, .5, -1.0, MT));
+    // hangar: two aircraft, yellow safety lines, crates, a tool cart, ceiling lamps
+    for (const [z, col] of [[2.3, GR], [-2.3, 0x7a8a9a]]) {
+      b.box(2.6, .2, .26, -15.2, .32, z, col); b.add(GEO.cone, col, -13.7, .32, z, .13, .4, .13, -Math.PI / 2, 0, 0); b.box(.4, .24, .24, -16.7, .38, z, col);
+      b.box(.6, .02, 2, -15, .3, z, col); b.box(.3, .02, .9, -16.6, .42, z, col); b.box(.05, .3, .02, -16.7, .52, z, col); b.box(.28, .12, .2, -14.8, .43, z, 0x2a8aaa);
+      [-.4, .4].forEach(dz => b.cyl(.05, .04, -14.7, .06, z + dz, DK)); b.cyl(.05, .04, -13.9, .06, z, DK);
+    }
+    for (let x = -19.5; x < -10.5; x += 1.5) b.box(.04, .01, 7.4, x, .005, 0, YL);
+    b.box(1, .5, 1, -18.9, .25, 3.55, 0x5a4a30); b.box(.8, .4, .8, -18.9, .7, 3.55, 0x6a5a40); b.box(1, .5, 1, -18.9, .25, -3.55, 0x5a4a30);
+    b.box(.8, .4, .6, -11, .3, 3.3, 0xc23030); b.box(.8, .04, .6, -11, .52, 3.3, DK);
+    for (let i = 0; i < 4; i++) { b.box(.2, .05, .2, -18 + i * 2.6, H - .06, 0, 0xfff2c0); b.cylX(.03, 9.4, -15, H - .12, -3 + i * 2, 0x8a7a50); }
+    // flight deck aft: arresting wires, deck markings, rails
+    for (let i = 0; i < 3; i++) b.box(.02, .01, 7.6, -21.4 - i * 1.4, .01, 0, DK);
+    b.box(5.8, .01, .12, -23, .006, 0, 0xf4f4f0); for (let x = -25.5; x < -20.4; x += .85) { b.cyl(.015, .35, x, .17, -3.95, MT); b.cyl(.015, .35, x, .17, 3.95, MT); } b.cylX(.012, 5.4, -23, .34, -3.95, MT); b.cylX(.012, 5.4, -23, .34, 3.95, MT);
+  },
   build(k, nat) {
     const L = this.layout(k), P = palette(nat), H = this.H, b = new Batch(), T = .08, sub = L.sub;
     const wallC = sub ? 0x5d6a66 : 0x8a949c, floorC = sub ? 0x2c3331 : 0x4a525a, roofC = sub ? 0x3b4442 : 0xa8b0b6, DK = 0x1c1f22, ST = 0x3a3f44;
@@ -11131,7 +11252,8 @@ const Interior = {
     b.cyl(.05, .3, cx, .15, cz, DK); b.box(.42, .07, .42, cx, .34, cz, 0x7a2020); b.box(.07, .5, .42, cx - .2, .6, cz, 0x7a2020); b.box(.3, .05, .05, cx + .02, .47, cz + .2, DK); b.box(.3, .05, .05, cx + .02, .47, cz - .2, DK);
     b.box(.4, .03, .4, cx, .004, cz, P.main);
     const screen = (x, y, z, w, h, col, ry) => b.box(w, h, .02, x, y, z, col, ry);
-    if (!sub) {
+    if (k === 'destroyer') this.furnishDestroyer(b, P, H, screen); else if (k === 'carrier') this.furnishCarrier(b, P, H, screen);
+    else if (!sub) {
       b.box(.5, .55, 1.4, 4.35, .28, 0, ST); screen(4.12, .68, 0, 1.1, .22, 0x5ad0ff, Math.PI / 2); b.cyl(.14, .03, 4.05, .62, 0, DK, 0, 0, Math.PI / 2);
       b.add(GEO.wedge, 0x6f7a84, 7.2, -.35, 0, 4.4, .3, 3.2); b.cyl(.28, .22, 6.5, .08, 0, ST); b.cylX(.05, 1, 7.1, .12, 0, DK);  // bow and deck gun, seen from the bridge
       b.box(1.2, .42, .5, -1.3, .21, 1.35, 0x7a5a3a); [-1.7, -.9].forEach(x => b.box(.2, .2, .2, x, .1, 1.0, DK));                // mess table and stools
@@ -11705,25 +11827,33 @@ const UI = {
     const L = this.g.sim.scen.land[2] || this.g.sim.scen.land[0] || this.g.sim.scen.fwd;
     this.jump(L.x, L.y + 8);
     this.scen.cls = batClasses(B)[0];
-    if (B.arc) setTimeout(() => { if (this.scen && !Direct.on) this.showScenSpawn(true); }, 300); // air/tank battles: pick what you start in
+    if (B.harbor) this.g.issue({c: 'scenSpawn', u: 'rifle'}); else if (B.arc) setTimeout(() => { if (this.scen && !Direct.on) this.showScenSpawn(true); }, 300); // air/tank battles: pick what you start in
     else this.g.issue({c: 'scenSpawn', u: this.scen.cls});
-    this.addAlert(B.harbor ? 'Harbor Havoc! Launch off your carrier, sink their fleet and destroy the enemy harbor core.' : B.arc === 'air' ? 'Air battle! Shoot down planes and hit their ground targets.' : B.arc ? 'Tank battle! Capture A, B and C.' : B.tdm ? 'Team deathmatch: first to ' + B.tdm + ' kills!' : 'Landing craft inbound. Get ready!', 'gold');
+    this.addAlert(B.harbor ? 'Harbor Havoc! You start as a soldier: walk to your runway or boat spawner to launch, sink their fleet and destroy the enemy harbor core.' : B.arc === 'air' ? 'Air battle! Shoot down planes and hit their ground targets.' : B.arc ? 'Tank battle! Capture A, B and C.' : B.tdm ? 'Team deathmatch: first to ' + B.tdm + ' kills!' : 'Landing craft inbound. Get ready!', 'gold');
   },
-  showScenSpawn(show) {
+  harborNear() { // walk up to your runway or boat spawner and the menu opens
+    const g = this.g; if (!g || !this.scen || this.demo || !g.sim || !g.sim.scen || !g.sim.scen.B.harbor) return;
+    if ((this.hhN = (this.hhN || 0) + 1) % 10) return;
+    let kind = null; const e = Direct.on && Direct.mode === 'soldier' && Direct.e;
+    if (e) { let bd = 7; for (const b of g.view.ents.values()) if (b.b && b.o === g.me && b.hp > 0 && (b.k === 'airfield' || b.k === 'yard')) { const d = Math.hypot(b.x - e.x, b.y - e.y); if (d < bd) { bd = d; kind = b.k === 'yard' ? 'sea' : 'air'; } } }
+    if (kind !== this.hhKind) { this.hhKind = kind; this.showScenSpawn(!!kind, kind); }
+  },
+  showScenSpawn(show, kind) {
     const el = $('scenSpawn');
-    if (!show || !this.scen || !this.g || this.g.sim.over) { el.classList.add('hidden'); return; }
+    if (!show || !this.scen || !this.g || this.g.sim.over) { el.classList.add('hidden'); this.hhKind = null; this.ssList = null; return; }
     const S = this.g.sim.scen, O = S.obj[S.oi];
     if (O && el.classList.contains('hidden')) this.jump(O.x, O.y + 6);
-    el.querySelector('h3').textContent = S.arc ? (S.arc === 'air' ? 'Choose your plane' : 'Choose your vehicle') : 'Choose your soldier';
+    el.querySelector('h3').textContent = kind ? (kind === 'air' ? 'Runway: choose your aircraft' : 'Boat spawner: choose your boat') : S.arc ? (S.arc === 'air' ? 'Choose your plane' : 'Choose your vehicle') : 'Choose your soldier';
     el.querySelector('p.small').classList.toggle('hidden', !!S.arc);
     if (S.arc) { let kb = $('killedBy'); if (!kb) { kb = document.createElement('div'); kb.id = 'killedBy'; $('ssInfo').before(kb); } kb.textContent = this.killedBy || ''; this.killedBy = '';
       $('ssInfo').textContent = `Tickets ${Math.ceil(S.tix[0])} : ${Math.ceil(S.tix[1])} · pick your ${S.arc === 'air' ? 'plane' : 'vehicle'}` + (S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ' · STRIKE PLANE READY (A-10)' : ''); }
     else if (S.tdm) { $('ssInfo').textContent = `Score ${this.g.view.players[0].kills} : ${this.g.view.players[1].kills} · first to ${S.B.tdm} · respawn at your base`; }
     else $('ssInfo').textContent = `Reinforcements left: ${S.tickets} · Objective ${String.fromCharCode(65 + S.oi)}: ${O ? O.n : ''} · Landing at: ${S.fwd ? 'forward position' : 'the beach, by boat'}`;
-    const CL = batClasses(S.B).concat(S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ['a10'] : []);
+    const CL = batClasses(S.B).filter(k => !kind || (kind === 'air' ? UNITS[k].cat === 'air' : UNITS[k].cat === 'sea')).concat(S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ['a10'] : []); this.ssList = kind ? CL : null;
     $('ssBtns').innerHTML = CL.map((k, i) => `<button data-k="${k}" class="${k === this.scen.cls ? 'primary' : ''}"><kbd>${i + 1}</kbd>${UNITS[k].n}</button>`).join('');
     $('ssBtns').querySelectorAll('button').forEach(b => b.onclick = () => this.scenPick(b.dataset.k));
-    if (S.arc === 'air') { // take off from the runway (or carrier deck) or start in the air
+    if (kind) $('ssInfo').textContent = 'Press ' + (CL.length > 1 ? '1 to ' + CL.length : '1') + ' to launch · walk away to cancel';
+    if (S.arc === 'air' && !kind) { // take off from the runway (or carrier deck) or start in the air
       if (S.arc === 'air' && !this.airStart) this.airStart = 'rwy';
       const row = document.createElement('div'); row.className = 'tierRow';
       row.innerHTML = 'Start: ' + [['rwy', S.B.harbor ? '🛫 Carrier deck' : '🛫 Runway'], ['air', '✈ In the air']].map(([v2, n]) => `<button data-a="${v2}" class="${(this.airStart || 'air') === v2 ? 'primary' : ''}">${n}</button>`).join('') + '<span class="small"> · land on your airfield to repair and rearm</span>';
@@ -11739,7 +11869,7 @@ const UI = {
   },
   scenPick(k) {
     if (!this.scen) return;
-    this.scen.cls = k; this.g.issue({c: 'scenSpawn', u: k, t: this.tierSel || 1, rwy: this.airStart !== 'air' && UNITS[k].cat === 'air' ? 1 : 0}); Sfx.ui();
+    this.scen.cls = k; this.g.issue({c: 'scenSpawn', u: k, t: this.tierSel || 1, rwy: (this.airStart !== 'air' || this.hhKind) && UNITS[k].cat === 'air' ? 1 : 0}); Sfx.ui();
     $('ssBtns').querySelectorAll('button[data-k]').forEach(b => b.classList.toggle('primary', b.dataset.k === k));
     $('ssInfo').textContent = (this.g.sim.scen && this.g.sim.scen.arc ? 'Spawning as ' : 'Coming ashore as ') + UNITS[k].n + (this.g.sim.scen && this.g.sim.scen.arc === 'ground' && TANK_CLASSES.includes(k) && this.tierSel > 1 ? ' ' + TIERS[this.tierSel - 1].n : '') + '...';
   },
@@ -12328,7 +12458,7 @@ const UI = {
       if (this.R.ghost) this.R.ghost.rotation.y = m.rot; Sfx.ui && Sfx.ui(); return; }
     if (c === 'Escape') { if (this.bigMap) this.toggleBigMap(); else if (this.mode) this.cancelMode(); else if (this.sel.size) { this.sel.clear(); this.refreshHud(true); } else $('pause').classList.toggle('hidden'); return; }
     if (c === 'Tab') e.preventDefault();
-    if (this.scen && c.startsWith('Digit') && !$('scenSpawn').classList.contains('hidden')) { const S = this.g.sim.scen, k = batClasses(S && S.B).concat(S && S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ['a10'] : [])[+c.slice(5) - 1]; if (k) this.scenPick(k); return; }
+    if (this.scen && c.startsWith('Digit') && !$('scenSpawn').classList.contains('hidden')) { const S = this.g.sim.scen, k = (this.ssList || batClasses(S && S.B).concat(S && S.arc === 'ground' && (S.strike[this.g.me] || 0) > 0 ? ['a10'] : []))[+c.slice(5) - 1]; if (k) this.scenPick(k); return; }
     if (c.startsWith('Digit') && c !== 'Digit0') {
       const n = c.slice(5);
       if (e.ctrlKey) { this.groups[n] = e.shiftKey && this.groups[n] ? [...new Set(this.groups[n].concat([...this.sel]))] : [...this.sel]; this.addAlert('Group ' + n + ' set: ' + this.groups[n].length + ' units (press ' + n + ' to select, twice to jump)'); this.groupBar(); e.preventDefault(); return; }
@@ -13004,7 +13134,7 @@ const UI = {
   },
   exitDirect(msg) {
     this.awaySummary();
-    if (this.scen && this.g && !this.g.sim.over) setTimeout(() => { if (!Direct.on && this.scen) this.showScenSpawn(true); }, 1200);
+    if (this.scen && this.g && !this.g.sim.over) setTimeout(() => { if (!Direct.on && this.scen) { if (this.scen.B.harbor) this.g.issue({c: 'scenSpawn', u: 'rifle'}); else this.showScenSpawn(true); } }, 1200);
     document.body.classList.remove('direct-mode');
     $('direct').classList.add('hidden');
     this.R.cam.fov = 46; this.R.cam.updateProjectionMatrix();
@@ -13029,6 +13159,7 @@ const UI = {
       const g = this.g, q = g && !this.demo && g.view && g.view.players[g.me], on = !!(q && q.nat.key === 'charlies');
       if (on !== !!this.cbOn) { this.cbOn = on; document.body.classList.toggle('cbDeut', on); } if (this.R) this.R.cb = on;
     }
+    this.harborNear();
     const raw = (now - this.lastF) / 1000, dt = clamp(raw, 0, .1); this.lastF = now;
     // automatic graphics: if frames stay slow for a few seconds, step quality down once per step
     if (this.gfxAuto && !this.demo && raw > 0 && raw < 1) {
@@ -13134,6 +13265,9 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
+      'Harbor Havoc: you now start as a soldier on your base island. Walk up to your runway or your boat spawner and a menu opens to pick your aircraft or boat (number keys). Far fewer bot planes, and the islands are now round tropical islets with flat green tops, sandy beaches and palms.',
+      'Boats: every boat now has a machine gun and a big gun that fire together when you hold fire, plus unlimited missiles on the alt button. Destroyers and carriers have fully built interiors: bridge, combat centre, mess, galley, bunks, engine room, and on the carrier a ready room, briefing room and a hangar with aircraft.',
+      'Missiles that are locked on now always connect. Planes: a much wider first-person field of view.',
       'Harbor Havoc: new all-ocean map with two base islands and three capturable islands (turrets, a runway for repairs and a naval yard that sends patrol boats). Held islands drain enemy tickets.',
       'Harbor Havoc: cartoony bright graphics, and a new Torpedo Seaplane that floats on the water, takes off from it, and drops torpedoes on ships (E).',
       'New mode: Harbor Havoc (Air & Tank Battles). Pick both nations, fly arcade-style (no stalls, no crashes) off your aircraft carrier, sink the enemy fleet and destroy their harbor core, or take a patrol boat or destroyer yourself.',
