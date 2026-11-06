@@ -353,6 +353,7 @@ body.cbDeut #ov,body.cbDeut #mm,body.cbDeut #cards img,body.cbDeut #selpanel img
     <button class="big mtile" id="bArc" style="grid-column:1/-1" title="Arcade air and tank battles: endless respawns, tickets and capture points"><b>✈ Air &amp; Tank Battles</b><small>Dogfights and tank fights · 12 vs 12, tickets, capture points</small></button>
     <div class="mgroup">With friends</div>
     <button class="big mtile" id="bHost"><b>🛰 Host a game</b><small>Get a code to share</small></button>
+    <button class="big mtile" id="bTest"><b>🧪 Multiplayer test room</b><small>No bots, just you and friends</small></button>
     <button class="big mtile" id="bJoin"><b>🔗 Join a friend</b><small>Enter their code</small></button>
     <div class="mfoot">
       <button class="big sm" id="bSettings">⚙ Controls &amp; settings</button>
@@ -11553,6 +11554,7 @@ const UI = {
     $('fpSettings').onclick = () => this.openSettings();
     $('sReset').onclick = () => { Settings.resetBinds(); this.openSettings(); };
     $('bHost').onclick = () => { Sfx.init(); Sfx.ui(); this.openLobby('host'); };
+    $('bTest').onclick = () => { Sfx.init(); Sfx.ui(); this.openLobby('test'); };
     $('bJoin').onclick = () => { Sfx.init(); Sfx.ui(); this.openJoin(); };
     $('bJoinGo').onclick = () => { Sfx.init(); this.join($('joinIn').value); };
     $('bJoinBack').onclick = () => { if (this.link) { this.link.close(); this.link = null; } this.net = 'off'; $('joinScr').classList.add('hidden'); $('menu').classList.remove('hidden'); };
@@ -11656,7 +11658,9 @@ const UI = {
   openLobby(type) {
     this.renderNations();
     $('menu').classList.add('hidden'); $('lobby').classList.remove('hidden');
+    this.testRoom = type === 'test'; if (this.testRoom) type = 'host';
     this.lobby = {slots: [{kind: 'human', name: 'You', nation: 3, team: 0, id: 'host'}, {kind: 'bot', level: 'normal', nation: 4, team: 1}]};
+    if (this.testRoom) { this.lobby.slots.pop(); $('optAll').checked = true; $('optTut').checked = false; } // test room: no bots, every unit free
     this.mySlot = 0;
     $('addBot').classList.remove('hidden'); $('bStart').classList.remove('hidden');
     if (type === 'host') {
@@ -11664,8 +11668,8 @@ const UI = {
       const code = this.code = makeCode();
       $('lCode').textContent = 'Room ' + code; $('lCode').classList.remove('hidden'); $('lTitle').textContent = 'Play with friends';
       $('roomCode').textContent = code;
-      { const on = !!Net.relay(); $('roomBox').classList.toggle('hidden', !on); $('oldInv').open = !on; $('roomBig').textContent = code; $('roomName').value = 'Friendly war'; if (this.link && this.link.setMeta) this.link.setMeta({name: 'Friendly war', open: true}); $('roomStat').textContent = on ? 'Connecting to the game server...' : ''; }
-      this.lobby.slots[1].team = 1;
+      { const on = !!Net.relay(); $('roomBox').classList.toggle('hidden', !on); $('oldInv').open = !on; $('roomBig').textContent = code; const nm = this.testRoom ? 'Test room' : 'Friendly war'; $('roomName').value = nm; if (this.link && this.link.setMeta) this.link.setMeta({name: nm, open: true}); $('roomStat').textContent = on ? 'Connecting to the game server...' : ''; }
+      if (this.lobby.slots[1]) this.lobby.slots[1].team = 1;
       this.inv = null; $('invStep2').classList.add('hidden'); $('invStep3').classList.add('hidden'); $('invStatus').textContent = ''; $('relayStatus').textContent = '';
       $('invPanel').classList.remove('hidden');
       this.link = new HostLink(code, {
@@ -11683,7 +11687,7 @@ const UI = {
         onMsg: (id, m) => this.onHostMsg(id, m),
         onStatus: () => this.inviteStatus(),
       });
-      this.lobby.slots[1].auto = 1;
+      if (this.lobby.slots[1]) this.lobby.slots[1].auto = 1;
     } else { $('invPanel').classList.add('hidden'); this.net = 'off'; $('lCode').classList.add('hidden'); $('lTitle').textContent = 'Skirmish against bots'; }
     this.drawLobby();
   },
@@ -11824,14 +11828,14 @@ const UI = {
       if (host && i > 0) { const x = document.createElement('button'); x.textContent = '×'; x.onclick = () => { L.slots.splice(i, 1); this.pushLobby(); }; d.append(x); }
       w.appendChild(d);
     });
-    $('addBot').classList.toggle('hidden', !host || L.slots.length >= 6);
+    $('addBot').classList.toggle('hidden', !host || L.slots.length >= 6 || !!this.testRoom);
     $('optEnemies').value = L.slots.filter(s => s.kind === 'bot').length || 1; $('optEnemies').disabled = !host;
     $('bStart').classList.toggle('hidden', !host);
     const teams = new Set(L.slots.map(s => s.team));
     $('bStart').disabled = teams.size < 2;
     let st = '';
     if (this.net === 'client') st = 'Waiting for the host to start...';
-    else if (teams.size < 2) st = 'You need at least one opponent on another team.';
+    else if (teams.size < 2) st = this.testRoom ? 'Waiting for friends. Share the room code or tell them to press Join a Friend. Put at least one player on another team to start.' : 'You need at least one opponent on another team.';
     else if (this.net === 'host') st = this.lobby.slots.some(s => s.id && s.id !== 'host') ? 'Ready when you are.' : 'Invite a friend below, or start now against the bot.';
     $('lStatus').textContent = st;
   },
@@ -13377,7 +13381,7 @@ addEventListener('keydown', () => { if (typeof Direct !== 'undefined' && window.
   // ---- changelog: add a new entry at the TOP of this list whenever something changes
   const CHANGELOG = [
     {d: '7 Nov 2026', items: [
-      'Multiplayer rooms: name your room and it shows up on everyone's Join screen with a Join button. No codes to share, though the 5-letter code and link still work. It runs over a normal secure web connection so it works on school Wi-Fi, and drops reconnect on their own.',
+      'Multiplayer rooms: name your room and it shows up on the Join screen for everyone with a Join button. No codes to share, though the 5-letter code and link still work. It runs over a normal secure web connection so it works on school Wi-Fi, and drops reconnect on their own.',
       'Harbor Havoc: you now start as a soldier on your base island. Walk up to your runway or your boat spawner and a menu opens to pick your aircraft or boat (number keys). Far fewer bot planes, and the islands are now round tropical islets with flat green tops, sandy beaches and palms.',
       'Boats: every boat now has a machine gun and a big gun that fire together when you hold fire, plus unlimited missiles on the alt button. Destroyers and carriers have fully built interiors: bridge, combat centre, mess, galley, bunks, engine room, and on the carrier a ready room, briefing room and a hangar with aircraft.',
       'Missiles that are locked on now always connect. Planes: a much wider first-person field of view.',
