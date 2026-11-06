@@ -4137,7 +4137,7 @@ const SPY_GUARDS = {
     q: [['What do we ride into battle?', 'Road bikes', ['Horses', 'Scooters', 'Skateboards', 'Unicycles']], ['How many wheels on a proper war bike?', 'Two', ['Three', 'Four', 'One']], ['What colour is our camo?', 'Green', ['Desert tan', 'Navy blue', 'Orange']]]},
   dhruvs: {who: 'Analyst Rao', hi: 'Halt. Your face does not match our records. Verify.', ok: 'Probability you are a spy: low. Proceed.', no: 'As calculated. A spy.',
     q: [() => { const a = 6 + Math.floor(Math.random() * 7), b = 6 + Math.floor(Math.random() * 7), r = a * b; return ['Quick: what is ' + a + ' times ' + b + '?', '' + r, ['' + (r + a), '' + (r - b), '' + (r + 2), '' + (r - 1)]]; },
-        ['What do we never go anywhere without?', 'Our glasses', ['Our bikes', 'Our sunnies', 'Our knives']], () => { const a = 13 + Math.floor(Math.random() * 20), b = 14 + Math.floor(Math.random() * 30), r = a + b; return ['Fast: ' + a + ' plus ' + b + '?', '' + r, ['' + (r + 10), '' + (r - 1), '' + (r + 1), '' + (r - 10)]]; }]},
+        () => { const a = 13 + Math.floor(Math.random() * 20), b = 14 + Math.floor(Math.random() * 30), r = a + b; return ['Fast: ' + a + ' plus ' + b + '?', '' + r, ['' + (r + 10), '' + (r - 1), '' + (r + 1), '' + (r - 10)]]; }]},
   valentinos: {who: 'Sergente Rossi', hi: 'Ehi! Who are you? I never saw you at dinner.', ok: 'Bene, bene. Go, eat something.', no: 'Mamma mia... a SPY!',
     q: [['What goes in a real carbonara?', 'Guanciale, egg and pecorino', ['Cream and ham', 'Ketchup and cheddar', 'Peas and bacon']], ['Where do we eat before a battle?', 'The Trattoria', ['The Mess Hall', 'The Canteen', 'The Drive-thru']], ['Pineapple on pizza?', 'Never', ['Always', 'Only on Sundays', 'With extra cheese']]]},
   jethroes: {who: 'Sgt. Buck', hi: 'Hold it right there, partner.', ok: 'Alright, move along.', no: 'We got ourselves a SPY! Awooo!',
@@ -4145,7 +4145,7 @@ const SPY_GUARDS = {
   toms: {who: "Big Tom's bodyguard", hi: "Oi. Take off those shades... no, wait, put 'em back on. Who are you?", ok: 'Nice shades. Carry on.', no: 'Shame about your cover. SPY!',
     q: [['What does every Tom wear, day and night?', 'Sunnies', ['Glasses', 'A top hat', 'A scarf']], ['What is the size of a Tom\'s arms?', 'Huge', ['Average', 'Small', 'Noodly']], ['Where do Toms like to fight?', 'The desert', ['The snow', 'The jungle', 'Underwater']]]},
   charlies: {who: 'Engineer Byte', hi: 'Scanning... identity unconfirmed. Answer the challenge.', ok: 'Identity confirmed. Proceed.', no: 'Intruder detected. SPY.',
-    q: [['What colour is our flag?', "We can't tell, we're colourblind", ['Red and green', 'Blue', 'Gold']], ['Who flies our planes?', 'Our allies', ['We do', 'Nobody, we have none', 'Robots']], ['Why do we not fly our own jets?', 'No pilot licence', ['Afraid of heights', 'Too expensive', 'Planes are boring']]]},
+    q: [['What colour is our flag?', "We can't tell, we're colourblind", ['Red and green', 'Blue', 'Gold']], ['Why do we not fly our own jets?', 'No pilot licence', ['Afraid of heights', 'Too expensive', 'Planes are boring']]]},
 };
 function spyCover(v, o) {
   const q = v.players[o], n = q.nat, ep = Math.floor((v.t || 0) / 240), pw = e => SPY_WORDS[(((v.seed || 1) * 31 + (o + 3) * 977 + e * 7919) >>> 0) % SPY_WORDS.length];
