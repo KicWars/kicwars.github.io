@@ -9915,7 +9915,7 @@ const Direct = {
         c.restore();
       }
     }
-    if (this.vLock && this.mode === 'plane') { // bracket on the plane the view is locked to
+    if (false && this.vLock && this.mode === 'plane') { // old lock bracket: replaced by drawAirMarks
       const T = this.ui.g.view.ents.get(this.vLock), sp = T && this.toScreen(T.rx === undefined ? T.x : T.rx, T.ryy === undefined ? T.y : T.ryy, T.rz === undefined ? T.z : T.rz);
       if (sp) { const r = 18; c.save(); c.strokeStyle = '#ff5a4a'; c.lineWidth = 2; for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { c.beginPath(); c.moveTo(sp.x + sx * r, sp.y + sy * (r - 7)); c.lineTo(sp.x + sx * r, sp.y + sy * r); c.lineTo(sp.x + sx * (r - 7), sp.y + sy * r); c.stroke(); } c.fillStyle = '#ff8a7a'; c.font = '700 11px system-ui'; c.textAlign = 'center'; c.fillText('VIEW LOCK · ' + T.d.n, sp.x, sp.y - r - 6); c.restore(); }
     }
