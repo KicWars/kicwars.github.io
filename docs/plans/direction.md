@@ -260,3 +260,26 @@ Some earlier sections described things as missing that already exist. Treat thes
 - Photo mode: pause and orbit camera, save as image. UI scale applies to everything.
 - Analytics: players per day, mode popularity, session length, drop-off points.
 - Supply option: **ammo trucks and depots only.**
+
+## Round 7 details (2026-11-07): final priorities (supersedes earlier ordering)
+
+### The one thing for month one
+**Accounts and usernames** come first. Order: **accounts, then trackpad plane controls, then tank collision and smarter bots**. Friends' top complaint is **"too easy / boring"**, so the bot work matters a lot.
+
+### How we work
+Under 5 hours a week: **bigger batches, Finn reviews weekly.**
+
+### Accounts, simplified (supersedes the earlier "short password" decision)
+- **No password to start.** An account is just a **username**, and progress is tied to it. Add a password later if impersonation becomes a problem.
+- Risk to note: anyone can type another player's name and take over or overwrite their progress. The relay should at least refuse a second *simultaneous* session for the same name and keep a history of changes so a bad overwrite can be rolled back.
+- Names may contain **spaces and symbols**, but still need a length limit and the blocked-names and profanity checks decided earlier.
+- On first sign-in, **upload local XP and stats.** Cap or sanity-check the upload, since clients are trusted.
+- Sign-up is one box. No recovery flow (the name is the account).
+
+### Plane controls
+- Mouse-aim cursor lag: **light**, the plane catches up quickly.
+- A **small centre deadzone** where the plane flies straight.
+
+### Tanks and bots
+- Ramming: **big tanks push small ones** (weight-based collision).
+- Bot difficulty shown as **numbers 1 to 5.**
