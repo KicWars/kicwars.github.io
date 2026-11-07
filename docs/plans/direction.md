@@ -98,3 +98,44 @@ New-player tutorial, opened as a **guided tutorial mission** on first load. The 
 
 ## Open questions
 - Account storage: which database on the relay.
+
+## Round 2 details (2026-11-07, late)
+
+### Tanks
+- Driving: **middle ground** (weighty but forgiving). Turret follows the mouse, hull separate.
+- Spotting: **minimap blips** and **dust and tracks** that reveal movement.
+- Damage: **more shots to kill** (no one-taps).
+
+### Bots
+- Behaviours: **retreat when hurt**, **target priorities**, **unpredictable routes** (on top of flank and cover).
+- **Five difficulty levels.**
+- RTS early income: undecided, **propose numbers to test** (faster early income, cheaper first buildings, early skirmish objectives).
+- Match length **scales with the selectable battle size**.
+
+### Red Star combat
+- Flak: visible black bursts, the pilot can dodge, searchlights at night.
+- Fighters: attack in passes from clock positions, break off when shot, a boss ace escort.
+- Turrets: **selectable aim assist**.
+- Failure: **debrief, then the crew chooses** (retry from the last act, or restart).
+
+### Accounts, details
+- Abuse protection: block reserved and impersonating names, and a ban list on the relay. (No rate limiting or report/mute chosen.)
+- Saved: rank and XP, stats, keybinds and settings, unlocks (camos later).
+- Short **password** per name. Player base is **mixed ages**, so keep names and chat clean.
+
+### Multiplayer
+- Max **8** players.
+- **Host migration** if the host leaves (new work).
+- Lag: not tested enough yet. **Playtest before tuning.**
+- Relay hosting: undecided, **recommend options** (needs a look at the current host first).
+
+### Audio and polish
+- Audio: better weapon sounds, otherwise minimal (no music).
+- Polish: **loading screen with tips**. Quality settings, bug report and What's new already exist.
+- Sharing: keep it small (friends and their friends).
+- **Success for the month:** Red Star runs smoothly with 4+ players.
+
+## Updated open questions
+- Account database and relay host (recommend).
+- Host-migration design for Red Star and RTS.
+- RTS early-economy numbers.
