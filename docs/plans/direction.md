@@ -70,7 +70,11 @@ Show **Play vs bots (RTS)**, **Operation Red Star**, and **Arcade battles marked
 Submarine, convoy escort, heist, 1v1 duel arena, naval battles, kill cam, camos.
 
 ## Launch bar
-New-player tutorial. (Moderation tools and a public lobby were not picked.)
+New-player tutorial, opened as a **guided tutorial mission** on first load. It covers RTS basics, flying a plane, driving a tank / on foot, and joining a friend's game. (Moderation tools and a public lobby were not picked.)
+
+## Red Star clarity and comms
+- Weakest point today: **unclear what to do**. Role guidance and prompts matter more than pacing or length.
+- Most crews will play **in the same room** (voice in person), so in-game comms stay light: **text chat** only. No quick-message wheel or map pings needed for now.
 
 ## Risks
 - One month is tight for feel work, Red Star roles and accounts together. If it slips, cut visuals first, then friends list.
