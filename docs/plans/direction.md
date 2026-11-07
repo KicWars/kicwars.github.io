@@ -193,3 +193,26 @@ New-player tutorial, opened as a **guided tutorial mission** on first load. The 
 
 ### Performance
 - Target: **mid laptop with integrated graphics**, **adaptive quality** (hold the frame rate by dropping detail), trade only far-away detail, **under 5 seconds to the menu.**
+
+## Corrections (checked against the in-game What's new list)
+Some earlier sections described things as missing that already exist. Treat these as **polish, not new builds**:
+- **Tutorial**, **research trees**, **campaign**, **Harbor Havoc naval/carrier mode**, **tank armour and ricochets**, **bug report and ideas button**, **sound and graphics settings**, **platoons**, **kill feed** and **Xaviers** all exist. The "tiny research tree" and "build a tutorial" items mean *review and improve the existing ones*, and the "guided tutorial mission" means checking what the current tutorial covers.
+- **Multiplayer rooms** (host, name, Join list) and **usernames with name tags** exist.
+
+## Round 5 details (2026-11-07): new ideas only
+- **Social:** squad/clan tags, emotes and quick taunts. No spectating, match history or challenges; instead an **achievements list**.
+- **Host rules:** starting resources and income, friendly fire on/off, unit and building limits, time limit. **Bot teammates fill gaps** instead of handicaps.
+- **Environment:** day/night cycle, rain and fog that affect visibility, snow and storms, wind that affects flight and shells.
+- **Destruction:** buildings collapse in chunks.
+- **Vehicles:** colour/camo choice, loadouts, upgrade modules bought with XP. **Eject, then parachute and fight on foot** from arcade planes.
+- **Practice:** shooting range, flight school with gates, tank proving ground, free sandbox with a spawn menu. A **simple map editor**. **Autosave on exit.** **Vote between three maps** before arcade battles.
+- **RTS controls:** shift-click waypoint queues, rally points, team map pings, saved build orders. **Veterancy:** units rank up from kills.
+- **Ammo and vehicle supply** as a **lobby option**. **Fog of war** toggle.
+- **Accessibility and polish:** UI scale slider; photo mode with hidden HUD and free camera. English only, no gamepad.
+- **Content:** a **guerrilla/stealth nation** and **one superweapon per nation**. New battle types: **capture the flag on foot** and **survival waves vs bots**.
+- **Group size:** the group is ~16, so **two 8-player teams** is wanted. The relay cap is 8 per room today, so this needs a **relay change** (or linked rooms).
+- **Trust and data:** not worried about cheating yet, **trust the clients**, **basic anonymous analytics**. Privacy policy and terms: "not yet". Note: once passwords and usernames are stored, a privacy policy becomes necessary; revisit before accounts ship.
+
+## Updated open questions
+- Raise the relay cap from 8 to 16 for team modes?
+- Which of the ~40 new ideas fit the one-month window (almost certainly few of them)? Needs a ranked cut list.
