@@ -283,3 +283,10 @@ Under 5 hours a week: **bigger batches, Finn reviews weekly.**
 ### Tanks and bots
 - Ramming: **big tanks push small ones** (weight-based collision).
 - Bot difficulty shown as **numbers 1 to 5.**
+
+## Round 8 details (2026-11-07): final decisions
+- Same account name used twice at once: **the relay refuses the second session.**
+- "Too easy" bot fixes start with **tank bots, infantry bots and air bots.** Difficulty 5 is **beatable by a good player.**
+- Weekly update from Claude: a **short summary of what changed.**
+- Docs stay in this single file. **First thing next session: re-read this doc for errors** (it was written across many rounds and has some superseded entries; later rounds win).
+- **First coding task next session: design the accounts schema** (usernames, progress, history, one-session rule, local-save import), then build the relay account store.
