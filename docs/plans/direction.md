@@ -19,7 +19,8 @@ Process: ask before big design choices, keep `docs/plans/` current as work lands
 
 ### Planes (laptop trackpad is the target device)
 - Aim: **mouse aim with cursor lag** (the plane chases a cursor, War Thunder style). Fix the twitchy/drifting mouse aim.
-- Too many keys: reduce the **weapon keys E/R/Y** and the **landing / gear / flaps** handling (candidates: switchable weapons, automatic gear and flaps).
+- Weapon keys: **left click fires guns, one key for the special weapon** (replaces E/R/Y as the default; keep rebindable).
+- Landing gear and flaps: an **assist toggle** (automatic by default, manual option for experienced pilots).
 - Target lock: easier to acquire, stays locked when the target turns, clearer lead marker, camera smoothing.
 
 ### Tanks / ground vehicles
@@ -63,7 +64,7 @@ Next, in order:
 Mountains and rocks, trees and foliage, UI and menus.
 
 ## Public menu
-Show **Play vs bots (RTS)** and **Operation Red Star** at launch. Arcade battles are not in the launch menu list.
+Show **Play vs bots (RTS)**, **Operation Red Star**, and **Arcade battles marked as beta** at launch.
 
 ## Dropped for now
 Submarine, convoy escort, heist, 1v1 duel arena, naval battles, kill cam, camos.
@@ -76,6 +77,5 @@ New-player tutorial. (Moderation tools and a public lobby were not picked.)
 - Accounts touch the relay, which can break multiplayer if rushed.
 
 ## Open questions
-- Exact keys to cut or automate for plane weapons and landing.
-- Whether the launch menu should still hide Arcade battles.
+- Which key is the special-weapon key, and how a plane with several specials (missiles, bombs, rockets) cycles them.
 - Account storage: which database on the relay.
