@@ -216,3 +216,47 @@ Some earlier sections described things as missing that already exist. Treat thes
 ## Updated open questions
 - Raise the relay cap from 8 to 16 for team modes?
 - Which of the ~40 new ideas fit the one-month window (almost certainly few of them)? Needs a ranked cut list.
+
+## Round 6 details (2026-11-07): scope, time and more new ideas
+
+### Scope reality check
+- Time available: **under 5 hours a week.** The list in this doc is far larger than that allows in a month.
+- **Must make the first month:** trackpad plane controls, accounts and usernames, tank collision and smarter bots.
+- **After launch:** map editor, day/night and weather, replay system.
+- Not picked as must-haves (so they slip unless time remains): Red Star Navigator and Bombardier, the rest of the long list below.
+- Conflict to resolve: earlier rounds called "Red Star runs smoothly with 4+" the success measure, but Red Star roles did not make the must-have list. Decide which is the true month-one goal.
+
+### 16 players
+- **Two linked rooms** (8 + 8 sharing one match) for team modes. Needs a relay design.
+
+### Social
+- Achievements: combat feats, Red Star feats, silly ones, progress milestones.
+- Emotes: **radial wheel (hold a key).** Clan tags: **created by a leader with invites.**
+- Bot teammates: **auto-fill and replace leavers**, with a toggle to turn off.
+
+### Environment and destruction (post-launch)
+- Red Star storms: turbulence and icing events. Wind: subtle drift. Collapsed buildings leave **rubble that gives cover.**
+- Night maps: headlights/flashlights/flares, night vision toggle, and searchlights/illumination rounds (all three).
+
+### Vehicles
+- Loadouts: spawn screen, garage with a point budget, and preset kits (all).
+- XP modules: **ammo types.**
+- Camos: presets plus **custom camos with resizable flag stickers that other players can see on your vehicle.** (Needs the design to sync over the relay.)
+- Eject: **the parachute can be shot**, land and fight on foot, or skip to respawn.
+
+### Practice and tools
+- Shooting range: moving targets, every weapon unlocked, an aim-assist test.
+- Flight school: takeoff and landing, dogfight a target drone, bombing run.
+- Sandbox spawn menu: anyone, **offline only.**
+- Map editor (post-launch): paint heights, place bases and capture points, place trees and rocks, share by code.
+
+### New content
+- Guerrilla nation: jungle fighters inspired by Vietnam-era guerrillas (name and look to be decided, as the other nations are fictional): hidden units in forests, traps and mines, sabotage and spies.
+- Superweapons: **game-ending, like ICBMs**, one per nation.
+- Capture the flag on foot: **small bases on a new map.**
+- Survival waves: more infantry, tanks and planes later, bosses, supply drops between waves.
+
+### Polish
+- Photo mode: pause and orbit camera, save as image. UI scale applies to everything.
+- Analytics: players per day, mode popularity, session length, drop-off points.
+- Supply option: **ammo trucks and depots only.**
