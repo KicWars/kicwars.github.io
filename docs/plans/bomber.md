@@ -1,6 +1,6 @@
 # Operation Red Star: Soviet atomic bomber co-op
 
-Status: detailed plan, not built. Written 2026-11-06 with Finn.
+Status: playable preview built (flight, complications, lounge, bail-out, arming, Strangelove ending). Roles, flak and the code challenge not built; see [direction.md](direction.md). Written 2026-11-06 with Finn.
 
 ## Pitch
 2 to 7 players are blob crew inside one Soviet atomic bomber. Everyone has a different job at a different station. Fly from a Siberian airfield over the Arctic and Atlantic to New York, survive the fighters and flak, and drop the bomb. 15 to 20 minutes. Teamwork under pressure, with comedy: shouting radio lines, a commissar, a very loud engine room.

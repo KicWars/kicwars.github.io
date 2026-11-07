@@ -11,6 +11,8 @@ Saved design plans. Nothing here is built unless it says so. Status last updated
 | Co-op campaign "Operation Chain" | Idea | below |
 | 1v1 PvP modes | Idea | below |
 
+**Current direction (2026-11-07): see [direction.md](direction.md).** Priority: feel and balance, then Red Star roles, then accounts, aiming for a public launch within a month.
+
 ## Constraints that shape every mode
 - The relay allows 1 host + 7 guests per room (8 players). The host's game is authoritative; guests send commands.
 - Interiors (`Interior.get(kind, nation)`, `Direct.aboard`) are **local to each player**: you see your own walk, not others. Any crew mode needs shared interior presence first (see bomber.md, "Shared interiors").
