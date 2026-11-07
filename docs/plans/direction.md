@@ -63,7 +63,13 @@ Next, in order:
 - Ideas picked: smaller file / lazy-load rarely used modes, skip the menu demo battle.
 
 ## 5. Visuals
-Mountains and rocks, trees and foliage, UI and menus.
+Overall look: **stylised blobs, cleaner** (keep the cartoon look, tidier).
+- **Mountains and rocks:** bigger dramatic peaks, snow caps and rock layers, more varied rock shapes.
+- **Trees and foliage:** more tree types, denser forests, better wind sway, cheaper far-away trees (ties to performance).
+- **Menu:** **big mode cards** (RTS, Arcade beta, Red Star), settings tucked away.
+- **Direct-control HUD:** health and ammo only by default, minimap, a controls hint that fades, kill feed and alerts.
+- **RTS panels:** buttons too small, too many build options at once (needs categories), unit info unclear, shortcuts not discoverable.
+- **Battle size:** selectable by the player.
 
 ## Public menu
 Show **Play vs bots (RTS)**, **Operation Red Star**, and **Arcade battles marked as beta** at launch.
