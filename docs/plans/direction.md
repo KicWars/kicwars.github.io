@@ -13,13 +13,15 @@ Open the game to the public **within a month**, friends first. Ranked ladder is 
 5. **Visuals** (lowest priority if time runs short)
 6. **Public-launch bar**: new-player tutorial
 
+Playtests: ad hoc, whenever friends are around.
+
 Process: ask before big design choices, keep `docs/plans/` current as work lands, test with short Playwright pokes only (no long sims).
 
 ## 1. Feel, controls, balance
 
 ### Planes (laptop trackpad is the target device)
 - Aim: **mouse aim with cursor lag** (the plane chases a cursor, War Thunder style). Fix the twitchy/drifting mouse aim.
-- Weapon keys: **left click fires guns, one key for the special weapon** (replaces E/R/Y as the default; keep rebindable).
+- Weapon keys: **left click fires guns, one key for the special weapon**, default **E**, rebindable. Planes with several specials pick with **number keys 1-3**. Replaces E/R/Y.
 - Landing gear and flaps: an **assist toggle** (automatic by default, manual option for experienced pilots).
 - Target lock: easier to acquire, stays locked when the target turns, clearer lead marker, camera smoothing.
 
@@ -69,8 +71,16 @@ Show **Play vs bots (RTS)**, **Operation Red Star**, and **Arcade battles marked
 ## Dropped for now
 Submarine, convoy escort, heist, 1v1 duel arena, naval battles, kill cam, camos.
 
+## Roles in Red Star: free swapping
+- **No auto-assigned jobs.** Players choose and can change roles during the flight by **walking to a free seat and sitting**.
+- A **role card in the lobby** explains each job before the start.
+- Empty stations are covered by **AI at half efficiency**, and a **warning banner** tells the crew which seats are empty.
+
+## Accounts: guests
+Guests keep playing with **local saves** (browser storage, as today). Named accounts add relay-stored progress on top.
+
 ## Launch bar
-New-player tutorial, opened as a **guided tutorial mission** on first load. It covers RTS basics, flying a plane, driving a tank / on foot, and joining a friend's game. (Moderation tools and a public lobby were not picked.)
+New-player tutorial, opened as a **guided tutorial mission** on first load. The RTS tutorial ends by **winning a tiny skirmish**. It covers RTS basics, flying a plane, driving a tank / on foot, and joining a friend's game. (Moderation tools and a public lobby were not picked.)
 
 ## Red Star clarity and comms
 - Weakest point today: **unclear what to do**. Role guidance and prompts matter more than pacing or length.
@@ -81,5 +91,4 @@ New-player tutorial, opened as a **guided tutorial mission** on first load. It c
 - Accounts touch the relay, which can break multiplayer if rushed.
 
 ## Open questions
-- Which key is the special-weapon key, and how a plane with several specials (missiles, bombs, rockets) cycles them.
 - Account storage: which database on the relay.
