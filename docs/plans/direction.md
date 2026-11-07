@@ -159,3 +159,37 @@ New-player tutorial, opened as a **guided tutorial mission** on first load. The 
 - **Replays:** a **full replay system** is wanted eventually (this includes the kill cam). Post-launch.
 - **Never change:** the blob art style (existing rules also keep the tester code hidden and old KICWARS- codes accepted).
 - **Money:** free for now. Monetisation (ads, microtransactions) is a later idea once the game is popular. Revisit once there is an audience; the player base is mixed ages, so check consumer-protection rules for minors first.
+
+## Round 4 details (2026-11-07, 28 questions)
+
+### Red Star story and tone
+- Opens with a **short comic briefing screen**. One route (New York) only.
+- The **commissar is a Stalin blob AI** (not a player seat).
+- Tone: it's for Finn's ~16 friends, so **fun rather than funny**: no corny Soviet jokes.
+- More complications: engine fires and leaks, radar and missiles, crew trouble (drunk, panic).
+- **Debrief:** who did what (damage, repairs), time and route accuracy, medals, rank XP gained. **Letter grade S to F.**
+- Roles: **picked in-flight only** (free swapping), with the lobby role card as an explainer.
+
+### Controls (trackpad)
+- Aim assist on **on-foot shooting, plane guns and the tank turret**.
+- Sensitivity **per mode** (foot, plane, tank).
+- Key bindings: **presets plus full rebinding.**
+- Two-finger scroll: **zoom in RTS, switch weapons in direct control** (context).
+
+### On foot
+- Weapons: rifle and pistol, grenades, rocket launcher, melee, **and more cool ones**.
+- Health: **no regen**. Xaviers stay default-off, but add **healing items**.
+- Climbing: **falls through terrain** is a bug to fix; otherwise polish.
+- **Jump plus auto-vault over low walls.**
+
+### Tutorial
+- **Friendly short prompts**, **under 3 minutes**, skippable and replayable from the menu, **reward: unlock a vehicle.**
+
+### Ranks, chat, rooms
+- Ranks unlock **vehicles, camos, titles and badges.**
+- Name tags: **colour by team, just the name.**
+- Chat: **unfiltered text.** Note: the player base is mixed ages and usernames get a profanity filter, so decide later whether to filter chat too.
+- Rooms: the **host picks private or public** per lobby. A public room browser is needed.
+
+### Performance
+- Target: **mid laptop with integrated graphics**, **adaptive quality** (hold the frame rate by dropping detail), trade only far-away detail, **under 5 seconds to the menu.**
