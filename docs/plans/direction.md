@@ -139,3 +139,23 @@ New-player tutorial, opened as a **guided tutorial mission** on first load. The 
 - Account database and relay host (recommend).
 - Host-migration design for Red Star and RTS.
 - RTS early-economy numbers.
+
+## Round 3 details (2026-11-07, night)
+
+### RTS
+- Early game: **scouts/recon, defensive towers, economy first.**
+- Objectives: **capture points**, **resource nodes in the middle**, destroy the base.
+- Win conditions: **selectable** by the host.
+- Research: a **tiny tree (3 branches)** for launch; the full tree comes later.
+
+### Arcade (beta)
+- Vehicles needing work: fighters, bombers and A-10, tanks, helicopters and drones.
+- Team size is **player-picked**. Respawns **cost points per vehicle**. Win by **both** ticket/kill targets and capture-and-hold zones.
+
+### Scope and platforms
+- **Nations:** balance the existing ones and give each **unique units**. No new nations yet.
+- **Campaign:** yes, **after launch** (Operation Chain idea).
+- **Platforms:** desktop only officially, **Chrome** must work. Phones are best effort.
+- **Replays:** a **full replay system** is wanted eventually (this includes the kill cam). Post-launch.
+- **Never change:** the blob art style (existing rules also keep the tester code hidden and old KICWARS- codes accepted).
+- **Money:** free for now. Monetisation (ads, microtransactions) is a later idea once the game is popular. Revisit once there is an audience; the player base is mixed ages, so check consumer-protection rules for minors first.
